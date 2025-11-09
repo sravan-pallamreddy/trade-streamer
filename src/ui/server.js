@@ -26,7 +26,57 @@ console.log(`Using port: ${PORT}`);
 
 // Store latest AI results
 let latestResults = null;
+let lastScanMeta = null;
+let lastScanError = null;
 let isScanning = false;
+let scanTimer = null;
+let nextScanDelayOverride = null;
+
+function parseSymbolList(input) {
+  if (!input) return [];
+  const source = Array.isArray(input) ? input : String(input).split(/[,\s]+/);
+  const out = [];
+  const seen = new Set();
+  for (const raw of source) {
+    if (!raw) continue;
+    const symbol = String(raw).trim().toUpperCase();
+    if (!symbol) continue;
+    if (!/^[A-Z0-9.\-]{1,12}$/.test(symbol)) continue;
+    if (seen.has(symbol)) continue;
+    seen.add(symbol);
+    out.push(symbol);
+  }
+  return out;
+}
+
+function buildAgentCommand(symbolsList) {
+  if (!Array.isArray(symbolsList) || symbolsList.length === 0) {
+    return AGENT_COMMAND;
+  }
+
+  const symbolArg = symbolsList.join(',');
+
+  if (AGENT_COMMAND.includes('{{symbols}}')) {
+    return AGENT_COMMAND.replace(/{{symbols}}/g, symbolArg);
+  }
+
+  if (/npm\s+run\s+/i.test(AGENT_COMMAND)) {
+    return `${AGENT_COMMAND} -- --symbols ${symbolArg}`;
+  }
+
+  return `${AGENT_COMMAND} --symbols ${symbolArg}`;
+}
+const DEFAULT_SYMBOLS = process.env.SCAN_SYMBOLS || 'SPY,QQQ,AAPL,TSLA,GOOGL,NVDA';
+const DEFAULT_SYMBOL_LIST = parseSymbolList(DEFAULT_SYMBOLS);
+
+let scanConfig = {
+  symbols: DEFAULT_SYMBOL_LIST.length ? Array.from(DEFAULT_SYMBOL_LIST) : ['SPY', 'QQQ'],
+  updatedAt: new Date().toISOString()
+};
+
+const AGENT_COMMAND = process.env.UI_AGENT_COMMAND || 'npm run day-trade';
+const AGENT_INTERVAL_MS = Number(process.env.UI_AGENT_INTERVAL_MS || 120000);
+const AGENT_TIMEOUT_MS = Number(process.env.UI_AGENT_TIMEOUT_MS || 90000);
 
 // Middleware
 app.use(express.json());
@@ -42,44 +92,63 @@ try {
   process.exit(1);
 }
 
-const { getAccounts, getPortfolio, getAccountBalance } = etradeModule;
+const { getAccounts, getPortfolio, getAccountBalance, placeOptionMarketOrder } = etradeModule;
 
 // API endpoints
 app.get('/api/recommendations', (req, res) => {
   res.json({
     results: latestResults,
     isScanning,
+    scanMeta: lastScanMeta,
+    lastError: lastScanError,
+    config: scanConfig,
     timestamp: new Date().toISOString()
   });
 });
 
 app.post('/api/scan', async (req, res) => {
-  if (isScanning) {
-    return res.status(409).json({ error: 'Scan already in progress' });
+  const manualResult = await triggerScan('manual');
+  if (!manualResult.success) {
+    return res.status(manualResult.statusCode || 500).json({ success: false, error: manualResult.error });
   }
 
-  isScanning = true;
-  try {
-    console.log('Starting AI scan...');
-    const { stdout, stderr } = await execAsync('npm run ai-agent', {
-      cwd: path.join(__dirname, '..'),
-      timeout: 60000 // 1 minute timeout
-    });
+  res.json({ success: true, results: manualResult.results });
+});
 
-    // Parse the output (this is a simple implementation)
-    // In a real app, you'd modify ai-agent.js to return structured data
-    latestResults = {
-      rawOutput: stdout,
-      timestamp: new Date().toISOString(),
-      parsed: parseAIOutput(stdout)
+app.get('/api/scan/config', (req, res) => {
+  res.json({ success: true, config: scanConfig });
+});
+
+app.post('/api/scan/config', (req, res) => {
+  try {
+    const symbolsInput = req.body?.symbols;
+    const normalized = parseSymbolList(symbolsInput);
+
+    if (!normalized.length) {
+      return res.status(400).json({ success: false, error: 'At least one symbol is required.' });
+    }
+
+    if (normalized.length > 24) {
+      return res.status(400).json({ success: false, error: 'Please limit the watchlist to 24 symbols.' });
+    }
+
+    scanConfig = {
+      symbols: normalized,
+      updatedAt: new Date().toISOString()
     };
 
-    res.json({ success: true, results: latestResults });
+    console.log(`Updated scan symbols: ${scanConfig.symbols.join(', ')}`);
+    nextScanDelayOverride = null;
+    if (isScanning) {
+      nextScanDelayOverride = 1500;
+    } else {
+      scheduleNextScan(1500);
+    }
+
+    res.json({ success: true, config: scanConfig });
   } catch (error) {
-    console.error('Scan error:', error);
-    res.status(500).json({ error: error.message });
-  } finally {
-    isScanning = false;
+    console.error('Failed to update scan config:', error);
+    res.status(500).json({ success: false, error: 'Failed to update scan configuration.' });
   }
 });
 
@@ -137,46 +206,397 @@ app.get('/api/portfolio/:accountIdKey/balance', async (req, res) => {
   }
 });
 
+app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res) => {
+  try {
+    const { accountIdKey } = req.params;
+    if (!accountIdKey) {
+      return res.status(400).json({ success: false, error: 'Account ID is required.' });
+    }
+
+    const {
+      optionSymbol,
+      symbol,
+      quantity,
+      positionId,
+      orderAction,
+      callPut,
+      strike,
+      expiry,
+    } = req.body || {};
+
+    const chosenSymbol = optionSymbol || symbol;
+
+    if (!chosenSymbol) {
+      return res.status(400).json({ success: false, error: 'Option symbol is required.' });
+    }
+
+    const numericQty = Number(quantity);
+    if (!Number.isFinite(numericQty) || numericQty === 0) {
+      return res.status(400).json({ success: false, error: 'Position quantity must be provided.' });
+    }
+
+    const orderResult = await placeOptionMarketOrder({
+      accountIdKey,
+      optionSymbol: chosenSymbol,
+      quantity: numericQty,
+      orderAction,
+      callPut,
+      strike,
+      expiry,
+    });
+
+    res.json({
+      success: true,
+      order: {
+        ...orderResult,
+        positionId: positionId || null,
+        optionSymbol: chosenSymbol,
+        quantity: numericQty,
+        accountIdKey,
+      },
+    });
+  } catch (error) {
+    console.error('Emergency sell error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to submit emergency sell order.' });
+  }
+});
+
 function parseAIOutput(output) {
-  // Simple parser for AI agent output
+  if (!output) {
+    return [];
+  }
+
   const lines = output.split('\n');
-  const recommendations = [];
-  let currentRec = null;
+  const recMap = new Map();
+  let currentSymbol = null;
+  let summarySymbol = null;
+  let collectingPlanFor = null;
+  let inSummary = false;
 
-  console.log('Parsing AI output, lines:', lines.length);
+  const ensureRec = (symbol) => {
+    if (!symbol) return null;
+    const key = symbol.trim().toUpperCase();
+    if (!key) return null;
+    if (!recMap.has(key)) {
+      recMap.set(key, {
+        symbol: key,
+        signals: [],
+        ai: {},
+        scalingPlan: [],
+      });
+    }
+    return recMap.get(key);
+  };
 
-  for (const line of lines) {
-    console.log('Processing line:', JSON.stringify(line));
-    if (line.includes('🔍 Analyzing')) {
-      if (currentRec) recommendations.push(currentRec);
-      // Extract symbol from "🔍 Analyzing SPY..." format
-      const symbolMatch = line.match(/🔍 Analyzing (\w+)/);
-      const symbol = symbolMatch ? symbolMatch[1] : 'unknown';
-      console.log('Found symbol:', symbol, 'from line:', line);
-      currentRec = { symbol, signals: [], ai: {} };
-    } else if (line.includes('📋 Signals:')) {
-      if (currentRec) {
-        const signalsText = line.split('📋 Signals:')[1]?.trim() || 'none';
-        currentRec.signals = signalsText === 'none' ? [] : signalsText.split(', ');
-        console.log('Found signals:', currentRec.signals);
+  const parseCurrency = (value) => {
+    if (value == null) return null;
+    const numeric = Number(value.replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : null;
+  };
+
+  const addPlanStep = (rec, step, sellQty, targetLabel, note) => {
+    if (!rec) return;
+    if (!Array.isArray(rec.scalingPlan)) {
+      rec.scalingPlan = [];
+    }
+    const numericTarget = parseCurrency(targetLabel);
+    const stepData = {
+      step,
+      sellQty,
+      target: Number.isFinite(numericTarget) ? numericTarget : null,
+      targetLabel: targetLabel.trim(),
+      note: note.trim(),
+    };
+    const existingIdx = rec.scalingPlan.findIndex((s) => s.step === stepData.step);
+    if (existingIdx >= 0) {
+      rec.scalingPlan[existingIdx] = stepData;
+    } else {
+      rec.scalingPlan.push(stepData);
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (!line) continue;
+
+    const analyzingMatch = line.match(/🔍 Analyzing ([A-Z0-9]+)/i);
+    if (analyzingMatch) {
+      currentSymbol = analyzingMatch[1].toUpperCase();
+      summarySymbol = null;
+      collectingPlanFor = null;
+      inSummary = false;
+      ensureRec(currentSymbol);
+      continue;
+    }
+
+    if (line.includes('🎉 RECOMMENDED TRADES:')) {
+      inSummary = true;
+      summarySymbol = null;
+      collectingPlanFor = null;
+      currentSymbol = null;
+      continue;
+    }
+
+    if (inSummary) {
+      const summaryMatch = line.match(/^([A-Z0-9]+)\s+(CALL|PUT)\s+-\s+(.+)/);
+      if (summaryMatch) {
+        summarySymbol = summaryMatch[1].toUpperCase();
+        const rec = ensureRec(summarySymbol);
+        if (rec) {
+          rec.side = summaryMatch[2].toLowerCase();
+          rec.contract = summaryMatch[3].trim();
+        }
+        continue;
       }
-    } else if (line.includes('🎯 DAY_TRADE Analysis:')) {
-      if (currentRec) {
-        // Extract strength percentage
-        const strengthMatch = line.match(/Strength (-?\d+)%/);
-        if (strengthMatch) {
-          currentRec.ai.strength = parseInt(strengthMatch[1]);
-          currentRec.ai.decision = currentRec.ai.strength > 50 ? 'approve' : currentRec.ai.strength > 25 ? 'caution' : 'reject';
-          currentRec.ai.confidence = Math.abs(currentRec.ai.strength) > 75 ? 'High' : Math.abs(currentRec.ai.strength) > 50 ? 'Medium' : 'Low';
-          console.log('Found strength:', currentRec.ai.strength, 'decision:', currentRec.ai.decision);
+
+      const entryLine = line.match(/^Entry:\s*\$?([0-9.]+|N\/A)\s*\|\s*Stop:\s*\$?([0-9.]+|N\/A)\s*\|\s*Target:\s*\$?([0-9.]+|N\/A)/i);
+      if (entryLine && summarySymbol) {
+        const rec = ensureRec(summarySymbol);
+        if (rec) {
+          rec.entry = entryLine[1] !== 'N/A' ? parseCurrency(entryLine[1]) : null;
+          rec.stop = entryLine[2] !== 'N/A' ? parseCurrency(entryLine[2]) : null;
+          rec.target = entryLine[3] !== 'N/A' ? parseCurrency(entryLine[3]) : null;
+        }
+        continue;
+      }
+
+      const qtyLine = line.match(/^Qty:\s*(\d+)\s*\|\s*Risk:\s*\$?([0-9.]+)/i);
+      if (qtyLine && summarySymbol) {
+        const rec = ensureRec(summarySymbol);
+        if (rec) {
+          rec.qty = Number(qtyLine[1]);
+          rec.risk = parseCurrency(qtyLine[2]);
+        }
+        continue;
+      }
+
+      const planLine = line.match(/^Plan:\s*(.+)/i);
+      if (planLine && summarySymbol) {
+        const rec = ensureRec(summarySymbol);
+        if (rec) {
+          rec.planSummary = planLine[1];
+        }
+        continue;
+      }
+
+      const notesLine = line.match(/^AI Notes:\s*(.+)/i);
+      if (notesLine && summarySymbol) {
+        const rec = ensureRec(summarySymbol);
+        if (rec) {
+          rec.ai.notes = notesLine[1];
+        }
+        continue;
+      }
+
+      const stepLine = line.match(/^(\d+)\)\s+Sell\s+(\d+)\s*@\s*([^—]+)—\s*(.+)$/);
+      if (stepLine && summarySymbol) {
+        const rec = ensureRec(summarySymbol);
+        addPlanStep(rec, Number(stepLine[1]), Number(stepLine[2]), stepLine[3], stepLine[4]);
+        continue;
+      }
+
+      continue;
+    }
+
+    const rec = ensureRec(currentSymbol);
+    if (!rec) continue;
+
+    if (line.includes('📋 Signals:')) {
+      const signalsText = line.split('📋 Signals:')[1]?.trim() || 'none';
+      rec.signals = signalsText === 'none' ? [] : signalsText.split(', ').map(s => s.trim()).filter(Boolean);
+      continue;
+    }
+
+    const priceMatch = line.match(/📊 Current price:\s*\$([0-9.]+)\s*\(([^)]+)\)/i);
+    if (priceMatch) {
+      rec.price = parseCurrency(priceMatch[1]);
+      rec.priceSource = priceMatch[2];
+      continue;
+    }
+
+    const strengthMatch = line.match(/🎯 .*?Strength\s*(-?\d+)%/i);
+    if (strengthMatch) {
+      const strength = Number(strengthMatch[1]);
+      rec.ai.strength = strength;
+      if (rec.ai.decision == null) {
+        rec.ai.decision = strength > 50 ? 'approve' : strength > 25 ? 'caution' : 'reject';
+      }
+      continue;
+    }
+
+    const selectedMatch = line.match(/🟢 Selected\s+(CALL|PUT)?[^@]*@\s*~?\$([0-9.]+)/i);
+    if (selectedMatch) {
+      if (selectedMatch[1]) {
+        rec.side = selectedMatch[1].toLowerCase();
+      }
+      rec.entry = parseCurrency(selectedMatch[2]);
+      continue;
+    }
+
+    const stopTargetMatch = line.match(/Stop\s*~?\$([0-9.]+|N\/A)\s*\|\s*Target\s*~?\$([0-9.]+|N\/A)/i);
+    if (stopTargetMatch) {
+      rec.stop = stopTargetMatch[1] !== 'N/A' ? parseCurrency(stopTargetMatch[1]) : rec.stop ?? null;
+      rec.target = stopTargetMatch[2] !== 'N/A' ? parseCurrency(stopTargetMatch[2]) : rec.target ?? null;
+      continue;
+    }
+
+    const sizingMatch = line.match(/📦 Position sizing: buy\s+(\d+)\s+contract/);
+    if (sizingMatch) {
+      rec.qty = Number(sizingMatch[1]);
+      const riskMatch = line.match(/Risk\s*~?\$([0-9.]+)/i);
+      if (riskMatch) {
+        rec.risk = parseCurrency(riskMatch[1]);
+      }
+      const perContractMatch = line.match(/per contract\s*~?\$([0-9.]+)/i);
+      if (perContractMatch) {
+        rec.riskPerContract = parseCurrency(perContractMatch[1]);
+      }
+      continue;
+    }
+
+    if (line.startsWith('⚠️')) {
+      rec.warning = line.replace(/^⚠️\s*/, '');
+      continue;
+    }
+
+    if (line.startsWith('📈 Profit plan:')) {
+      rec.scalingPlan = [];
+      collectingPlanFor = rec.symbol;
+      continue;
+    }
+
+    const planStepMatch = line.match(/^(\d+)\)\s+Sell\s+(\d+)\s*@\s*([^—]+)—\s*(.+)$/);
+    if (planStepMatch && collectingPlanFor === rec.symbol) {
+      addPlanStep(rec, Number(planStepMatch[1]), Number(planStepMatch[2]), planStepMatch[3], planStepMatch[4]);
+      continue;
+    }
+
+    const aiDecisionMatch = line.match(/🧠 AI Decision:\s*(\w+)/i);
+    if (aiDecisionMatch) {
+      rec.ai.decision = aiDecisionMatch[1].toLowerCase();
+      const confidenceMatch = line.match(/confidence:\s*([0-9.]+)/i);
+      if (confidenceMatch) {
+        const confValue = Number(confidenceMatch[1]);
+        if (Number.isFinite(confValue)) {
+          rec.ai.confidence = `${Math.round(confValue)}%`;
         }
       }
+      continue;
+    }
+
+    if (line.includes('⏭️')) {
+      rec.skipped = true;
+      continue;
     }
   }
 
-  if (currentRec) recommendations.push(currentRec);
-  console.log('Final recommendations:', recommendations.length);
+  const recommendations = Array.from(recMap.values());
+  recommendations.sort((a, b) => {
+    const aStrength = Number.isFinite(a.ai.strength) ? a.ai.strength : -Infinity;
+    const bStrength = Number.isFinite(b.ai.strength) ? b.ai.strength : -Infinity;
+    return bStrength - aStrength;
+  });
+
   return recommendations;
+}
+
+async function triggerScan(source = 'auto') {
+  if (isScanning) {
+    return { success: false, statusCode: 409, error: 'Scan already in progress' };
+  }
+
+  isScanning = true;
+  const startedAt = new Date();
+  const startedMs = Date.now();
+  clearPendingTimer();
+
+  let commandToRun = AGENT_COMMAND;
+
+  try {
+    const symbolsList = Array.isArray(scanConfig.symbols) ? scanConfig.symbols : [];
+    const env = { ...process.env };
+    if (symbolsList.length) {
+      env.SCAN_SYMBOLS = symbolsList.join(',');
+    }
+
+    commandToRun = buildAgentCommand(symbolsList);
+
+    console.log(`Starting ${source} AI scan with command: ${commandToRun} (symbols: ${symbolsList.join(', ') || 'default'})`);
+    const { stdout, stderr } = await execAsync(commandToRun, {
+      cwd: path.join(__dirname, '..'),
+      timeout: AGENT_TIMEOUT_MS,
+      env
+    });
+
+    latestResults = {
+      rawOutput: stdout,
+      parsed: parseAIOutput(stdout),
+      startedAt: startedAt.toISOString(),
+      completedAt: new Date().toISOString(),
+      durationMs: Date.now() - startedMs,
+      command: commandToRun,
+      source,
+      symbols: Array.from(symbolsList)
+    };
+
+    lastScanMeta = {
+      startedAt: startedAt.toISOString(),
+      completedAt: latestResults.completedAt,
+      durationMs: latestResults.durationMs,
+      source,
+      success: true,
+      symbols: Array.from(symbolsList)
+    };
+    lastScanError = null;
+
+    return { success: true, results: latestResults };
+  } catch (error) {
+    console.error('Scan error:', error);
+
+    lastScanMeta = {
+      startedAt: startedAt.toISOString(),
+      completedAt: new Date().toISOString(),
+      durationMs: Date.now() - startedMs,
+      source,
+      success: false,
+      symbols: Array.isArray(scanConfig.symbols) ? Array.from(scanConfig.symbols) : []
+    };
+
+    lastScanError = {
+      message: error.message,
+      stdout: error.stdout,
+      stderr: error.stderr,
+      command: commandToRun,
+      timestamp: lastScanMeta.completedAt
+    };
+
+    return { success: false, statusCode: 500, error: error.message };
+  } finally {
+    isScanning = false;
+    const nextDelay = nextScanDelayOverride != null ? nextScanDelayOverride : AGENT_INTERVAL_MS;
+    nextScanDelayOverride = null;
+    scheduleNextScan(nextDelay);
+  }
+}
+
+function scheduleNextScan(delayMs = AGENT_INTERVAL_MS) {
+  if (!Number.isFinite(delayMs) || delayMs <= 0) {
+    return;
+  }
+
+  clearPendingTimer();
+  scanTimer = setTimeout(() => {
+    triggerScan('auto').catch((err) => {
+      console.error('Auto scan failed:', err);
+    });
+  }, delayMs);
+}
+
+function clearPendingTimer() {
+  if (scanTimer) {
+    clearTimeout(scanTimer);
+    scanTimer = null;
+  }
 }
 
 // Serve the main dashboard
@@ -189,6 +609,9 @@ console.log(`Attempting to start server on port ${PORT}...`);
 app.listen(PORT, () => {
   console.log(`Trading Dashboard running at http://localhost:${PORT}`);
   console.log(`Open your browser to view AI recommendations and execute trades`);
+  console.log(`Auto-scanning every ${AGENT_INTERVAL_MS}ms with command: ${AGENT_COMMAND}`);
+  console.log(`Initial symbol watchlist: ${scanConfig.symbols.join(', ')}`);
+  scheduleNextScan(1000);
 }).on('error', (err) => {
   console.error('Server failed to start:', err);
   process.exit(1);

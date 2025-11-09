@@ -25,161 +25,184 @@
 
         <!-- Control Panel -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex gap-4 items-center">
-                <button id="scanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
-                    <i data-lucide="search" class="w-5 h-5"></i>
-                    Scan for Trades
-                </button>
-                <button id="portfolioBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
-                    <i data-lucide="wallet" class="w-5 h-5"></i>
-                    Load Portfolio
-                </button>
-                <div id="scanStatus" class="text-gray-600 flex items-center gap-2">
-                    <i data-lucide="clock" class="w-4 h-4"></i>
-                    Ready to scan
-                </div>
-            </div>
-        </div>
-
-        <!-- Recommendations Grid -->
-        <div id="recommendations" class="grid gap-6">
-            <!-- Recommendations will be inserted here -->
-        </div>
-
-        <!-- Portfolio Section -->
-        <div id="portfolioSection" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-gray-800">Portfolio</h2>
-                <select id="accountSelect" class="border border-gray-300 rounded px-3 py-2">
-                    <option value="">Select Account</option>
-                </select>
-            </div>
-
-            <!-- Account Summary -->
-            <div id="accountSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <!-- Account summary will be inserted here -->
-            </div>
-
-            <!-- Positions Tables -->
-            <div class="space-y-8">
-                <!-- Stocks Section -->
-                <div id="stocksSection">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
-                        Stocks
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full table-auto">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stocksBody" class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                        <div class="flex flex-col items-center">
-                                            <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
-                                            <div class="text-lg font-medium mb-2">Select an Account</div>
-                                            <div class="text-sm text-center max-w-md">
-                                                <div class="text-gray-400">Choose an account from the dropdown above to view stock positions.</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-wrap gap-4 items-center">
+                    <button id="scanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                        Scan for Trades
+                    </button>
+                    <button id="portfolioBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="wallet" class="w-5 h-5"></i>
+                        Load Portfolio
+                    </button>
+                    <div id="scanStatus" class="text-gray-600 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        Waiting for first scan
                     </div>
                 </div>
-
-                <!-- Options Section -->
-                <div id="optionsSection">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="zap" class="w-5 h-5 text-purple-600"></i>
-                        Options
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full table-auto">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
-                                </tr>
-                            </thead>
-                            <tbody id="optionsBody" class="bg-white divide-y divide-gray-200">
-                                <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                        <div class="flex flex-col items-center">
-                                            <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
-                                            <div class="text-lg font-medium mb-2">Select an Account</div>
-                                            <div class="text-sm text-center max-w-md">
-                                                <div class="text-gray-400">Choose an account from the dropdown above to view options positions.</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="w-full">
+                    <label for="symbolsInput" class="text-sm font-semibold text-gray-700">Symbols to scan</label>
+                    <div class="flex flex-col sm:flex-row gap-2 mt-2">
+                        <input id="symbolsInput" type="text" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter comma-separated symbols e.g. SPY, QQQ, AAPL">
+                        <button id="saveSymbolsBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            Save Symbols
+                        </button>
+                    </div>
+                    <div id="symbolsStatus" class="mt-2 text-sm text-gray-500 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                        Loading symbol list...
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-green-100 p-3 rounded-full">
-                        <i data-lucide="trending-up" class="w-6 h-6 text-green-600"></i>
+        <!-- Dashboard Content -->
+        <div class="lg:grid lg:grid-cols-[1.35fr_1fr] gap-6 items-start">
+            <div class="space-y-6">
+                <div id="recommendations" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <!-- Recommendations will be inserted here -->
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <div class="flex items-center">
+                            <div class="bg-green-100 p-3 rounded-full">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-lg font-bold text-green-600">$0</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Today's P&L</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="ml-4">
-                        <div class="text-2xl font-bold text-green-600">$0</div>
-                        <div class="text-gray-500">Today's P&L</div>
+
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <div class="flex items-center">
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-lg font-bold text-blue-600">0</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Active Trades</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <div class="flex items-center">
+                            <div class="bg-yellow-100 p-3 rounded-full">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-lg font-bold text-yellow-600">$5</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Max Risk/Trade</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <div class="flex items-center">
+                            <div class="bg-purple-100 p-3 rounded-full">
+                                <i data-lucide="zap" class="w-5 h-5 text-purple-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-lg font-bold text-purple-600">82%</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">AI Confidence</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-blue-100 p-3 rounded-full">
-                        <i data-lucide="target" class="w-6 h-6 text-blue-600"></i>
+            <!-- Portfolio Section -->
+            <div id="portfolioColumn" class="space-y-4">
+                <div id="portfolioSection" class="bg-white rounded-lg shadow-md p-6 hidden max-h-[70vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Portfolio</h2>
+                        <select id="accountSelect" class="border border-gray-300 rounded px-3 py-2">
+                            <option value="">Select Account</option>
+                        </select>
                     </div>
-                    <div class="ml-4">
-                        <div class="text-2xl font-bold text-blue-600">0</div>
-                        <div class="text-gray-500">Active Trades</div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-yellow-100 p-3 rounded-full">
-                        <i data-lucide="alert-triangle" class="w-6 h-6 text-yellow-600"></i>
+                    <!-- Account Summary -->
+                    <div id="accountSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <!-- Account summary will be inserted here -->
                     </div>
-                    <div class="ml-4">
-                        <div class="text-2xl font-bold text-yellow-600">$5</div>
-                        <div class="text-gray-500">Max Risk/Trade</div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-purple-100 p-3 rounded-full">
-                        <i data-lucide="zap" class="w-6 h-6 text-purple-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <div class="text-2xl font-bold text-purple-600">82%</div>
-                        <div class="text-gray-500">AI Confidence</div>
+                    <!-- Positions Tables -->
+                    <div class="space-y-8">
+                        <!-- Stocks Section -->
+                        <div id="stocksSection">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                                Stocks
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full table-auto">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stocksBody" class="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                                <div class="flex flex-col items-center">
+                                                    <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
+                                                    <div class="text-lg font-medium mb-2">Select an Account</div>
+                                                    <div class="text-sm text-center max-w-md">
+                                                        <div class="text-gray-400">Choose an account from the dropdown above to view stock positions.</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Options Section -->
+                        <div id="optionsSection">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <i data-lucide="zap" class="w-5 h-5 text-purple-600"></i>
+                                Options
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full table-auto">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="optionsBody" class="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                                <div class="flex flex-col items-center">
+                                                    <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
+                                                    <div class="text-lg font-medium mb-2">Select an Account</div>
+                                                    <div class="text-sm text-center max-w-md">
+                                                        <div class="text-gray-400">Choose an account from the dropdown above to view options positions.</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -197,12 +220,18 @@
         const portfolioSection = document.getElementById('portfolioSection');
         const accountSelect = document.getElementById('accountSelect');
         const accountSummary = document.getElementById('accountSummary');
-        const positionsBody = document.getElementById('positionsBody');
         const stocksBody = document.getElementById('stocksBody');
         const optionsBody = document.getElementById('optionsBody');
         const stocksSection = document.getElementById('stocksSection');
         const optionsSection = document.getElementById('optionsSection');
         const headerBalance = document.getElementById('headerBalance');
+        const symbolsInput = document.getElementById('symbolsInput');
+        const saveSymbolsBtn = document.getElementById('saveSymbolsBtn');
+        const symbolsStatus = document.getElementById('symbolsStatus');
+
+        const POLL_INTERVAL_MS = 15000;
+        let recommendationsTimer = null;
+        let currentSymbolList = [];
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -213,31 +242,236 @@
             }
         }
 
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return text.toString().replace(/[&<>"']/g, (char) => {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+                return map[char] || char;
+            });
+        }
+
+        function normalizeSymbolInput(value) {
+            if (!value) return [];
+            const parts = Array.isArray(value) ? value : value.split(/[,\s]+/);
+            const seen = new Set();
+            const out = [];
+            for (const raw of parts) {
+                if (!raw) continue;
+                const symbol = raw.toString().trim().toUpperCase();
+                if (!symbol) continue;
+                if (!/^[A-Z0-9.\-]{1,12}$/.test(symbol)) continue;
+                if (seen.has(symbol)) continue;
+                seen.add(symbol);
+                out.push(symbol);
+            }
+            return out;
+        }
+
+        function formatSymbolSummary(list) {
+            if (!Array.isArray(list) || list.length === 0) {
+                return 'No symbols configured';
+            }
+            const preview = list.slice(0, 6);
+            const suffix = list.length > preview.length ? '…' : '';
+            const countLabel = `${list.length} symbol${list.length === 1 ? '' : 's'}`;
+            return `${countLabel}: ${preview.join(', ')}${suffix}`;
+        }
+
+        function setSymbolsStatus(state, message) {
+            if (!symbolsStatus) return;
+            const states = {
+                loading: { icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin' },
+                success: { icon: 'check', color: 'text-green-600', iconClass: '' },
+                error: { icon: 'x', color: 'text-red-600', iconClass: '' },
+                warning: { icon: 'alert-triangle', color: 'text-yellow-600', iconClass: '' },
+                info: { icon: 'info', color: 'text-gray-600', iconClass: '' }
+            };
+            const meta = states[state] || states.info;
+            const iconHtml = `<i data-lucide="${meta.icon}" class="w-4 h-4 ${meta.iconClass}"></i>`;
+            symbolsStatus.innerHTML = `
+                <div class="flex items-center gap-2 text-sm ${meta.color}">
+                    ${iconHtml}
+                    <span>${escapeHtml(message)}</span>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function applyScanConfig(config, options = {}) {
+            const { updateInput = false, updateStatus = true } = options;
+            if (!config) return;
+            const list = Array.isArray(config.symbols) ? config.symbols : [];
+            currentSymbolList = list;
+            if (updateInput && symbolsInput && document.activeElement !== symbolsInput) {
+                symbolsInput.value = list.join(', ');
+            }
+            if (updateStatus) {
+                if (list.length === 0) {
+                    setSymbolsStatus('warning', 'No symbols configured. Add tickers to start scanning.');
+                } else {
+                    setSymbolsStatus('info', formatSymbolSummary(list));
+                }
+            }
+        }
+
+        function renderScanStatus({ icon, color = 'text-gray-600', message, suffix = '', iconClass = '' }) {
+            if (!scanStatus) return;
+            scanStatus.innerHTML = `
+                <div class="flex items-center gap-2 ${color}">
+                    <i data-lucide="${icon}" class="w-4 h-4 ${iconClass}"></i>
+                    <span>${escapeHtml(message)}</span>
+                    ${suffix}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function formatRelativeTime(isoString) {
+            if (!isoString) {
+                return 'never';
+            }
+
+            const deltaMs = Date.now() - Date.parse(isoString);
+            if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+                return new Date(isoString).toLocaleTimeString();
+            }
+
+            const seconds = Math.floor(deltaMs / 1000);
+            if (seconds < 60) {
+                return `${seconds}s ago`;
+            }
+
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) {
+                return `${minutes}m ago`;
+            }
+
+            const hours = Math.floor(minutes / 60);
+            return `${hours}h ago`;
+        }
+
+        function updateScanStatus(payload, error) {
+            if (payload?.config) {
+                applyScanConfig(payload.config, { updateInput: false, updateStatus: true });
+            }
+
+            const symbolSuffix = currentSymbolList.length
+                ? `<span class="text-xs text-gray-400 ml-2">[${escapeHtml(currentSymbolList.join(', '))}]</span>`
+                : '';
+
+            if (error) {
+                renderScanStatus({ icon: 'x', color: 'text-red-600', message: error, suffix: symbolSuffix });
+                return;
+            }
+
+            if (!payload) {
+                renderScanStatus({ icon: 'clock', message: 'Waiting for first scan', suffix: symbolSuffix });
+                return;
+            }
+
+            const { isScanning, scanMeta, lastError } = payload;
+
+            if (isScanning) {
+                renderScanStatus({ icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin', message: 'Running day-trade scan...', suffix: symbolSuffix });
+                return;
+            }
+
+            if (scanMeta?.success) {
+                const completed = formatRelativeTime(scanMeta.completedAt);
+                const sourceLabel = scanMeta.source || 'auto';
+                renderScanStatus({
+                    icon: 'check',
+                    color: 'text-green-600',
+                    message: `Last scan ${completed} (${sourceLabel})`,
+                    suffix: symbolSuffix
+                });
+                return;
+            }
+
+            if (scanMeta && !scanMeta.success) {
+                const completed = formatRelativeTime(scanMeta.completedAt);
+                const errorMessage = lastError?.message || 'Scan failed';
+                renderScanStatus({
+                    icon: 'alert-triangle',
+                    color: 'text-yellow-600',
+                    message: `Scan error ${completed}: ${errorMessage}`,
+                    suffix: symbolSuffix
+                });
+                return;
+            }
+
+            renderScanStatus({ icon: 'clock', message: 'Waiting for first scan', suffix: symbolSuffix });
+        }
+
+        async function fetchRecommendations() {
+            try {
+                const response = await fetch('/api/recommendations');
+                const data = await response.json();
+
+                if (data.results) {
+                    displayRecommendations(data.results.parsed);
+                }
+
+                updateScanStatus(data);
+            } catch (err) {
+                console.error('Failed to fetch recommendations:', err);
+                updateScanStatus(null, 'Disconnected from scanner');
+            }
+        }
+
+        function startRecommendationsPolling() {
+            if (recommendationsTimer) {
+                return;
+            }
+
+            recommendationsTimer = setInterval(fetchRecommendations, POLL_INTERVAL_MS);
+        }
+
         // Scan for trades
         scanBtn.addEventListener('click', async () => {
             scanBtn.disabled = true;
             scanBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Scanning...';
-            scanStatus.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Analyzing markets...';
+            lucide.createIcons();
+            const suffix = currentSymbolList.length
+                ? `<span class="text-xs text-gray-400 ml-2">[${escapeHtml(currentSymbolList.join(', '))}]</span>`
+                : '';
+            renderScanStatus({ icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin', message: 'Running manual scan...', suffix });
 
             try {
                 const response = await fetch('/api/scan', { method: 'POST' });
                 const data = await response.json();
 
                 if (data.success) {
-                    displayRecommendations(data.results.parsed);
-                    scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Scan complete';
+                    await fetchRecommendations();
                 } else {
                     throw new Error(data.error);
                 }
             } catch (error) {
                 console.error('Scan failed:', error);
-                scanStatus.innerHTML = '<i data-lucide="x" class="w-4 h-4 text-red-600"></i> Scan failed: ' + error.message;
+                const alreadyRunning = error.message === 'Scan already in progress';
+                const msg = alreadyRunning ? 'Scan already running, please wait...' : 'Manual scan failed: ' + error.message;
+                updateScanStatus(null, msg);
             } finally {
                 scanBtn.disabled = false;
                 scanBtn.innerHTML = '<i data-lucide="search" class="w-5 h-5"></i> Scan for Trades';
                 lucide.createIcons();
             }
         });
+
+        if (saveSymbolsBtn) {
+            saveSymbolsBtn.addEventListener('click', async () => {
+                await saveSymbols();
+            });
+        }
+
+        if (symbolsInput) {
+            symbolsInput.addEventListener('keydown', async (event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    await saveSymbols();
+                }
+            });
+        }
 
         // Load portfolio
         portfolioBtn.addEventListener('click', async () => {
@@ -281,6 +515,7 @@
         // Account selection change
         accountSelect.addEventListener('change', async (e) => {
             const accountIdKey = e.target.value;
+            window.selectedAccountIdKey = accountIdKey || null;
             if (!accountIdKey) {
                 updateHeaderBalance(null); // Reset to $0.00 when no account selected
                 return;
@@ -305,7 +540,7 @@
             `;
             optionsBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                         <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
                         <div>Loading options positions...</div>
                     </td>
@@ -354,15 +589,6 @@
                         </div>
                     `;
                 }
-                positionsBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            <i data-lucide="x-circle" class="w-8 h-8 text-red-400 mx-auto mb-2"></i>
-                            <div class="text-red-600">Failed to load account details</div>
-                            <div class="text-sm text-gray-500 mt-1">Please try again or check E*TRADE API status</div>
-                        </td>
-                    </tr>
-                `;
                 stocksBody.innerHTML = `
                     <tr>
                         <td colspan="6" class="px-4 py-8 text-center text-gray-500">
@@ -373,7 +599,7 @@
                 `;
                 optionsBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                             <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
                             <div class="text-red-600">Error loading positions</div>
                         </td>
@@ -382,6 +608,115 @@
                 lucide.createIcons();
             }
         });
+
+        if (optionsBody) {
+            optionsBody.addEventListener('click', async (event) => {
+                const button = event.target.closest('button[data-action]');
+                if (!button) {
+                    return;
+                }
+
+                const action = button.dataset.action;
+                if (action !== 'emergency-sell') {
+                    return;
+                }
+
+                event.preventDefault();
+                const accountIdKey = window.selectedAccountIdKey;
+                if (!accountIdKey) {
+                    alert('Select an account before submitting an emergency sell.');
+                    return;
+                }
+
+                const optionSymbol = button.dataset.optionSymbol || button.dataset.symbol;
+                const quantity = Number(button.dataset.quantity);
+                if (!optionSymbol) {
+                    alert('Missing option symbol for this position.');
+                    return;
+                }
+                if (!Number.isFinite(quantity) || quantity === 0) {
+                    alert('Unable to determine position size for emergency sell.');
+                    return;
+                }
+
+                const callPut = button.dataset.callPut || null;
+                const strike = button.dataset.strike !== '' ? Number(button.dataset.strike) : null;
+                const expiry = button.dataset.expiry || null;
+                const positionId = button.dataset.positionId || null;
+
+                const confirmationLines = [
+                    `Account: ${accountIdKey}`,
+                    `Option: ${optionSymbol}`,
+                    `Quantity: ${quantity}`,
+                    '',
+                    'This will submit a market exit at the current market price immediately.',
+                    'Existing stop or limit orders are not automatically cancelled.',
+                    'Continue?',
+                ];
+
+                if (!window.confirm(confirmationLines.join('\n'))) {
+                    return;
+                }
+
+                const payload = {
+                    optionSymbol,
+                    symbol: button.dataset.symbol || optionSymbol,
+                    quantity,
+                    positionId,
+                    callPut,
+                    strike: Number.isFinite(strike) ? strike : null,
+                    expiry,
+                };
+
+                const originalLabel = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>';
+                lucide.createIcons();
+
+                try {
+                    const response = await fetch(`/api/portfolio/${accountIdKey}/options/emergency-sell`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        data = null;
+                    }
+
+                    if (!response.ok || !data?.success) {
+                        const errorMessage = data?.error || `Broker rejected order (HTTP ${response.status})`;
+                        throw new Error(errorMessage);
+                    }
+
+                    const messageLines = ['Emergency sell submitted successfully.'];
+                    if (data.order?.orderId) {
+                        messageLines.push(`Order ID: ${data.order.orderId}`);
+                    }
+                    if (data.order?.previewId) {
+                        messageLines.push(`Preview ID: ${data.order.previewId}`);
+                    }
+                    if (Array.isArray(data.order?.messages) && data.order.messages.length) {
+                        messageLines.push(`Broker notes: ${data.order.messages.join('; ')}`);
+                    }
+
+                    alert(messageLines.join('\n'));
+
+                    if (accountSelect) {
+                        accountSelect.dispatchEvent(new Event('change'));
+                    }
+                } catch (err) {
+                    alert(`Emergency sell failed: ${err.message}`);
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = originalLabel;
+                    lucide.createIcons();
+                }
+            });
+        }
 
         // Display recommendations
         function displayRecommendations(recs) {
@@ -398,55 +733,105 @@
                 return;
             }
 
-            recs.forEach(rec => {
+            recs.forEach((rec, idx) => {
                 const decision = rec.ai?.decision || 'unknown';
-                const confidence = rec.ai?.confidence || 'N/A';
-                const cardClass = decision === 'approve' ? 'border-green-200 bg-green-50' :
-                                decision === 'caution' ? 'border-yellow-200 bg-yellow-50' :
-                                'border-red-200 bg-red-50';
-
+                const confidence = rec.ai?.confidence || (Number.isFinite(rec.ai?.strength) ? `${rec.ai.strength}%` : 'N/A');
                 const icon = decision === 'approve' ? 'check-circle' :
                            decision === 'caution' ? 'alert-triangle' : 'x-circle';
 
                 const iconColor = decision === 'approve' ? 'text-green-600' :
                                 decision === 'caution' ? 'text-yellow-600' : 'text-red-600';
 
-                recommendations.innerHTML += `
-                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 ${cardClass}">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-3">
-                                <i data-lucide="${icon}" class="w-6 h-6 ${iconColor}"></i>
-                                <div>
-                                    <h3 class="text-xl font-bold text-gray-800">${rec.symbol}</h3>
-                                    <p class="text-gray-600">${rec.signals?.join(', ') || 'No signals'}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-bold ${decision === 'approve' ? 'text-green-600' : decision === 'caution' ? 'text-yellow-600' : 'text-red-600'}">
-                                    ${decision.toUpperCase()}
-                                </div>
-                                <div class="text-sm text-gray-500">Confidence: ${confidence}</div>
-                            </div>
-                        </div>
-
-                        ${rec.entry ? `
+                const entryBlock = Number.isFinite(rec.entry) || Number.isFinite(rec.stop) || Number.isFinite(rec.target)
+                    ? `
                         <div class="grid grid-cols-3 gap-4 mb-4">
                             <div class="text-center">
-                                <div class="text-lg font-bold text-blue-600">$${rec.entry}</div>
+                                <div class="text-lg font-bold text-blue-600">${Number.isFinite(rec.entry) ? `$${rec.entry.toFixed(2)}` : 'N/A'}</div>
                                 <div class="text-sm text-gray-600">Entry</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-lg font-bold text-red-600">$${rec.stop}</div>
+                                <div class="text-lg font-bold text-red-600">${Number.isFinite(rec.stop) ? `$${rec.stop.toFixed(2)}` : 'N/A'}</div>
                                 <div class="text-sm text-gray-600">Stop Loss</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-lg font-bold text-green-600">$${rec.target}</div>
+                                <div class="text-lg font-bold text-green-600">${Number.isFinite(rec.target) ? `$${rec.target.toFixed(2)}` : 'N/A'}</div>
                                 <div class="text-sm text-gray-600">Target</div>
                             </div>
                         </div>
-                        ` : ''}
+                    ` : '';
 
-                        <div class="flex gap-2">
+                const sizingBlock = Number.isFinite(rec.qty) || Number.isFinite(rec.risk) || Number.isFinite(rec.riskPerContract)
+                    ? `
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-indigo-600">${Number.isFinite(rec.qty) ? rec.qty : 'N/A'}</div>
+                                <div class="text-sm text-gray-600">Contracts</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-amber-600">${Number.isFinite(rec.risk) ? `$${rec.risk.toFixed(2)}` : 'N/A'}</div>
+                                <div class="text-sm text-gray-600">Risk Budget</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-purple-600">${Number.isFinite(rec.riskPerContract) ? `$${rec.riskPerContract.toFixed(2)}` : 'N/A'}</div>
+                                <div class="text-sm text-gray-600">Per Contract</div>
+                            </div>
+                        </div>
+                    ` : '';
+
+                const planSteps = Array.isArray(rec.scalingPlan) ? rec.scalingPlan
+                    .sort((a, b) => a.step - b.step)
+                    .map(step => {
+                        const targetLabel = step.target != null ? `$${step.target.toFixed(2)}` : escapeHtml(step.targetLabel || 'Market strength');
+                        return `
+                            <div class="flex items-start gap-3 text-sm text-gray-700">
+                                <div class="font-semibold text-gray-900">${step.step}.</div>
+                                <div>
+                                    <div class="font-medium">Sell ${step.sellQty} @ ${targetLabel}</div>
+                                    <div class="text-xs text-gray-500">${escapeHtml(step.note)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('') : '';
+
+                const planBlock = planSteps
+                    ? `
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                            <div class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <i data-lucide="layers" class="w-4 h-4 text-gray-500"></i>
+                                Scaling Plan
+                            </div>
+                            <div class="space-y-2">
+                                ${planSteps}
+                            </div>
+                        </div>
+                    ` : '';
+
+                const warningBlock = rec.warning
+                    ? `
+                        <div class="border border-yellow-200 bg-yellow-50 rounded-lg p-4 mb-4 flex items-start gap-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mt-0.5"></i>
+                            <div class="text-sm text-yellow-800">${escapeHtml(rec.warning)}</div>
+                        </div>
+                    ` : '';
+
+                const notesBlock = rec.ai?.notes
+                    ? `
+                        <div class="bg-white border border-blue-100 rounded-lg p-4 mb-4">
+                            <div class="text-sm font-semibold text-blue-700 mb-1 flex items-center gap-2">
+                                <i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i>
+                                AI Notes
+                            </div>
+                            <div class="text-sm text-gray-700">${escapeHtml(rec.ai.notes)}</div>
+                        </div>
+                    ` : '';
+
+                const signalText = rec.signals?.length ? rec.signals.map(signal => escapeHtml(signal)).join(', ') : 'No signals';
+                const symbolLabel = escapeHtml(rec.symbol || 'UNKNOWN');
+                const borderAccent = decision === 'approve' ? 'border-l-4 border-green-200' : decision === 'caution' ? 'border-l-4 border-yellow-200' : 'border-l-4 border-red-200';
+                const openAttr = idx === 0 ? ' open' : '';
+
+                const actionButtons = `
+                        <div class="flex flex-wrap gap-2">
                             <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2">
                                 <i data-lucide="play" class="w-4 h-4"></i>
                                 Execute Trade
@@ -456,7 +841,35 @@
                                 View Chart
                             </button>
                         </div>
-                    </div>
+                `;
+
+                recommendations.innerHTML += `
+                    <details class="group bg-white rounded-lg shadow-md border border-gray-100 ${borderAccent}"${openAttr}>
+                        <summary class="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer select-none">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="${icon}" class="w-6 h-6 ${iconColor}"></i>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">${symbolLabel}</h3>
+                                    <p class="text-xs text-gray-500">${signalText || 'No signals'}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 text-right">
+                                <div>
+                                    <div class="text-sm font-semibold ${decision === 'approve' ? 'text-green-600' : decision === 'caution' ? 'text-yellow-600' : 'text-red-600'}">${decision.toUpperCase()}</div>
+                                    <div class="text-xs text-gray-500">Confidence: ${confidence}</div>
+                                </div>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-200 group-open:-rotate-180"></i>
+                            </div>
+                        </summary>
+                        <div class="px-4 pb-4 border-t border-gray-100 bg-white">
+                            ${entryBlock}
+                            ${sizingBlock}
+                            ${planBlock}
+                            ${warningBlock}
+                            ${notesBlock}
+                            ${actionButtons}
+                        </div>
+                    </details>
                 `;
             });
 
@@ -656,13 +1069,22 @@
                             <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlPercentClass}">
                                 ${position.unrealizedGainLossPercent.toFixed(2)}%
                             </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                <div class="flex justify-end gap-2">
+                                    <button class="px-3 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition" data-symbol="${escapeHtml(position.symbol)}" data-option-symbol="${escapeHtml(position.symbol)}" data-quantity="${Number.isFinite(position.quantity) ? position.quantity : 0}" data-position-id="${escapeHtml(position.positionId || '')}" data-call-put="${escapeHtml(position.callPut || '')}" data-strike="${Number.isFinite(position.strike) ? position.strike : ''}" data-expiry="${escapeHtml(position.expiry || '')}" data-action="emergency-sell">
+                                        Emergency Sell
+                                    </button>
+                                    <button class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition" data-symbol="${escapeHtml(position.symbol)}" data-action="manage-option">Manage</button>
+                                    <button class="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition" data-symbol="${escapeHtml(position.symbol)}" data-action="note-option">Add Note</button>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 });
             } else {
                 optionsBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                             <div class="flex flex-col items-center">
                                 <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
                                 <div class="text-lg font-medium mb-2">No Options Positions</div>
@@ -701,7 +1123,7 @@
                 `;
                 optionsBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                             <div class="flex flex-col items-center">
                                 <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
                                 <div class="text-lg font-medium mb-2">No Options Positions</div>
@@ -719,22 +1141,23 @@
 
         // Display basic account info when portfolio fails to load
         function displayBasicAccountInfo(accountDetails) {
+            const safe = (value, fallback = '') => escapeHtml(value != null ? value : fallback);
             accountSummary.innerHTML = `
                 <div class="bg-blue-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account ID</div>
-                    <div class="text-lg font-bold text-blue-600">${accountDetails.accountId}</div>
+                    <div class="text-lg font-bold text-blue-600">${safe(accountDetails.accountId)}</div>
                 </div>
                 <div class="bg-green-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account Type</div>
-                    <div class="text-lg font-bold text-green-600">${accountDetails.accountType}</div>
+                    <div class="text-lg font-bold text-green-600">${safe(accountDetails.accountType, 'INDIVIDUAL')}</div>
                 </div>
                 <div class="bg-purple-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account Mode</div>
-                    <div class="text-lg font-bold text-purple-600">${accountDetails.accountMode}</div>
+                    <div class="text-lg font-bold text-purple-600">${safe(accountDetails.accountMode, 'CASH')}</div>
                 </div>
                 <div class="bg-orange-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Status</div>
-                    <div class="text-lg font-bold text-orange-600">${accountDetails.accountStatus}</div>
+                    <div class="text-lg font-bold text-orange-600">${safe(accountDetails.accountStatus, 'ACTIVE')}</div>
                 </div>
             `;
 
@@ -745,10 +1168,10 @@
                             <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
                             <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
                             <div class="text-sm text-center max-w-md">
-                                <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails.accountDesc}</div>
-                                <div class="mb-2">✅ <strong>Type:</strong> ${accountDetails.accountType} (${accountDetails.accountMode})</div>
-                                <div class="mb-2">✅ <strong>Status:</strong> ${accountDetails.accountStatus}</div>
-                                <div class="mb-3">✅ <strong>Institution:</strong> ${accountDetails.institutionType}</div>
+                                <div class="mb-2">✅ <strong>Account:</strong> ${safe(accountDetails.accountDesc, 'Brokerage Account')}</div>
+                                <div class="mb-2">✅ <strong>Type:</strong> ${safe(accountDetails.accountType, 'INDIVIDUAL')} (${safe(accountDetails.accountMode, 'CASH')})</div>
+                                <div class="mb-2">✅ <strong>Status:</strong> ${safe(accountDetails.accountStatus, 'ACTIVE')}</div>
+                                <div class="mb-3">✅ <strong>Institution:</strong> ${safe(accountDetails.institutionType, 'E*TRADE')}</div>
                                 <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
                                     <strong>Note:</strong> Portfolio details (balances, positions) are not available through the E*TRADE API for this account type. This is normal for many brokerage accounts.
                                 </div>
@@ -759,7 +1182,7 @@
             `;
             optionsBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                         <div class="flex flex-col items-center">
                             <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
                             <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
@@ -773,20 +1196,77 @@
             lucide.createIcons();
         }
 
+        async function loadScanConfig() {
+            try {
+                setSymbolsStatus('loading', 'Loading symbol list...');
+                const response = await fetch('/api/scan/config');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load configuration.');
+                }
+                applyScanConfig(data.config, { updateInput: true, updateStatus: true });
+                if (symbolsInput) {
+                    symbolsInput.value = currentSymbolList.join(', ');
+                }
+            } catch (error) {
+                console.error('Failed to load scan config:', error);
+                setSymbolsStatus('error', 'Unable to load symbol list');
+            }
+        }
+
+        async function saveSymbols() {
+            if (!symbolsInput || !saveSymbolsBtn) return;
+            const normalized = normalizeSymbolInput(symbolsInput.value);
+            if (normalized.length === 0) {
+                setSymbolsStatus('warning', 'Enter at least one valid ticker symbol.');
+                return;
+            }
+            if (normalized.length > 24) {
+                setSymbolsStatus('warning', 'Please limit the list to 24 symbols.');
+                return;
+            }
+
+            saveSymbolsBtn.disabled = true;
+            saveSymbolsBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving...';
+            lucide.createIcons();
+            setSymbolsStatus('loading', 'Updating symbol list...');
+
+            try {
+                const response = await fetch('/api/scan/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbols: normalized })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to update symbol list.');
+                }
+                symbolsInput.value = normalized.join(', ');
+                currentSymbolList = normalized;
+                setSymbolsStatus('success', `Symbol list updated (${formatSymbolSummary(normalized)})`);
+                applyScanConfig(data.config, { updateInput: false, updateStatus: false });
+                await fetchRecommendations();
+            } catch (error) {
+                console.error('Symbol save failed:', error);
+                setSymbolsStatus('error', error.message || 'Failed to update symbol list.');
+            } finally {
+                saveSymbolsBtn.disabled = false;
+                saveSymbolsBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Save Symbols';
+                lucide.createIcons();
+            }
+        }
+
         // Load initial data
         async function loadInitialData() {
             // Initialize header balance to $0.00
             updateHeaderBalance(null);
-            
-            try {
-                const response = await fetch('/api/recommendations');
-                const data = await response.json();
-                if (data.results) {
-                    displayRecommendations(data.results.parsed);
-                }
-            } catch (error) {
-                console.log('No initial data available');
-            }
+            updateScanStatus(null);
+            await loadScanConfig();
+            await fetchRecommendations();
+            startRecommendationsPolling();
         }
 
         loadInitialData();

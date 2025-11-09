@@ -34,6 +34,7 @@ function computeQty({ accountSize, riskPct = 0.01, entry, stop, multiplier = 100
     perContractRisk,
     totalRisk: qty * perContractRisk,
     adjustedRiskPct,
+    riskBudget,
     strategy
   };
 }

@@ -15,6 +15,60 @@ const { selectOptimalOption, midPrice } = require('../strategy/selector');
 
 const sleep = util.promisify(setTimeout);
 
+function buildScalingPlan({ qty, entry, takeProfit, stop }) {
+  const plan = { qty, stop, iterations: [] };
+  if (!Number.isFinite(qty) || qty <= 0) return plan;
+
+  const entryPrice = Number.isFinite(entry) ? entry : null;
+  const baseTarget = Number.isFinite(takeProfit) ? Number(takeProfit.toFixed(2)) : null;
+  const diff = entryPrice != null && baseTarget != null ? baseTarget - entryPrice : null;
+
+  const scaledTarget = (factor) => {
+    if (diff == null || entryPrice == null) return baseTarget;
+    return Number((entryPrice + diff * factor).toFixed(2));
+  };
+
+  const addIteration = (sellQty, target, note) => {
+    const qtyInt = Math.max(0, Math.round(sellQty));
+    if (qtyInt <= 0) return;
+    let targetRounded = null;
+    if (target != null) {
+      const numericTarget = Number(target);
+      targetRounded = Number.isFinite(numericTarget) ? Number(numericTarget.toFixed(2)) : null;
+    }
+    plan.iterations.push({
+      sellQty: qtyInt,
+      target: targetRounded,
+      note,
+    });
+  };
+
+  if (qty === 1) {
+    addIteration(1, baseTarget, 'Exit full position at target or earlier if momentum fades.');
+    return plan;
+  }
+
+  const firstQty = Math.max(1, Math.ceil(qty * 0.5));
+  addIteration(firstQty, baseTarget, 'Scale out half and move stop to breakeven once target prints.');
+  let remaining = qty - firstQty;
+  if (remaining <= 0) return plan;
+
+  if (remaining === 1) {
+    addIteration(1, scaledTarget(1.3), 'Let final runner stretch; trail stop below last higher low.');
+    return plan;
+  }
+
+  const secondQty = Math.max(1, Math.floor(remaining / 2));
+  addIteration(secondQty, scaledTarget(1.3), 'Take additional profits if extension continues; trail stop under VWAP.');
+  remaining -= secondQty;
+
+  if (remaining > 0) {
+    addIteration(remaining, scaledTarget(1.6), 'Leave final runner for outsized move; ratchet stop up aggressively.');
+  }
+
+  return plan;
+}
+
 function parseArgs(argv) {
   const out = {
     symbols: process.env.SCAN_SYMBOLS ? process.env.SCAN_SYMBOLS.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) : [],
@@ -215,6 +269,13 @@ async function analyzeSymbol(symbol, params) {
       strategy: params.strategy
     });
 
+    const tradePlan = buildScalingPlan({
+      qty: sizing.qty,
+      entry: suggestion.est_entry,
+      takeProfit: suggestion.take_profit,
+      stop: suggestion.stop,
+    });
+
     const enrichedSuggestion = {
       ...suggestion,
       qty: sizing.qty,
@@ -231,7 +292,27 @@ async function analyzeSymbol(symbol, params) {
         spread_pct: suggestion.liquidity?.spread_pct ?? null,
         score: liveOption._metrics?.totalScore ?? null,
       } : null,
+      tradePlan,
     };
+
+    const stopLabel = Number.isFinite(suggestion.stop) ? `$${suggestion.stop.toFixed(2)}` : 'N/A';
+    const tpLabel = Number.isFinite(suggestion.take_profit) ? `$${suggestion.take_profit.toFixed(2)}` : 'N/A';
+    const perContractRisk = sizing.perContractRisk.toFixed(2);
+    const riskBudgetValue = sizing.riskBudget != null
+      ? sizing.riskBudget
+      : (params.account && sizing.adjustedRiskPct != null ? params.account * sizing.adjustedRiskPct : null);
+    const riskBudgetLabel = riskBudgetValue != null ? `~$${riskBudgetValue.toFixed(2)}` : 'N/A';
+    console.log(`📦 Position sizing: buy ${tradePlan.qty} contract(s) | Stop ${stopLabel} | Target ${tpLabel} | Risk ~$${enrichedSuggestion.risk_total.toFixed(2)} (per contract ~$${perContractRisk})`);
+    if (tradePlan.qty === 0) {
+      console.log(`⚠️  Risk budget (${riskBudgetLabel}) is smaller than the per-contract risk ($${perContractRisk}). Increase account size, tighten the stop, or raise RISK_PCT to afford a starter contract.`);
+    }
+    if (tradePlan.iterations.length) {
+      console.log('📈 Profit plan:');
+      tradePlan.iterations.forEach((step, idx) => {
+        const targetLabel = step.target != null ? `$${step.target.toFixed(2)}` : 'market strength';
+        console.log(`   ${idx + 1}) Sell ${step.sellQty} @ ${targetLabel} — ${step.note}`);
+      });
+    }
 
     // AI analysis
     console.log(`🤖 Getting AI analysis...`);
@@ -311,6 +392,14 @@ async function runScan(args, runId = 1) {
       console.log(`\n${r.symbol} ${s.side.toUpperCase()} - ${s.contract}`);
       console.log(`  Entry: $${s.est_entry} | Stop: $${s.stop} | Target: $${s.take_profit}`);
       console.log(`  Qty: ${s.qty} | Risk: $${s.risk_total}`);
+      if (s.tradePlan?.iterations?.length) {
+        const stopSummary = Number.isFinite(s.stop) ? `$${s.stop.toFixed(2)}` : 'N/A';
+        console.log(`  Plan: stop at ${stopSummary} and scale out over ${s.tradePlan.iterations.length} step(s)`);
+        s.tradePlan.iterations.forEach((step, idx) => {
+          const tgt = step.target != null ? `$${step.target.toFixed(2)}` : 'market strength';
+          console.log(`    ${idx + 1}) Sell ${step.sellQty} @ ${tgt} — ${step.note}`);
+        });
+      }
       console.log(`  AI Notes: ${r.ai.notes || 'N/A'}`);
     });
   }

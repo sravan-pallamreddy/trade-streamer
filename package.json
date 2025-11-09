@@ -14,7 +14,8 @@
     "day-trade:watch": "node src/cli/ai-agent.js --strategy day_trade --expiry-type 0dte --symbols SPY,QQQ,AAPL,TSLA,GOOGL,NVDA --watch --interval 30",
     "guardian": "node src/cli/position-guardian.js",
   "guardian:watch": "node src/cli/position-guardian.js --source etrade --interval 30 --watch",
-    "guardian:once": "node src/cli/position-guardian.js --source etrade --once"
+    "guardian:once": "node src/cli/position-guardian.js --source etrade --once",
+    "ui": "node src/ui/server.js"
   },
   "engines": {
     "node": ">=18"

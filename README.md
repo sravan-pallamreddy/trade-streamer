@@ -281,7 +281,7 @@ To enable portfolio tracking, configure E*TRADE API access:
 - **Positions Table**: Detailed view of all holdings with P&L
 - **Recommendations Grid**: Color-coded cards showing AI decisions and trade details
 - **Stats Cards**: Key metrics for monitoring performance
-- **Action Buttons**: Ready for future trade execution integration
+- **Action Buttons**: Manage notes plus a one-tap **Emergency Sell** for options that submits a market exit through E*TRADE
 
 ### Quick Start
 ```bash
@@ -311,6 +311,7 @@ node src/ui/server.js
 - `GET /api/portfolio/accounts`: Get list of E*TRADE accounts
 - `GET /api/portfolio/:accountIdKey`: Get portfolio for specific account
 - `GET /api/portfolio/:accountIdKey/balance`: Get account balance details
+- `POST /api/portfolio/:accountIdKey/options/emergency-sell`: Submit a market exit for an option contract (uses E*TRADE preview/place flow)
 - `GET /`: Serve the main dashboard interface
 
 ### Configuration

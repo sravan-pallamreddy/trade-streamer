@@ -298,11 +298,161 @@ async function getAccountBalance(accountIdKey) {
   }
 }
 
+function collectOrderMessages(root) {
+  if (!root) return [];
+  const buckets = [];
+  const candidates = [
+    root?.Messages?.Message,
+    root?.messages,
+    root?.messageList,
+    root?.message,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) {
+        if (!item) continue;
+        const values = [item.description, item.MessageDetail, item.message, item.text];
+        for (const val of values) {
+          if (val) buckets.push(String(val));
+        }
+      }
+    } else if (typeof candidate === 'object') {
+      const values = [candidate.description, candidate.MessageDetail, candidate.message, candidate.text];
+      for (const val of values) {
+        if (val) buckets.push(String(val));
+      }
+    } else if (typeof candidate === 'string') {
+      buckets.push(candidate);
+    }
+  }
+  return Array.from(new Set(buckets.filter(Boolean)));
+}
+
+function buildOptionProduct({ optionSymbol, callPut, strike, expiry }) {
+  const product = {
+    securityType: 'OPTION',
+  };
+
+  if (optionSymbol) {
+    product.symbol = optionSymbol;
+  }
+  if (callPut) {
+    product.callPut = callPut.toUpperCase();
+  }
+  if (strike != null && strike !== '') {
+    const numericStrike = Number(strike);
+    if (Number.isFinite(numericStrike)) {
+      product.strikePrice = numericStrike;
+    }
+  }
+  if (expiry) {
+    const parts = String(expiry).split('-').map((p) => Number(p));
+    if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+      const [year, month, day] = parts;
+      product.expiryYear = year;
+      product.expiryMonth = month;
+      product.expiryDay = day;
+    }
+  }
+  return product;
+}
+
+function buildClientOrderId(prefix = 'SOS') {
+  const stamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `${prefix}${stamp}${random}`.slice(0, 32);
+}
+
+async function placeOptionMarketOrder({
+  accountIdKey,
+  optionSymbol,
+  quantity,
+  orderAction,
+  callPut,
+  strike,
+  expiry,
+}) {
+  if (!accountIdKey) throw new Error('Account ID (accountIdKey) is required');
+  const symbol = optionSymbol;
+  if (!symbol) throw new Error('Option symbol is required for emergency sell');
+
+  const rawQty = Number(quantity);
+  if (!Number.isFinite(rawQty) || rawQty === 0) {
+    throw new Error('Quantity must be a non-zero number');
+  }
+
+  const absQty = Math.abs(rawQty);
+  const action = orderAction || (rawQty > 0 ? 'SELL_TO_CLOSE' : 'BUY_TO_COVER');
+
+  const product = buildOptionProduct({ optionSymbol: symbol, callPut, strike, expiry });
+  const clientOrderId = buildClientOrderId();
+
+  const baseRequest = {
+    PlaceOrderRequest: {
+      orderType: 'OPTION',
+      clientOrderId,
+      orderTerm: 'GOOD_FOR_DAY',
+      marketSession: 'REGULAR',
+      priceType: 'MARKET',
+      orderStrategyType: 'SINGLE',
+      Instrument: [
+        {
+          Product: product,
+          orderAction: action,
+          quantityType: 'QUANTITY',
+          quantity: absQty,
+        },
+      ],
+    },
+  };
+
+  const previewPath = `/v1/accounts/${accountIdKey}/orders/preview.json`;
+  const previewResponse = await etFetch(previewPath, { method: 'POST', body: baseRequest });
+  const previewRoot = previewResponse?.PreviewOrderResponse || previewResponse;
+  const previewIds = previewRoot?.PreviewIds?.previewId
+    || previewRoot?.PreviewIds?.PreviewId
+    || previewRoot?.previewId;
+  const previewId = Array.isArray(previewIds) ? previewIds[0] : previewIds;
+
+  if (!previewId) {
+    const messages = collectOrderMessages(previewRoot);
+    const hint = messages.length ? ` (${messages.join('; ')})` : '';
+    throw new Error(`Order preview failed${hint}`);
+  }
+
+  const placeRequest = {
+    PlaceOrderRequest: {
+      ...baseRequest.PlaceOrderRequest,
+      PreviewIds: { PreviewId: [previewId] },
+    },
+  };
+
+  const placePath = `/v1/accounts/${accountIdKey}/orders/place.json`;
+  const placeResponse = await etFetch(placePath, { method: 'POST', body: placeRequest });
+  const placeRoot = placeResponse?.PlaceOrderResponse || placeResponse;
+  const orderIds = placeRoot?.OrderIds?.orderId
+    || placeRoot?.OrderIds?.OrderId
+    || placeRoot?.orderId;
+  const orderId = Array.isArray(orderIds) ? orderIds[0] : orderIds;
+
+  const messages = collectOrderMessages(placeRoot);
+
+  return {
+    previewId,
+    orderId: orderId || null,
+    messages,
+    rawPreview: previewRoot,
+    rawPlace: placeRoot,
+  };
+}
+
 module.exports = {
   getEquityQuotes,
   getOptionChain,
   getHistoricalData,
   getAccounts,
   getPortfolio,
-  getAccountBalance
+  getAccountBalance,
+  placeOptionMarketOrder,
 };
