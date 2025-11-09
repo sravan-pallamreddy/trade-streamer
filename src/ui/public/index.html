@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">AI Trading Dashboard</h1>
+                    <p class="text-gray-600 mt-2">Day Trading Assistant - $300-500 Daily Target</p>
+                </div>
+                <div class="text-right">
+                    <div id="headerBalance" class="text-2xl font-bold text-green-600">$0.00</div>
+                    <div class="text-sm text-gray-500">Account Balance</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex gap-4 items-center">
+                <button id="scanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                    Scan for Trades
+                </button>
+                <button id="portfolioBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                    Load Portfolio
+                </button>
+                <div id="scanStatus" class="text-gray-600 flex items-center gap-2">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    Ready to scan
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Grid -->
+        <div id="recommendations" class="grid gap-6">
+            <!-- Recommendations will be inserted here -->
+        </div>
+
+        <!-- Portfolio Section -->
+        <div id="portfolioSection" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Portfolio</h2>
+                <select id="accountSelect" class="border border-gray-300 rounded px-3 py-2">
+                    <option value="">Select Account</option>
+                </select>
+            </div>
+
+            <!-- Account Summary -->
+            <div id="accountSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <!-- Account summary will be inserted here -->
+            </div>
+
+            <!-- Positions Tables -->
+            <div class="space-y-8">
+                <!-- Stocks Section -->
+                <div id="stocksSection">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                        Stocks
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stocksBody" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                        <div class="flex flex-col items-center">
+                                            <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
+                                            <div class="text-lg font-medium mb-2">Select an Account</div>
+                                            <div class="text-sm text-center max-w-md">
+                                                <div class="text-gray-400">Choose an account from the dropdown above to view stock positions.</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Options Section -->
+                <div id="optionsSection">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="zap" class="w-5 h-5 text-purple-600"></i>
+                        Options
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="optionsBody" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                        <div class="flex flex-col items-center">
+                                            <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
+                                            <div class="text-lg font-medium mb-2">Select an Account</div>
+                                            <div class="text-sm text-center max-w-md">
+                                                <div class="text-gray-400">Choose an account from the dropdown above to view options positions.</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i data-lucide="trending-up" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-green-600">$0</div>
+                        <div class="text-gray-500">Today's P&L</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i data-lucide="target" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-blue-600">0</div>
+                        <div class="text-gray-500">Active Trades</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <i data-lucide="alert-triangle" class="w-6 h-6 text-yellow-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-yellow-600">$5</div>
+                        <div class="text-gray-500">Max Risk/Trade</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i data-lucide="zap" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-2xl font-bold text-purple-600">82%</div>
+                        <div class="text-gray-500">AI Confidence</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        const scanBtn = document.getElementById('scanBtn');
+        const scanStatus = document.getElementById('scanStatus');
+        const recommendations = document.getElementById('recommendations');
+        const portfolioBtn = document.getElementById('portfolioBtn');
+        const portfolioSection = document.getElementById('portfolioSection');
+        const accountSelect = document.getElementById('accountSelect');
+        const accountSummary = document.getElementById('accountSummary');
+        const positionsBody = document.getElementById('positionsBody');
+        const stocksBody = document.getElementById('stocksBody');
+        const optionsBody = document.getElementById('optionsBody');
+        const stocksSection = document.getElementById('stocksSection');
+        const optionsSection = document.getElementById('optionsSection');
+        const headerBalance = document.getElementById('headerBalance');
+
+        // Update header balance display
+        function updateHeaderBalance(balanceData) {
+            if (balanceData && balanceData.totalAccountValue) {
+                headerBalance.textContent = `$${balanceData.totalAccountValue.toFixed(2)}`;
+            } else {
+                headerBalance.textContent = '$0.00';
+            }
+        }
+
+        // Scan for trades
+        scanBtn.addEventListener('click', async () => {
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Scanning...';
+            scanStatus.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Analyzing markets...';
+
+            try {
+                const response = await fetch('/api/scan', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    displayRecommendations(data.results.parsed);
+                    scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Scan complete';
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Scan failed:', error);
+                scanStatus.innerHTML = '<i data-lucide="x" class="w-4 h-4 text-red-600"></i> Scan failed: ' + error.message;
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = '<i data-lucide="search" class="w-5 h-5"></i> Scan for Trades';
+                lucide.createIcons();
+            }
+        });
+
+        // Load portfolio
+        portfolioBtn.addEventListener('click', async () => {
+            portfolioBtn.disabled = true;
+            portfolioBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Loading...';
+
+            try {
+                // First get accounts
+                const accountsResponse = await fetch('/api/portfolio/accounts');
+                const accountsData = await accountsResponse.json();
+
+                if (!accountsData.success || !accountsData.accounts.length) {
+                    throw new Error('No accounts found. Please check E*TRADE authentication.');
+                }
+
+                // Store accounts data for later use
+                window.availableAccounts = accountsData.accounts;
+
+                // Populate account selector
+                accountSelect.innerHTML = '<option value="">Select Account</option>';
+                accountsData.accounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.accountIdKey;
+                    option.textContent = `${account.accountDesc} (${account.accountId}) - ${account.accountMode}`;
+                    accountSelect.appendChild(option);
+                });
+
+                portfolioSection.classList.remove('hidden');
+                scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Portfolio loaded - Select an account to view details';
+
+            } catch (error) {
+                console.error('Portfolio load error:', error);
+                scanStatus.innerHTML = '<i data-lucide="x" class="w-4 h-4 text-red-600"></i> Portfolio error: ' + error.message;
+            } finally {
+                portfolioBtn.disabled = false;
+                portfolioBtn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Load Portfolio';
+                lucide.createIcons();
+            }
+        });
+
+        // Account selection change
+        accountSelect.addEventListener('change', async (e) => {
+            const accountIdKey = e.target.value;
+            if (!accountIdKey) {
+                updateHeaderBalance(null); // Reset to $0.00 when no account selected
+                return;
+            }
+
+            // Show loading state
+            accountSummary.innerHTML = `
+                <div class="col-span-4 flex items-center justify-center py-8">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="loader" class="w-5 h-5 animate-spin text-blue-600"></i>
+                        <span class="text-gray-600">Loading account details...</span>
+                    </div>
+                </div>
+            `;
+            stocksBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
+                        <div>Loading stock positions...</div>
+                    </td>
+                </tr>
+            `;
+            optionsBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
+                        <div>Loading options positions...</div>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+
+            try {
+                // Try to get balance information first
+                let balanceData = null;
+                try {
+                    const balanceResponse = await fetch(`/api/portfolio/${accountIdKey}/balance`);
+                    if (balanceResponse.ok) {
+                        const balanceResult = await balanceResponse.json();
+                        if (balanceResult.success) {
+                            balanceData = balanceResult.balance;
+                        }
+                    }
+                } catch (balanceErr) {
+                    console.log('Balance API not available, continuing with basic info');
+                }
+
+                // Get portfolio (which may fail but gives us account structure)
+                const portfolioResponse = await fetch(`/api/portfolio/${accountIdKey}`);
+                const portfolioData = await portfolioResponse.json();
+
+                if (portfolioData.success) {
+                    displayPortfolio(portfolioData.portfolio, balanceData);
+                    updateHeaderBalance(balanceData);
+                } else {
+                    throw new Error(portfolioData.error);
+                }
+            } catch (error) {
+                console.error('Account fetch error:', error);
+                // Fallback: show account info from stored accounts list
+                const accountDetails = window.availableAccounts?.find(acc => acc.accountIdKey === e.target.value);
+                if (accountDetails) {
+                    displayBasicAccountInfo(accountDetails);
+                    updateHeaderBalance(null); // Reset to $0.00 when no balance data
+                } else {
+                    accountSummary.innerHTML = `
+                        <div class="col-span-4 text-center py-8">
+                            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
+                            <div class="text-red-600 font-medium">Error Loading Account</div>
+                            <div class="text-sm text-gray-500 mt-1">${error.message}</div>
+                        </div>
+                    `;
+                }
+                positionsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i data-lucide="x-circle" class="w-8 h-8 text-red-400 mx-auto mb-2"></i>
+                            <div class="text-red-600">Failed to load account details</div>
+                            <div class="text-sm text-gray-500 mt-1">Please try again or check E*TRADE API status</div>
+                        </td>
+                    </tr>
+                `;
+                stocksBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
+                            <div class="text-red-600">Error loading positions</div>
+                        </td>
+                    </tr>
+                `;
+                optionsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
+                            <div class="text-red-600">Error loading positions</div>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+            }
+        });
+
+        // Display recommendations
+        function displayRecommendations(recs) {
+            recommendations.innerHTML = '';
+
+            if (!recs || recs.length === 0) {
+                recommendations.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <i data-lucide="alert-circle" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-600">No Recommendations</h3>
+                        <p class="text-gray-500">Market conditions not favorable for trades today.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            recs.forEach(rec => {
+                const decision = rec.ai?.decision || 'unknown';
+                const confidence = rec.ai?.confidence || 'N/A';
+                const cardClass = decision === 'approve' ? 'border-green-200 bg-green-50' :
+                                decision === 'caution' ? 'border-yellow-200 bg-yellow-50' :
+                                'border-red-200 bg-red-50';
+
+                const icon = decision === 'approve' ? 'check-circle' :
+                           decision === 'caution' ? 'alert-triangle' : 'x-circle';
+
+                const iconColor = decision === 'approve' ? 'text-green-600' :
+                                decision === 'caution' ? 'text-yellow-600' : 'text-red-600';
+
+                recommendations.innerHTML += `
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 ${cardClass}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="${icon}" class="w-6 h-6 ${iconColor}"></i>
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">${rec.symbol}</h3>
+                                    <p class="text-gray-600">${rec.signals?.join(', ') || 'No signals'}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold ${decision === 'approve' ? 'text-green-600' : decision === 'caution' ? 'text-yellow-600' : 'text-red-600'}">
+                                    ${decision.toUpperCase()}
+                                </div>
+                                <div class="text-sm text-gray-500">Confidence: ${confidence}</div>
+                            </div>
+                        </div>
+
+                        ${rec.entry ? `
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-600">$${rec.entry}</div>
+                                <div class="text-sm text-gray-600">Entry</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-red-600">$${rec.stop}</div>
+                                <div class="text-sm text-gray-600">Stop Loss</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-green-600">$${rec.target}</div>
+                                <div class="text-sm text-gray-600">Target</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="flex gap-2">
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                Execute Trade
+                            </button>
+                            <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded flex items-center gap-2">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                View Chart
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            lucide.createIcons();
+        }
+
+        // Display portfolio
+        function displayPortfolio(portfolio, balanceData = null) {
+            // Find the account details from the stored accounts list
+            const accountDetails = window.availableAccounts?.find(acc => acc.accountIdKey === portfolio.account.accountIdKey);
+
+            // Update account summary with available information
+            let balanceHtml = `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Account ID</div>
+                    <div class="text-lg font-bold text-blue-600">${accountDetails?.accountId || portfolio.account.accountId || 'N/A'}</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Account Type</div>
+                    <div class="text-lg font-bold text-green-600">${accountDetails?.accountType || 'INDIVIDUAL'}</div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Account Mode</div>
+                    <div class="text-lg font-bold text-purple-600">${accountDetails?.accountMode || 'CASH'}</div>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Status</div>
+                    <div class="text-lg font-bold text-orange-600">${accountDetails?.accountStatus || 'ACTIVE'}</div>
+                </div>
+            `;
+
+            // Add balance information if available
+            if (balanceData) {
+                // For cash accounts, use moneyMktBalance or cashAvailableForInvestment
+                const availableCash = balanceData.moneyMktBalance || balanceData.cashAvailableForInvestment || balanceData.cashBalance || 0;
+                const totalValue = balanceData.totalAccountValue || 0;
+                const buyingPower = balanceData.cashBuyingPower || balanceData.marginBuyingPower || 0;
+
+                balanceHtml = `
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">Account ID</div>
+                        <div class="text-lg font-bold text-blue-600">${accountDetails?.accountId || balanceData.accountId || 'N/A'}</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">Available Cash</div>
+                        <div class="text-lg font-bold text-green-600">$${availableCash.toFixed(2)}</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">Total Value</div>
+                        <div class="text-lg font-bold text-purple-600">$${totalValue.toFixed(2)}</div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <div class="text-sm text-gray-600">Buying Power</div>
+                        <div class="text-lg font-bold text-orange-600">$${buyingPower.toFixed(2)}</div>
+                    </div>
+                `;
+            }
+
+            accountSummary.innerHTML = balanceHtml;
+
+            // Separate positions into stocks and options
+            const stocks = [];
+            const options = [];
+
+            if (portfolio.positions && portfolio.positions.length > 0) {
+                // Check if positions are real or placeholder
+                const hasRealPositions = portfolio.positions.some(pos => pos.symbol !== 'UNKNOWN' && pos.symbol !== '');
+
+                if (hasRealPositions) {
+                    portfolio.positions.forEach(position => {
+                        // Check if it's an option by looking for option indicators in the symbol or description
+                        const isOption = position.symbol.includes(' ') ||
+                                       position.symbolDescription?.toLowerCase().includes('call') ||
+                                       position.symbolDescription?.toLowerCase().includes('put') ||
+                                       position.symbolDescription?.toLowerCase().includes('option') ||
+                                       position.symbol?.match(/\d{6}[CP]\d+/); // Option symbol pattern
+
+                        if (isOption) {
+                            options.push(position);
+                        } else {
+                            stocks.push(position);
+                        }
+                    });
+                } else {
+                    // No real positions available - show message in stocks section
+                    stocksBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                <div class="flex flex-col items-center">
+                                    <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
+                                    <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
+                                    <div class="text-sm text-center max-w-md">
+                                        <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails?.accountDesc || 'Individual Brokerage'}</div>
+                                        <div class="mb-2">✅ <strong>Balance Available:</strong> $${balanceData?.totalAccountValue?.toFixed(2) || '0.00'}</div>
+                                        <div class="mb-2">✅ <strong>Cash Available:</strong> $${(balanceData?.moneyMktBalance || balanceData?.cashAvailableForInvestment || 0).toFixed(2)}</div>
+                                        <div class="mb-3">✅ <strong>Status:</strong> ${accountDetails?.accountStatus || 'ACTIVE'}</div>
+                                        <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
+                                            <strong>Note:</strong> Position details are not available through the E*TRADE API for this account type. Balance information is available above. This is normal for many brokerage accounts.
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    optionsBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                <div class="flex flex-col items-center">
+                                    <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
+                                    <div class="text-lg font-medium mb-2">No Options Positions</div>
+                                    <div class="text-sm text-center max-w-md">
+                                        <div class="text-gray-400">No options positions found in this account.</div>
+                                        <div class="text-xs text-gray-400 mt-2">Options positions will appear here when available.</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    lucide.createIcons();
+                    return; // Exit early since we're showing the account info message
+                }
+            }
+
+            // Display stocks
+            stocksBody.innerHTML = '';
+            if (stocks.length > 0) {
+                stocks.forEach(position => {
+                    const pnlClass = position.unrealizedGainLoss >= 0 ? 'text-green-600' : 'text-red-600';
+                    const pnlPercentClass = position.unrealizedGainLossPercent >= 0 ? 'text-green-600' : 'text-red-600';
+
+                    stocksBody.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${position.symbol}</div>
+                                <div class="text-sm text-gray-500">${position.symbolDescription || ''}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                ${position.quantity}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                $${position.currentPrice.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                $${position.marketValue.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlClass}">
+                                $${position.unrealizedGainLoss.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlPercentClass}">
+                                ${position.unrealizedGainLossPercent.toFixed(2)}%
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                stocksBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
+                                <div class="text-lg font-medium mb-2">No Stock Positions</div>
+                                <div class="text-sm text-center max-w-md">
+                                    <div class="text-gray-400">No stock positions found in this account.</div>
+                                    <div class="text-xs text-gray-400 mt-2">Stock positions will appear here when available.</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Display options
+            optionsBody.innerHTML = '';
+            if (options.length > 0) {
+                options.forEach(position => {
+                    const pnlClass = position.unrealizedGainLoss >= 0 ? 'text-green-600' : 'text-red-600';
+                    const pnlPercentClass = position.unrealizedGainLossPercent >= 0 ? 'text-green-600' : 'text-red-600';
+
+                    optionsBody.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${position.symbol}</div>
+                                <div class="text-sm text-gray-500">${position.symbolDescription || ''}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                ${position.quantity}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                $${position.currentPrice.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                $${position.marketValue.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlClass}">
+                                $${position.unrealizedGainLoss.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlPercentClass}">
+                                ${position.unrealizedGainLossPercent.toFixed(2)}%
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                optionsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
+                                <div class="text-lg font-medium mb-2">No Options Positions</div>
+                                <div class="text-sm text-center max-w-md">
+                                    <div class="text-gray-400">No options positions found in this account.</div>
+                                    <div class="text-xs text-gray-400 mt-2">Options positions will appear here when available.</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // If no positions at all, show account info with balance data
+            if ((!portfolio.positions || portfolio.positions.length === 0) && stocks.length === 0 && options.length === 0) {
+                stocksBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
+                                <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
+                                <div class="text-sm text-center max-w-md">
+                                    <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails?.accountDesc || 'Individual Brokerage'}</div>
+                                    ${balanceData ? `
+                                    <div class="mb-2">✅ <strong>Balance Available:</strong> $${balanceData.totalAccountValue?.toFixed(2) || '0.00'}</div>
+                                    <div class="mb-2">✅ <strong>Cash Available:</strong> $${(balanceData.moneyMktBalance || balanceData.cashAvailableForInvestment || 0).toFixed(2)}</div>
+                                    ` : ''}
+                                    <div class="mb-3">✅ <strong>Status:</strong> ${accountDetails?.accountStatus || 'ACTIVE'}</div>
+                                    <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
+                                        <strong>Note:</strong> Portfolio details (positions) are not available through the E*TRADE API for this account type. ${balanceData ? 'Balance information is shown above.' : 'This is normal for many brokerage accounts.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                optionsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
+                                <div class="text-lg font-medium mb-2">No Options Positions</div>
+                                <div class="text-sm text-center max-w-md">
+                                    <div class="text-gray-400">No options positions found in this account.</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            lucide.createIcons();
+        }
+
+        // Display basic account info when portfolio fails to load
+        function displayBasicAccountInfo(accountDetails) {
+            accountSummary.innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Account ID</div>
+                    <div class="text-lg font-bold text-blue-600">${accountDetails.accountId}</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Account Type</div>
+                    <div class="text-lg font-bold text-green-600">${accountDetails.accountType}</div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Account Mode</div>
+                    <div class="text-lg font-bold text-purple-600">${accountDetails.accountMode}</div>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600">Status</div>
+                    <div class="text-lg font-bold text-orange-600">${accountDetails.accountStatus}</div>
+                </div>
+            `;
+
+            stocksBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center">
+                            <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
+                            <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
+                            <div class="text-sm text-center max-w-md">
+                                <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails.accountDesc}</div>
+                                <div class="mb-2">✅ <strong>Type:</strong> ${accountDetails.accountType} (${accountDetails.accountMode})</div>
+                                <div class="mb-2">✅ <strong>Status:</strong> ${accountDetails.accountStatus}</div>
+                                <div class="mb-3">✅ <strong>Institution:</strong> ${accountDetails.institutionType}</div>
+                                <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
+                                    <strong>Note:</strong> Portfolio details (balances, positions) are not available through the E*TRADE API for this account type. This is normal for many brokerage accounts.
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            optionsBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center">
+                            <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
+                            <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
+                            <div class="text-sm text-center max-w-md">
+                                <div class="text-gray-400">Portfolio details loaded for this account.</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+        }
+
+        // Load initial data
+        async function loadInitialData() {
+            // Initialize header balance to $0.00
+            updateHeaderBalance(null);
+            
+            try {
+                const response = await fetch('/api/recommendations');
+                const data = await response.json();
+                if (data.results) {
+                    displayRecommendations(data.results.parsed);
+                }
+            } catch (error) {
+                console.log('No initial data available');
+            }
+        }
+
+        loadInitialData();
+    </script>
+</body>
+</html>

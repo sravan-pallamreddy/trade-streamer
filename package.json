@@ -1,0 +1,26 @@
+{
+  "name": "trade-streamer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Options suggestions (SPY/QQQ) with continuous terminal streaming",
+  "main": "src/cli/suggest.js",
+  "scripts": {
+    "suggest": "node src/cli/suggest.js",
+    "suggest:stream": "node src/runner/suggest-stream.js",
+    "etrade:auth": "node src/cli/etrade-auth.js",
+    "ai-agent": "node src/cli/ai-agent.js",
+    "validate-data": "node -e \"const {validateDataConsistency, generateDataQualityReport} = require('./src/utils/data-validation'); validateDataConsistency(process.argv.slice(2)).then(generateDataQualityReport)\"",
+    "day-trade": "npm run ai-agent -- --strategy day_trade --expiry-type 0dte --symbols SPY,QQQ,AAPL,TSLA,GOOGL,NVDA",
+    "day-trade:watch": "node src/cli/ai-agent.js --strategy day_trade --expiry-type 0dte --symbols SPY,QQQ,AAPL,TSLA,GOOGL,NVDA --watch --interval 30",
+    "guardian": "node src/cli/position-guardian.js",
+  "guardian:watch": "node src/cli/position-guardian.js --source etrade --interval 30 --watch",
+    "guardian:once": "node src/cli/position-guardian.js --source etrade --once"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0"
+  }
+}

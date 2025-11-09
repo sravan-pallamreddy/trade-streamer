@@ -1,0 +1,8 @@
+# Dependencies and build artifacts
+node_modules/
+
+# Local environment configuration
+.env
+
+# Logs and runtime files
+server.log
