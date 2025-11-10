@@ -284,6 +284,7 @@ To enable portfolio tracking, configure E*TRADE API access:
 - **Header**: Account balance and daily profit target display
 - **Scan Button**: Triggers AI analysis across configured symbols
 - **Portfolio Button**: Loads E*TRADE account data and positions
+- **Auto Refresh**: Manual refresh button plus automatic portfolio polling every 60 seconds
 - **Account Selector**: Choose which account to view
 - **Account Summary**: Total value, cash balance, buying power, unrealized P&L
 - **Positions Table**: Detailed view of all holdings with P&L
@@ -340,6 +341,13 @@ The dashboard uses the same environment variables as the CLI agent:
 - `src/ui/server.js`: Express server with API endpoints
 - `src/ui/public/index.html`: Main dashboard interface
 - `src/cli/ai-agent.js`: Backend AI analysis (shared with CLI)
+
+## Next Steps / TODO
+- Add left-rail watchlist with live quote streaming and quick scan actions.
+- Surface right-rail market pulse (SPY/QQQ/VIX, sector breadth, FMP events) for context.
+- Implement scheduled auto-scan cadence plus user-configurable polling interval.
+- Persist recommendation history for backtesting playbook performance.
+- Introduce alert hooks for key events (earnings, large price moves) that auto-trigger scans.
 
 ## Data Sources & Reliability
 

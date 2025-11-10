@@ -126,11 +126,20 @@
             <!-- Portfolio Section -->
             <div id="portfolioColumn" class="space-y-4">
                 <div id="portfolioSection" class="bg-white rounded-lg shadow-md p-6 hidden max-h-[70vh] overflow-y-auto">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold text-gray-800">Portfolio</h2>
-                        <select id="accountSelect" class="border border-gray-300 rounded px-3 py-2">
-                            <option value="">Select Account</option>
-                        </select>
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-2xl font-bold text-gray-800">Portfolio</h2>
+                            <span id="portfolioStatus" class="text-xs text-gray-500"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="refreshPortfolioBtn" type="button" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-2 bg-white">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <select id="accountSelect" class="border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Account</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Account Summary -->
@@ -232,18 +241,23 @@
         const stocksSection = document.getElementById('stocksSection');
         const optionsSection = document.getElementById('optionsSection');
         const headerBalance = document.getElementById('headerBalance');
-    const toggleSensitiveBtn = document.getElementById('toggleSensitiveBtn');
+        const toggleSensitiveBtn = document.getElementById('toggleSensitiveBtn');
+        const refreshPortfolioBtn = document.getElementById('refreshPortfolioBtn');
+        const portfolioStatus = document.getElementById('portfolioStatus');
         const symbolsInput = document.getElementById('symbolsInput');
         const saveSymbolsBtn = document.getElementById('saveSymbolsBtn');
         const symbolsStatus = document.getElementById('symbolsStatus');
 
         const POLL_INTERVAL_MS = 15000;
+        const PORTFOLIO_REFRESH_INTERVAL_MS = 60000;
         let recommendationsTimer = null;
+        let portfolioRefreshTimer = null;
         let currentSymbolList = [];
-    let revealSensitive = false;
-    let lastBalancePayload = null;
-    let lastPortfolioPayload = null;
-    let lastPortfolioBalance = null;
+        let revealSensitive = false;
+        let lastBalancePayload = null;
+        let lastPortfolioPayload = null;
+        let lastPortfolioBalance = null;
+        let lastPortfolioRefreshAt = null;
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -373,6 +387,50 @@
                 selected.textContent = shouldShowFull ? fullLabel : maskedLabel;
             }
         }
+
+        function setPortfolioStatus(message, tone = 'info') {
+            if (!portfolioStatus) return;
+            const toneClassMap = {
+                info: 'text-gray-500',
+                success: 'text-green-600',
+                warning: 'text-amber-600',
+                error: 'text-red-600',
+            };
+            portfolioStatus.textContent = message || '';
+            portfolioStatus.classList.remove('text-gray-500', 'text-green-600', 'text-amber-600', 'text-red-600');
+            if (message) {
+                portfolioStatus.classList.add(toneClassMap[tone] || toneClassMap.info);
+                portfolioStatus.classList.remove('hidden');
+            } else {
+                portfolioStatus.classList.add('hidden');
+            }
+        }
+
+        function clearPortfolioRefreshTimer() {
+            if (portfolioRefreshTimer) {
+                clearInterval(portfolioRefreshTimer);
+                portfolioRefreshTimer = null;
+            }
+        }
+
+        function schedulePortfolioRefresh(accountIdKey) {
+            clearPortfolioRefreshTimer();
+            if (!accountIdKey) {
+                return;
+            }
+            portfolioRefreshTimer = setInterval(() => {
+                loadAccountDetails(accountIdKey, { showLoading: false, reason: 'auto' });
+            }, PORTFOLIO_REFRESH_INTERVAL_MS);
+        }
+
+        function formatRefreshTimestamp(timestamp) {
+            if (!timestamp) {
+                return '';
+            }
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        setPortfolioStatus('');
 
         function updateSensitiveControls() {
             if (!toggleSensitiveBtn) return;
@@ -602,6 +660,10 @@
                 });
 
                 updateAccountSelectLabels();
+                clearPortfolioRefreshTimer();
+                updateHeaderBalance(null);
+                window.selectedAccountIdKey = null;
+                setPortfolioStatus('Select an account to view details');
 
                 portfolioSection.classList.remove('hidden');
                 scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Portfolio loaded - Select an account to view details';
@@ -609,6 +671,7 @@
             } catch (error) {
                 console.error('Portfolio load error:', error);
                 scanStatus.innerHTML = '<i data-lucide="x" class="w-4 h-4 text-red-600"></i> Portfolio error: ' + error.message;
+                setPortfolioStatus('Portfolio load failed: ' + error.message, 'error');
             } finally {
                 portfolioBtn.disabled = false;
                 portfolioBtn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Load Portfolio';
@@ -646,40 +709,55 @@
             updateAccountSelectLabels();
             const accountIdKey = e.target.value;
             window.selectedAccountIdKey = accountIdKey || null;
+            clearPortfolioRefreshTimer();
+
             if (!accountIdKey) {
                 updateHeaderBalance(null); // Reset balance display when no account selected
+                setPortfolioStatus('Select an account to view details');
                 return;
             }
 
-            // Show loading state
-            accountSummary.innerHTML = `
-                <div class="col-span-4 flex items-center justify-center py-8">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="loader" class="w-5 h-5 animate-spin text-blue-600"></i>
-                        <span class="text-gray-600">Loading account details...</span>
+            await loadAccountDetails(accountIdKey, { showLoading: true, reason: 'manual' });
+            schedulePortfolioRefresh(accountIdKey);
+        });
+
+        async function loadAccountDetails(accountIdKey, { showLoading = true, reason = 'manual' } = {}) {
+            if (!accountIdKey) {
+                return false;
+            }
+
+            if (showLoading) {
+                accountSummary.innerHTML = `
+                    <div class="col-span-4 flex items-center justify-center py-8">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="loader" class="w-5 h-5 animate-spin text-blue-600"></i>
+                            <span class="text-gray-600">Loading account details...</span>
+                        </div>
                     </div>
-                </div>
-            `;
-            stocksBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                        <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
-                        <div>Loading stock positions...</div>
-                    </td>
-                </tr>
-            `;
-            optionsBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                        <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
-                        <div>Loading options positions...</div>
-                    </td>
-                </tr>
-            `;
-            lucide.createIcons();
+                `;
+                stocksBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
+                            <div>Loading stock positions...</div>
+                        </td>
+                    </tr>
+                `;
+                optionsBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                            <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
+                            <div>Loading options positions...</div>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                setPortfolioStatus('Loading account data...', 'info');
+            } else {
+                setPortfolioStatus(reason === 'auto' ? 'Auto refresh in progress…' : 'Refreshing portfolio…', 'info');
+            }
 
             try {
-                // Try to get balance information first
                 let balanceData = null;
                 try {
                     const balanceResponse = await fetch(`/api/portfolio/${accountIdKey}/balance`);
@@ -693,32 +771,36 @@
                     console.log('Balance API not available, continuing with basic info');
                 }
 
-                // Get portfolio (which may fail but gives us account structure)
                 const portfolioResponse = await fetch(`/api/portfolio/${accountIdKey}`);
                 const portfolioData = await portfolioResponse.json();
 
-                if (portfolioData.success) {
-                    displayPortfolio(portfolioData.portfolio, balanceData);
-                    updateHeaderBalance(balanceData);
-                } else {
-                    throw new Error(portfolioData.error);
+                if (!portfolioData.success) {
+                    throw new Error(portfolioData.error || 'Failed to load portfolio');
                 }
+
+                displayPortfolio(portfolioData.portfolio, balanceData);
+                updateHeaderBalance(balanceData);
+                lastPortfolioRefreshAt = Date.now();
+                const label = reason === 'auto' ? 'Auto refreshed' : 'Updated';
+                const suffix = reason === 'auto' ? '' : ' · auto refresh every 60s';
+                setPortfolioStatus(`${label} at ${formatRefreshTimestamp(lastPortfolioRefreshAt)}${suffix}`, 'success');
+                return true;
             } catch (error) {
                 console.error('Account fetch error:', error);
-                // Fallback: show account info from stored accounts list
-                const accountDetails = window.availableAccounts?.find(acc => acc.accountIdKey === e.target.value);
+                const accountDetails = window.availableAccounts?.find((acc) => acc.accountIdKey === accountIdKey);
                 if (accountDetails) {
                     displayBasicAccountInfo(accountDetails);
-                    updateHeaderBalance(null); // Reset balance display when no balance data
+                    updateHeaderBalance(null);
                 } else {
                     accountSummary.innerHTML = `
                         <div class="col-span-4 text-center py-8">
                             <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
                             <div class="text-red-600 font-medium">Error Loading Account</div>
-                            <div class="text-sm text-gray-500 mt-1">${error.message}</div>
+                            <div class="text-sm text-gray-500 mt-1">${escapeHtml(error.message)}</div>
                         </div>
                     `;
                 }
+
                 stocksBody.innerHTML = `
                     <tr>
                         <td colspan="6" class="px-4 py-8 text-center text-gray-500">
@@ -736,7 +818,24 @@
                     </tr>
                 `;
                 lucide.createIcons();
+                setPortfolioStatus(`Portfolio refresh failed: ${error.message}`, 'error');
+                return false;
             }
+        }
+
+        if (refreshPortfolioBtn) {
+            refreshPortfolioBtn.addEventListener('click', async () => {
+                if (!window.selectedAccountIdKey) {
+                    setPortfolioStatus('Select an account before refreshing', 'warning');
+                    return;
+                }
+                await loadAccountDetails(window.selectedAccountIdKey, { showLoading: false, reason: 'manual' });
+                schedulePortfolioRefresh(window.selectedAccountIdKey);
+            });
+        }
+
+        window.addEventListener('beforeunload', () => {
+            clearPortfolioRefreshTimer();
         });
 
         if (optionsBody) {
