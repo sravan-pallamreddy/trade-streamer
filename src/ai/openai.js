@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
 
+const PROVIDER_ID = 'openai';
 const DEFAULT_MODEL = 'gpt-4o-mini';
 
 function ensureKeyLoaded() {
@@ -65,7 +66,7 @@ async function chatJson({ model = DEFAULT_MODEL, system, user, timeout_ms = 1000
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`OpenAI HTTP ${res.status}: ${text}`);
+  throw new Error(`OpenAI HTTP ${res.status}: ${text}`);
     }
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content || '{}';
@@ -80,6 +81,7 @@ async function chatJson({ model = DEFAULT_MODEL, system, user, timeout_ms = 1000
 }
 
 module.exports = {
+  PROVIDER_ID,
   chatJson,
   DEFAULT_MODEL,
 };

@@ -11,7 +11,7 @@ const etrade = require('../providers/etrade');
 const { fetchBarsWithFallback } = require('../providers/bars');
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals } = require('../strategy/algorithms');
 const { midPrice } = require('../strategy/selector');
-const { chatJson, DEFAULT_MODEL } = require('../ai/openai');
+const { getClient } = require('../ai/client');
 
 const sleep = util.promisify(setTimeout);
 const COLORS = {
@@ -28,6 +28,8 @@ function blink(text) {
 }
 
 function parseArgs(argv) {
+  const defaultAiClient = getClient(process.env.GUARDIAN_AI_PROVIDER || process.env.AI_PROVIDER);
+  const aiModelEnv = process.env.GUARDIAN_AI_MODEL || process.env.AI_MODEL;
   const defaults = {
     file: process.env.GUARDIAN_POSITIONS_FILE || path.resolve(__dirname, '..', '..', 'data', 'open-positions.json'),
     provider: process.env.QUOTE_PROVIDER || 'fmp',
@@ -35,7 +37,8 @@ function parseArgs(argv) {
     watch: process.env.GUARDIAN_WATCH?.toLowerCase() === 'false' ? false : true,
     intervalMs: (Number(process.env.GUARDIAN_INTERVAL_MS) || 300_000),
     ai: process.env.GUARDIAN_AI?.toLowerCase() === 'false' ? false : true,
-    aiModel: process.env.GUARDIAN_AI_MODEL || process.env.AI_MODEL || DEFAULT_MODEL,
+    aiProvider: defaultAiClient.name,
+    aiModel: aiModelEnv || defaultAiClient.defaultModel,
     source: (process.env.GUARDIAN_SOURCE || 'file').toLowerCase(),
     etradeAccount: process.env.GUARDIAN_ETRADE_ACCOUNT || 'gks_erdl0Zw3A5ALvAvXOA',
     etradeView: process.env.GUARDIAN_ETRADE_VIEW || 'QUICK',
@@ -43,6 +46,7 @@ function parseArgs(argv) {
 
   const out = { ...defaults };
   const args = argv.slice(2);
+  let aiModelExplicit = Boolean(aiModelEnv);
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if ((arg === '--file' || arg === '-f') && args[i + 1]) { out.file = path.resolve(args[++i]); continue; }
@@ -53,7 +57,13 @@ function parseArgs(argv) {
     if ((arg === '--interval' || arg === '-i') && args[i + 1]) { out.intervalMs = Number(args[++i]) * 1000; continue; }
     if (arg === '--ai') { out.ai = true; continue; }
     if (arg === '--no-ai') { out.ai = false; continue; }
-    if ((arg === '--ai-model') && args[i + 1]) { out.aiModel = args[++i]; continue; }
+    if ((arg === '--ai-provider') && args[i + 1]) {
+      const client = getClient(args[++i]);
+      out.aiProvider = client.name;
+      if (!aiModelExplicit) out.aiModel = client.defaultModel;
+      continue;
+    }
+    if ((arg === '--ai-model') && args[i + 1]) { out.aiModel = args[++i]; aiModelExplicit = true; continue; }
     if ((arg === '--source' || arg === '-S') && args[i + 1]) { out.source = args[++i]; continue; }
     if ((arg === '--etrade-account' || arg === '--account') && args[i + 1]) { out.etradeAccount = args[++i]; continue; }
     if ((arg === '--etrade-view') && args[i + 1]) { out.etradeView = args[++i]; continue; }
@@ -84,7 +94,8 @@ function printHelp() {
   '  --no-watch, --once       Run a single evaluation and exit',
     '  --interval, -i <sec>     Poll interval when watching (default 300 seconds)',
     '  --ai / --no-ai           Enable or disable AI commentary (default on)',
-    '  --ai-model <name>        Override AI model (default gpt-4o-mini or AI_MODEL env)',
+    '  --ai-provider <name>     AI provider (openai|xai; default from env)',
+    '  --ai-model <name>        Override AI model (default per provider or AI_MODEL env)',
     '  --help, -h               Show this message',
   ].join('\n'));
 }
@@ -357,7 +368,8 @@ async function buildAiNote({ position, optionPrice, quote, analysis, gainPct, ct
       gainPct,
       analysis,
     };
-    const res = await chatJson({
+    const client = ctx.aiClient || getClient(ctx.aiProvider);
+    const res = await client.chatJson({
       model: ctx.aiModel,
       system,
       user: JSON.stringify(userPayload),
@@ -449,6 +461,8 @@ async function createContext(settings, positions) {
     strategy: settings.strategy,
     ai: settings.ai,
     aiModel: settings.aiModel,
+    aiProvider: settings.aiProvider,
+    aiClient: settings.aiClient || getClient(settings.aiProvider),
     chainCache: new Map(),
     loadBars,
   };
@@ -457,6 +471,9 @@ async function createContext(settings, positions) {
 async function runOnce(settings, runId = 1) {
   const positions = await loadPositions(settings);
   printHeader(runId);
+  if (settings.ai) {
+    console.log(`AI provider: ${settings.aiProvider} | model: ${settings.aiModel}`);
+  }
   if (!positions.length) {
     if ((settings.source || 'file') === 'etrade') {
       console.log('No option positions found via E*TRADE API.');
@@ -479,6 +496,9 @@ async function runOnce(settings, runId = 1) {
 
 async function main() {
   const settings = parseArgs(process.argv);
+  settings.aiClient = getClient(settings.aiProvider);
+  settings.aiProvider = settings.aiClient.name;
+  if (!settings.aiModel) settings.aiModel = settings.aiClient.defaultModel;
   if (settings.watch) {
     let runId = 1;
     while (true) {

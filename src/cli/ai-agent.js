@@ -7,7 +7,7 @@ const { buildSuggestion } = require('../strategy/options');
 const { computeQty } = require('../risk');
 const { getQuotes } = require('../providers/quotes');
 const etrade = require('../providers/etrade');
-const { chatJson, DEFAULT_MODEL } = require('../ai/openai');
+const { getClient } = require('../ai/client');
 const { buildSystemPrompt, buildUserPrompt } = require('../ai/prompt');
 const { fetchBarsWithFallback } = require('../providers/bars');
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals, recommendOptionStrategy } = require('../strategy/algorithms');
@@ -71,6 +71,8 @@ function buildScalingPlan({ qty, entry, takeProfit, stop }) {
 }
 
 function parseArgs(argv) {
+  const defaultAiClient = getClient(process.env.AGENT_AI_PROVIDER || process.env.AI_PROVIDER);
+  const aiModelEnv = process.env.AI_MODEL;
   const out = {
     symbols: process.env.SCAN_SYMBOLS ? process.env.SCAN_SYMBOLS.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) : [],
     account: process.env.ACCOUNT_SIZE ? Number(process.env.ACCOUNT_SIZE) : undefined,
@@ -82,7 +84,8 @@ function parseArgs(argv) {
     stopLossPct: process.env.STOP_LOSS_PCT ? Number(process.env.STOP_LOSS_PCT) : 0.5,
     takeProfitMult: process.env.TAKE_PROFIT_MULT ? Number(process.env.TAKE_PROFIT_MULT) : 2.0,
     provider: process.env.QUOTE_PROVIDER || 'yahoo',
-    aiModel: process.env.AI_MODEL || DEFAULT_MODEL,
+    aiProvider: defaultAiClient.name,
+    aiModel: aiModelEnv || defaultAiClient.defaultModel,
     expiryType: process.env.EXPIRY_TYPE || 'weekly',
     expiryOverride: process.env.OPTIONS_EXPIRY || process.env.EXPIRY_OVERRIDE || undefined,
     strategy: process.env.TRADING_STRATEGY || 'day_trade', // day_trade | swing_trade
@@ -91,6 +94,7 @@ function parseArgs(argv) {
     intervalMs: Number(process.env.AGENT_INTERVAL_MS) || 30_000,
   };
   const args = argv.slice(2);
+  let aiModelExplicit = Boolean(aiModelEnv);
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--symbols' && args[i + 1]) { out.symbols = args[++i].split(',').map(s => s.trim().toUpperCase()).filter(Boolean); continue; }
@@ -99,7 +103,13 @@ function parseArgs(argv) {
     if (a === '--strategy' && args[i + 1]) { out.strategy = args[++i]; continue; }
     if (a === '--expiry-type' && args[i + 1]) { out.expiryType = args[++i]; continue; }
     if ((a === '--expiry' || a === '--expiry-date') && args[i + 1]) { out.expiryOverride = args[++i]; continue; }
-    if (a === '--ai-model' && args[i + 1]) { out.aiModel = args[++i]; continue; }
+    if (a === '--ai-provider' && args[i + 1]) {
+      const client = getClient(args[++i]);
+      out.aiProvider = client.name;
+      if (!aiModelExplicit) out.aiModel = client.defaultModel;
+      continue;
+    }
+    if (a === '--ai-model' && args[i + 1]) { out.aiModel = args[++i]; aiModelExplicit = true; continue; }
     if (a === '--debug') { out.debug = true; continue; }
     if (a === '--watch' || a === '-w') { out.watch = true; continue; }
     if (a === '--no-watch' || a === '--once') { out.watch = false; continue; }
@@ -119,7 +129,8 @@ function usage() {
   `  --strategy <type>        Trading strategy: day_trade or swing_trade (default: day_trade)\n`+
   `  --expiry-type <type>     Options expiry: weekly, monthly, or 0dte (default: weekly)\n`+
   `  --risk-pct <num>         Risk per trade fraction (default: 0.01)\n`+
-  `  --ai-model <model>       OpenAI model to use (default: gpt-4o-mini)\n`+
+  `  --ai-provider <name>     AI provider (openai|xai)\n`+
+  `  --ai-model <model>       AI model to use (default depends on provider)\n`+
   `  --watch                  Continuously rerun at the configured interval\n`+
   `  --once / --no-watch      Run a single scan and exit\n`+
   `  --interval <sec>         Interval between scans in seconds (default: 30)\n`+
@@ -143,6 +154,8 @@ function usage() {
 async function analyzeSymbol(symbol, params) {
   try {
     console.log(`\n🔍 Analyzing ${symbol}...`);
+
+    const aiClient = params.aiClient || getClient(params.aiProvider);
 
     // Get current quote
     const quotes = await getQuotes([symbol], { provider: params.provider, debug: params.debug });
@@ -375,7 +388,7 @@ async function analyzeSymbol(symbol, params) {
 
     const system = buildSystemPrompt();
     const user = buildUserPrompt({ suggestion: enrichedSuggestion, context });
-    const ai = await chatJson({ model: params.aiModel, system, user, timeout_ms: 20000 });
+  const ai = await aiClient.chatJson({ model: params.aiModel, system, user, timeout_ms: 20000 });
 
     console.log(`🧠 AI Decision: ${ai.decision || 'N/A'} (confidence: ${(ai.confidence ?? 0) * 100}%)`);
     if (ai.selected_strategy) {
@@ -422,6 +435,7 @@ async function runScan(args, runId = 1) {
   console.log(`Tick: ${new Date().toISOString()} | Run ${runId}`);
   console.log(`📈 Strategy: ${args.strategy.toUpperCase()} | Expiry: ${args.expiryType.toUpperCase()}`);
   console.log(`💰 Account: $${args.account.toLocaleString()} | Symbols: ${args.symbols.join(', ')}`);
+  console.log(`🤖 AI: ${args.aiProvider} | Model: ${args.aiModel}`);
 
   const results = [];
 
@@ -473,6 +487,9 @@ async function runScan(args, runId = 1) {
 
 async function main() {
   const args = parseArgs(process.argv);
+  args.aiClient = getClient(args.aiProvider);
+  args.aiProvider = args.aiClient.name;
+  if (!args.aiModel) args.aiModel = args.aiClient.defaultModel;
   if (args.help) return usage();
 
   if (!args.symbols || args.symbols.length === 0) {

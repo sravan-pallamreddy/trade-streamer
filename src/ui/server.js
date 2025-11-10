@@ -78,6 +78,26 @@ const AGENT_COMMAND = process.env.UI_AGENT_COMMAND || 'npm run day-trade';
 const AGENT_INTERVAL_MS = Number(process.env.UI_AGENT_INTERVAL_MS || 120000);
 const AGENT_TIMEOUT_MS = Number(process.env.UI_AGENT_TIMEOUT_MS || 90000);
 
+function parseProviderList(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((token) => token.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function resolveUiProviders() {
+  const fromConfig = parseProviderList(process.env.UI_AI_PROVIDERS);
+  if (fromConfig.length) return Array.from(new Set(fromConfig));
+  const fromEnv = parseProviderList(process.env.AI_PROVIDER);
+  if (fromEnv.length) return Array.from(new Set(fromEnv));
+  const autoDetect = [];
+  if (process.env.OPENAI_API_KEY) autoDetect.push('openai');
+  if (process.env.XAI_API_KEY) autoDetect.push('xai');
+  if (autoDetect.length) return Array.from(new Set(autoDetect));
+  return ['openai'];
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -261,9 +281,9 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
   }
 });
 
-function parseAIOutput(output) {
+function parseAIOutput(output, { provider, model } = {}) {
   if (!output) {
-    return [];
+    return { recommendations: [], meta: { provider, model } };
   }
 
   const lines = output.split('\n');
@@ -272,6 +292,8 @@ function parseAIOutput(output) {
   let summarySymbol = null;
   let collectingPlanFor = null;
   let inSummary = false;
+  let activeProvider = provider || null;
+  let activeModel = model || null;
 
   const ensureRec = (symbol) => {
     if (!symbol) return null;
@@ -316,8 +338,18 @@ function parseAIOutput(output) {
   };
 
   for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
+    const line = rawLine.trim();
     if (!line) continue;
+
+    const headerMatch = line.match(/🤖 AI:\s*([^|]+)(?:\|\s*Model:\s*(.+))?/i);
+    if (headerMatch) {
+      activeProvider = headerMatch[1]?.trim() || activeProvider;
+      const maybeModel = headerMatch[2]?.trim();
+      if (maybeModel) {
+        activeModel = maybeModel;
+      }
+      continue;
+    }
 
     const analyzingMatch = line.match(/🔍 Analyzing ([A-Z0-9]+)/i);
     if (analyzingMatch) {
@@ -514,7 +546,7 @@ function parseAIOutput(output) {
       continue;
     }
 
-    const sizingMatch = line.match(/📦 Position sizing: buy\s+(\d+)\s+contract/);
+  const sizingMatch = line.match(/📦 Position sizing: buy\s+(\d+)\s+contract(?:\(s\))?/i);
     if (sizingMatch) {
       rec.qty = Number(sizingMatch[1]);
       const riskMatch = line.match(/Risk\s*~?\$([0-9.]+)/i);
@@ -571,7 +603,26 @@ function parseAIOutput(output) {
     return bStrength - aStrength;
   });
 
-  return recommendations;
+  const providerLabel = activeProvider || provider || null;
+  const modelLabel = activeModel || model || null;
+  for (const rec of recommendations) {
+    rec.provider = rec.provider || providerLabel;
+    rec.ai = rec.ai || {};
+    if (providerLabel && !rec.ai.provider) {
+      rec.ai.provider = providerLabel;
+    }
+    if (modelLabel && !rec.ai.model) {
+      rec.ai.model = modelLabel;
+    }
+  }
+
+  return {
+    recommendations,
+    meta: {
+      provider: providerLabel,
+      model: modelLabel,
+    },
+  };
 }
 
 async function triggerScan(source = 'auto') {
@@ -584,73 +635,155 @@ async function triggerScan(source = 'auto') {
   const startedMs = Date.now();
   clearPendingTimer();
 
-  let commandToRun = AGENT_COMMAND;
+  const symbolsList = Array.isArray(scanConfig.symbols) ? scanConfig.symbols : [];
+  const providers = resolveUiProviders();
+  const envBase = { ...process.env };
+  if (symbolsList.length) {
+    envBase.SCAN_SYMBOLS = symbolsList.join(',');
+  }
+
+  let commandToRun = buildAgentCommand(symbolsList);
+  const runSummaries = [];
+  const runErrors = [];
+  let response;
 
   try {
-    const symbolsList = Array.isArray(scanConfig.symbols) ? scanConfig.symbols : [];
-    const env = { ...process.env };
-    if (symbolsList.length) {
-      env.SCAN_SYMBOLS = symbolsList.join(',');
+    console.log(`Starting ${source} AI scan with command: ${commandToRun} (symbols: ${symbolsList.join(', ') || 'default'})`);
+    console.log(`Providers: ${providers.join(', ')}`);
+
+    try {
+      for (const providerId of providers) {
+        const runEnv = {
+          ...envBase,
+          AI_PROVIDER: providerId,
+          AGENT_AI_PROVIDER: providerId,
+          STREAM_AI_PROVIDER: providerId,
+          GUARDIAN_AI_PROVIDER: providerId,
+        };
+        const runStartedMs = Date.now();
+        const runStartedAt = new Date(runStartedMs).toISOString();
+        console.log(`→ Executing provider ${providerId}: ${commandToRun}`);
+        try {
+          const { stdout, stderr } = await execAsync(commandToRun, {
+            cwd: path.join(__dirname, '..'),
+            timeout: AGENT_TIMEOUT_MS,
+            env: runEnv,
+          });
+          const parsed = parseAIOutput(stdout, { provider: providerId, model: runEnv.AI_MODEL });
+          runSummaries.push({
+            provider: parsed.meta.provider || providerId,
+            model: parsed.meta.model || runEnv.AI_MODEL || null,
+            rawOutput: stdout,
+            stderr,
+            parsed: parsed.recommendations,
+            startedAt: runStartedAt,
+            completedAt: new Date().toISOString(),
+            durationMs: Date.now() - runStartedMs,
+            command: commandToRun,
+          });
+        } catch (providerError) {
+          console.error(`Provider ${providerId} scan error:`, providerError.message);
+          runErrors.push({
+            provider: providerId,
+            message: providerError.message,
+            stdout: providerError.stdout,
+            stderr: providerError.stderr,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Scan orchestration error:', error);
+      runErrors.push({
+        provider: 'system',
+        message: error.message,
+        stack: error.stack,
+      });
     }
 
-    commandToRun = buildAgentCommand(symbolsList);
+    if (!runSummaries.length) {
+      const completedAt = new Date().toISOString();
+      lastScanMeta = {
+        startedAt: startedAt.toISOString(),
+        completedAt,
+        durationMs: Date.now() - startedMs,
+        source,
+        success: false,
+        symbols: Array.from(symbolsList),
+        providers,
+        errors: runErrors,
+      };
+      lastScanError = {
+        message: 'All AI provider scans failed',
+        providers: runErrors,
+        command: commandToRun,
+        timestamp: completedAt,
+      };
+      response = { success: false, statusCode: 502, error: lastScanError.message };
+    } else {
+      const completedAt = new Date().toISOString();
+      const flattened = [];
+      for (const run of runSummaries) {
+        for (const rec of run.parsed) {
+          const clone = {
+            ...rec,
+            ai: { ...(rec.ai || {}) },
+          };
+          clone.provider = clone.provider || run.provider;
+          if (!clone.ai.provider) {
+            clone.ai.provider = run.provider;
+          }
+          if (run.model && !clone.ai.model) {
+            clone.ai.model = run.model;
+          }
+          flattened.push(clone);
+        }
+      }
 
-    console.log(`Starting ${source} AI scan with command: ${commandToRun} (symbols: ${symbolsList.join(', ') || 'default'})`);
-    const { stdout, stderr } = await execAsync(commandToRun, {
-      cwd: path.join(__dirname, '..'),
-      timeout: AGENT_TIMEOUT_MS,
-      env
-    });
+      flattened.sort((a, b) => {
+        const symA = String(a.symbol || '').toUpperCase();
+        const symB = String(b.symbol || '').toUpperCase();
+        const symbolCmp = symA.localeCompare(symB);
+        if (symbolCmp !== 0) return symbolCmp;
+        const providerA = String(a.ai?.provider || a.provider || '');
+        const providerB = String(b.ai?.provider || b.provider || '');
+        return providerA.localeCompare(providerB);
+      });
 
-    latestResults = {
-      rawOutput: stdout,
-      parsed: parseAIOutput(stdout),
-      startedAt: startedAt.toISOString(),
-      completedAt: new Date().toISOString(),
-      durationMs: Date.now() - startedMs,
-      command: commandToRun,
-      source,
-      symbols: Array.from(symbolsList)
-    };
+      latestResults = {
+        runs: runSummaries,
+        rawOutput: runSummaries.map((run) => `# ${run.provider}\n${run.rawOutput}`).join('\n'),
+        parsed: flattened,
+        startedAt: startedAt.toISOString(),
+        completedAt,
+        durationMs: Date.now() - startedMs,
+        command: commandToRun,
+        source,
+        symbols: Array.from(symbolsList),
+        providers,
+        errors: runErrors,
+      };
 
-    lastScanMeta = {
-      startedAt: startedAt.toISOString(),
-      completedAt: latestResults.completedAt,
-      durationMs: latestResults.durationMs,
-      source,
-      success: true,
-      symbols: Array.from(symbolsList)
-    };
-    lastScanError = null;
-
-    return { success: true, results: latestResults };
-  } catch (error) {
-    console.error('Scan error:', error);
-
-    lastScanMeta = {
-      startedAt: startedAt.toISOString(),
-      completedAt: new Date().toISOString(),
-      durationMs: Date.now() - startedMs,
-      source,
-      success: false,
-      symbols: Array.isArray(scanConfig.symbols) ? Array.from(scanConfig.symbols) : []
-    };
-
-    lastScanError = {
-      message: error.message,
-      stdout: error.stdout,
-      stderr: error.stderr,
-      command: commandToRun,
-      timestamp: lastScanMeta.completedAt
-    };
-
-    return { success: false, statusCode: 500, error: error.message };
+      lastScanMeta = {
+        startedAt: startedAt.toISOString(),
+        completedAt,
+        durationMs: Date.now() - startedMs,
+        source,
+        success: true,
+        symbols: Array.from(symbolsList),
+        providers: runSummaries.map((run) => ({ provider: run.provider, model: run.model })),
+        errors: runErrors,
+      };
+      lastScanError = runErrors.length ? { message: 'One or more providers failed', providers: runErrors } : null;
+      response = { success: true, results: latestResults };
+    }
   } finally {
     isScanning = false;
     const nextDelay = nextScanDelayOverride != null ? nextScanDelayOverride : AGENT_INTERVAL_MS;
     nextScanDelayOverride = null;
     scheduleNextScan(nextDelay);
   }
+
+  return response;
 }
 
 function scheduleNextScan(delayMs = AGENT_INTERVAL_MS) {

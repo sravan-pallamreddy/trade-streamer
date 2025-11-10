@@ -5,7 +5,7 @@ const { buildSuggestion } = require('../strategy/options');
 const { computeQty } = require('../risk');
 const { getQuotes } = require('../providers/quotes');
 const etrade = require('../providers/etrade');
-const { chatJson, DEFAULT_MODEL } = require('../ai/openai');
+const { getClient } = require('../ai/client');
 const { buildSystemPrompt, buildUserPrompt } = require('../ai/prompt');
 const gates = require('../rules/gates');
 const bars = require('../providers/bars');
@@ -13,6 +13,8 @@ const { pickByDelta, pickByPremium, midPrice } = require('../strategy/selector')
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals, recommendOptionStrategy, detectBreakout, detectReversal } = require('../strategy/algorithms');
 
 function parseArgs(argv) {
+  const defaultAiClient = getClient(process.env.STREAM_AI_PROVIDER || process.env.AI_PROVIDER);
+  const aiModelEnv = process.env.AI_MODEL;
   const out = {
     symbols: process.env.SCAN_SYMBOLS ? process.env.SCAN_SYMBOLS.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) : [],
     side: 'both', // call|put|both
@@ -28,7 +30,8 @@ function parseArgs(argv) {
     provider: process.env.QUOTE_PROVIDER || 'yahoo',
     debug: !!process.env.DEBUG_QUOTES,
     ai: !!process.env.USE_AI,
-    aiModel: process.env.AI_MODEL || DEFAULT_MODEL,
+  aiProvider: defaultAiClient.name,
+  aiModel: aiModelEnv || defaultAiClient.defaultModel,
     aiIntervalSec: process.env.AI_INTERVAL_SEC ? Number(process.env.AI_INTERVAL_SEC) : 60,
     table: !!process.env.TABLE_OUTPUT,
     json: !!process.env.JSON_OUTPUT,
@@ -45,6 +48,7 @@ function parseArgs(argv) {
     expiryType: process.env.EXPIRY_TYPE || 'weekly',
   };
   const args = argv.slice(2);
+  let aiModelExplicit = Boolean(aiModelEnv);
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--symbols' && args[i + 1]) { out.symbols = args[++i].split(',').map(s => s.trim().toUpperCase()).filter(Boolean); continue; }
@@ -61,7 +65,13 @@ function parseArgs(argv) {
     if (a === '--provider' && args[i + 1]) { out.provider = args[++i]; continue; }
     if (a === '--debug') { out.debug = true; continue; }
     if (a === '--ai') { out.ai = true; continue; }
-    if (a === '--ai-model' && args[i + 1]) { out.aiModel = args[++i]; continue; }
+    if (a === '--ai-provider' && args[i + 1]) {
+      const client = getClient(args[++i]);
+      out.aiProvider = client.name;
+      if (!aiModelExplicit) out.aiModel = client.defaultModel;
+      continue;
+    }
+    if (a === '--ai-model' && args[i + 1]) { out.aiModel = args[++i]; aiModelExplicit = true; continue; }
     if (a === '--ai-interval' && args[i + 1]) { out.aiIntervalSec = Number(args[++i]); continue; }
     if (a === '--table') { out.table = true; continue; }
     if (a === '--json') { out.json = true; continue; }
@@ -90,8 +100,8 @@ function parseArgs(argv) {
 }
 
 function usage() {
-  console.log(`Usage: npm run suggest:stream -- --symbols SPY,QQQ,AAPL [--side both|call|put] --account 25000 [--interval 15]\n`+
-  `Env: ACCOUNT_SIZE, SCAN_SYMBOLS, RISK_PCT, DEFAULT_IV, RISK_FREE, OTM_PCT, MIN_BUSINESS_DAYS, STOP_LOSS_PCT, TAKE_PROFIT_MULT, STREAM_INTERVAL_SEC, QUOTE_PROVIDER`);
+  console.log(`Usage: npm run suggest:stream -- --symbols SPY,QQQ,AAPL [--side both|call|put] --account 25000 [--interval 15] [--ai --ai-provider xai]\n`+
+  `Env: ACCOUNT_SIZE, SCAN_SYMBOLS, RISK_PCT, DEFAULT_IV, RISK_FREE, OTM_PCT, MIN_BUSINESS_DAYS, STOP_LOSS_PCT, TAKE_PROFIT_MULT, STREAM_INTERVAL_SEC, QUOTE_PROVIDER, USE_AI, AI_PROVIDER, AI_MODEL, AI_INTERVAL_SEC`);
 }
 
 function makeSuggestion({ symbol, price, side, params }) {
@@ -172,7 +182,13 @@ async function loop(params) {
     console.error('Missing --symbols or SCAN_SYMBOLS in env. Please specify stocks to scan.');
     return usage();
   }
+  params.aiClient = params.aiClient || getClient(params.aiProvider);
+  params.aiProvider = params.aiClient.name;
+  if (!params.aiModel) params.aiModel = params.aiClient.defaultModel;
   console.log(`Starting suggest stream for [${params.symbols.join(', ')}], side=${params.side}, interval=${params.intervalSec}s, provider=${params.provider}`);
+  if (params.ai) {
+    console.log(`AI provider: ${params.aiProvider} | model: ${params.aiModel} | cadence: ${params.aiIntervalSec}s`);
+  }
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const started = Date.now();
@@ -342,7 +358,7 @@ async function loop(params) {
                 try {
                   const system = buildSystemPrompt();
                   const user = buildUserPrompt({ suggestion: sug, context });
-                  const ai = await chatJson({ model: params.aiModel, system, user, timeout_ms: 15000 });
+                  const ai = await params.aiClient.chatJson({ model: params.aiModel, system, user, timeout_ms: 15000 });
                   if (!params.table) console.log(`  AI decision=${ai.decision || 'n/a'} conf=${ai.confidence ?? 'n/a'} flags=${Array.isArray(ai.risk_flags)?ai.risk_flags.join('|'):'-'}\n  notes: ${ai.notes || ''}`);
                   if (params.json) {
                     process.stdout.write(JSON.stringify({ type: 'option_suggestion_ai', ts: new Date().toISOString(), symbol: sym, side: sd, ai, suggestion: sug }) + '\n');

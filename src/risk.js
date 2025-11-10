@@ -8,8 +8,8 @@ function computeQty({ accountSize, riskPct = 0.01, entry, stop, multiplier = 100
 
   switch (strategy) {
     case 'day_trade':
-      // Day trading: tighter risk control, smaller positions
-      adjustedRiskPct = Math.min(riskPct, 0.005); // Max 0.5% per trade
+      // Day trading: tighter risk control, smaller positions (capped at 1% unless user opts lower)
+      adjustedRiskPct = Math.min(riskPct, 0.01); // Max 1% per trade
       adjustedMaxContracts = Math.min(maxContracts, 5); // Smaller max positions
       break;
     case 'swing_trade':

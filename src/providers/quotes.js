@@ -163,14 +163,25 @@ async function fetchFMPQuotes(symbols, { apiKey, debug = false } = {}) {
       if (!res.ok) throw new Error(`FMP HTTP ${res.status}`);
       const data = await res.json();
       if (Array.isArray(data)) {
-        const quote = data[0];
-        if (quote && quote.symbol && quote.price) {
+        for (const quote of data) {
+          if (!quote || !quote.symbol) continue;
+          const price = quote.price ?? quote.ask ?? quote.bid;
+          if (price == null) continue;
           const tsMillis = quote.timestamp ? Number(quote.timestamp) * 1000 : Date.now();
-          out[quote.symbol.toUpperCase()] = {
-            price: Number(quote.price),
+          const payload = {
+            price: Number(price),
             ts: new Date(tsMillis).toISOString(),
             source: 'fmp'
           };
+          const volume = Number(quote.volume ?? quote.avgVolume ?? Number.NaN);
+          if (Number.isFinite(volume) && volume >= 0) {
+            payload.volume = volume;
+          }
+          const prevClose = Number(quote.previousClose);
+          if (Number.isFinite(prevClose)) {
+            payload.prevClose = prevClose;
+          }
+          out[quote.symbol.toUpperCase()] = payload;
         }
       }
       if (debug) console.log(`fmp url=${url} fetched=${out[symbol.toUpperCase()] ? 'yes' : 'no'}`);
@@ -201,12 +212,14 @@ async function fetchMockQuotes(symbols, { debug = false } = {}) {
   return out;
 }
 
-async function getQuotes(symbols, { provider = 'yahoo', debug = false } = {}) {
+async function getQuotes(symbols, { provider = 'fmp', debug = false } = {}) {
   if (!Array.isArray(symbols) || symbols.length === 0) return {};
-  const { providerSymbols, reverseMap } = mapSymbols(symbols, provider);
+  const { reverseMap } = mapSymbols(symbols, provider);
   let raw = {};
-  const providers = ['yahoo', 'stooq', 'fmp', 'alphavantage', 'iex', 'mock'];
-  const startIndex = providers.indexOf(provider);
+  let activeReverseMap = reverseMap;
+  const providers = ['fmp', 'yahoo', 'stooq', 'alphavantage', 'iex', 'mock'];
+  const idx = providers.indexOf(provider);
+  const startIndex = idx >= 0 ? idx : 0;
 
   for (let i = 0; i < providers.length; i++) {
     const currentProvider = providers[(startIndex + i) % providers.length];
@@ -223,6 +236,7 @@ async function getQuotes(symbols, { provider = 'yahoo', debug = false } = {}) {
 
       if (Object.keys(raw).length > 0) {
         if (debug) console.log(`Successfully got quotes from ${currentProvider}`);
+        activeReverseMap = rm;
         break;
       }
     } catch (e) {
@@ -233,7 +247,7 @@ async function getQuotes(symbols, { provider = 'yahoo', debug = false } = {}) {
 
   const out = {};
   for (const [k, v] of Object.entries(raw)) {
-    const orig = reverseMap[k] || k;
+    const orig = activeReverseMap[k] || k;
     out[orig] = v;
   }
   return out;

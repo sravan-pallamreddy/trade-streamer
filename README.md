@@ -40,8 +40,10 @@ TAKE_PROFIT_MULT=1.5
 DEFAULT_IV=0.2
 OTM_PCT=0.01
 
-# OpenAI (required for AI commentary)
+# AI provider (OpenAI default; set AI_PROVIDER=xai for Grok)
+AI_PROVIDER=openai
 OPENAI_API_KEY=sk-your-key-here
+# XAI_API_KEY=sk-your-xai-key
 
 # E*TRADE API (sandbox or production)
 ETRADE_BASE_URL=https://api.etrade.com
@@ -136,8 +138,12 @@ Implementation:
 
 ### 1. Setup (5 minutes)
 ```bash
-# Add your OpenAI API key to .env
+# Add your AI provider credentials to .env
+AI_PROVIDER=openai
 OPENAI_API_KEY=sk-your-key-here
+# Or switch to Grok (xAI)
+# AI_PROVIDER=xai
+# XAI_API_KEY=sk-your-xai-key
 
 # Run daily scan
 npm run day-trade
@@ -229,7 +235,7 @@ Environment variables:
 - `ACCOUNT_SIZE` (required)
 - `TRADING_STRATEGY` (day_trade or swing_trade, default: day_trade)
 - `EXPIRY_TYPE` (weekly, monthly, 0dte, default: weekly)
-- `OPENAI_API_KEY` (required for AI analysis)
+- `AI_PROVIDER` (`openai` default, set `xai` for Grok) plus the matching API key (`OPENAI_API_KEY` or `XAI_API_KEY`)
 
 Files:
 - `src/cli/ai-agent.js`: AI agent CLI entry point.
@@ -243,7 +249,7 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 ### Integrations at a Glance
 - **E*TRADE API** – OAuth 1.0a connection powers account discovery, live balances, positions, and the emergency option exit workflow. Sensitive account numbers and balances now render masked by default with an in-app reveal toggle.
 - **Financial Modeling Prep (FMP)** – Supplements recommendations with fundamentals (earnings calendar, float, sector stats) that enrich the AI prompt and upcoming UI sidebars.
-- **OpenAI** – Generates narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card.
+- **AI Providers (OpenAI / xAI Grok)** – Generate narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card.
 - **Quote Providers** – Yahoo Finance remains the default intraday feed, with optional Stooq/IEX/Alpha Vantage fallbacks configured via environment settings.
 
 ### Features
@@ -296,7 +302,7 @@ To enable portfolio tracking, configure E*TRADE API access:
 1. **Button Click** – Client posts to `POST /api/scan` with the active symbol list and strategy settings.
 2. **Server Guard** – `src/ui/server.js` rejects duplicate in-flight scans, records the request, then invokes `ai-agent` with current environment configuration.
 3. **Data Fetching** – Quotes from Yahoo (or configured provider) and FMP fundamentals are pulled, then merged with the stored playbook metadata for context.
-4. **AI Synthesis** – `src/cli/ai-agent.js` composes the OpenAI prompt, applies rule-based gates, and emits normalized recommendations (`decision`, `confidence`, `playbooks`, `risk` details).
+4. **AI Synthesis** – `src/cli/ai-agent.js` composes the AI provider prompt, applies rule-based gates, and emits normalized recommendations (`decision`, `confidence`, `playbooks`, `risk` details).
 5. **Persist & Broadcast** – Results cache in memory and hydrate `GET /api/recommendations`, while scan metadata drives the “last scan” header chip.
 6. **UI Refresh** – The front-end poller (15s cadence) swaps in the new cards, re-renders symbol badges, and keeps status icons in sync.
 
@@ -334,7 +340,8 @@ node src/ui/server.js
 ### Configuration
 The dashboard uses the same environment variables as the CLI agent:
 - `ACCOUNT_SIZE`: Account balance for position sizing
-- `OPENAI_API_KEY`: Required for AI analysis
+- `AI_PROVIDER` (`openai` default, `xai` for Grok) plus the corresponding key (`OPENAI_API_KEY` or `XAI_API_KEY`)
+- `UI_AI_PROVIDERS`: Comma-separated provider list (e.g., `openai,xai`) to override auto-detection and run multiple analyses per scan
 - `SCAN_SYMBOLS`: Symbols to analyze (default: SPY,QQQ,AAPL,TSLA,GOOGL,NVDA)
 
 ### Files
@@ -439,20 +446,25 @@ ETRADE_ACCESS_TOKEN_SECRET=...
 ```
 5) Add those to your `.env` and restart the stream with `--provider mix`.
 
-## Optional: AI Enrichment (ChatGPT)
+## Optional: AI Enrichment (OpenAI / xAI)
 
-You can send each suggestion to OpenAI to get a short review with decision, confidence, risk flags, and notes.
+You can send each suggestion to your configured AI provider—OpenAI by default, or xAI Grok—to get a short review with decision, confidence, risk flags, and notes.
 
 Setup:
-- Add to `.env`: `OPENAI_API_KEY=...`
+- Add to `.env`: `AI_PROVIDER=openai` and `OPENAI_API_KEY=...` *(or* `AI_PROVIDER=xai` with `XAI_API_KEY=...`*)*
 - Optional envs: `USE_AI=true`, `AI_MODEL=gpt-4o-mini`, `AI_INTERVAL_SEC=60`
 
 Run:
 ```
-OPENAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ,ES,NQ --provider mix --interval 30 --ai --ai-model gpt-4o-mini
+AI_PROVIDER=openai OPENAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ,ES,NQ --provider mix --interval 30 --ai --ai-model gpt-4o-mini
+# or with Grok
+AI_PROVIDER=xai XAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ --provider mix --interval 30 --ai --ai-provider xai
 ```
 
 Files:
+- `src/ai/client.js`: provider registry and selection helper.
 - `src/ai/openai.js`: minimal client wrapper returning JSON.
+- `src/ai/xai.js`: Grok chat completion wrapper.
 - `src/ai/prompt.js`: system/user prompts and schema.
 - `src/runner/suggest-stream.js`: `--ai` flag wiring and output.
+- `src/ui/server.js`: runs the agent against each provider listed in `UI_AI_PROVIDERS` and merges results for the dashboard.
