@@ -401,6 +401,71 @@ function parseAIOutput(output) {
     const rec = ensureRec(currentSymbol);
     if (!rec) continue;
 
+    if (line.startsWith('AI_SELECTED_STRATEGY ')) {
+      const payload = line.slice('AI_SELECTED_STRATEGY '.length).trim();
+      try {
+        rec.ai.selectedStrategy = JSON.parse(payload);
+      } catch (err) {
+        console.warn('Failed to parse AI selected strategy payload:', payload, err.message);
+      }
+      continue;
+    }
+
+    if (line.startsWith('AI_RISK_FLAGS ')) {
+      const payload = line.slice('AI_RISK_FLAGS '.length).trim();
+      try {
+        const parsed = JSON.parse(payload);
+        if (Array.isArray(parsed)) {
+          rec.ai.riskFlags = parsed;
+        } else if (parsed) {
+          rec.ai.riskFlags = [parsed];
+        }
+      } catch (err) {
+        console.warn('Failed to parse AI risk flags payload:', payload, err.message);
+      }
+      continue;
+    }
+
+    if (line.startsWith('AI_ADJUSTMENTS ')) {
+      const payload = line.slice('AI_ADJUSTMENTS '.length).trim();
+      try {
+        rec.ai.adjustments = JSON.parse(payload);
+      } catch (err) {
+        console.warn('Failed to parse AI adjustments payload:', payload, err.message);
+      }
+      continue;
+    }
+
+    if (line.startsWith('📄 Option contract:')) {
+      const payload = line.replace('📄 Option contract:', '').trim();
+      if (payload) {
+        const parts = payload.split('|').map(part => part.trim()).filter(Boolean);
+        if (parts.length) {
+          rec.contract = parts[0];
+        }
+        for (let i = 1; i < parts.length; i++) {
+          const part = parts[i];
+          if (part.toLowerCase().startsWith('expiry')) {
+            const value = part.slice('expiry'.length).trim().replace(/^:/, '').trim();
+            rec.expiry = value || rec.expiry || null;
+            continue;
+          }
+          if (part.toLowerCase().startsWith('strike')) {
+            const value = part.slice('strike'.length).trim().replace(/^:/, '').trim();
+            const numeric = Number(value.replace(/[^0-9.\-]/g, ''));
+            rec.strike = Number.isFinite(numeric) ? numeric : rec.strike ?? null;
+            continue;
+          }
+          if (part.toLowerCase().startsWith('source')) {
+            const value = part.slice('source'.length).trim().replace(/^:/, '').trim();
+            rec.optionSource = value || rec.optionSource || null;
+            continue;
+          }
+        }
+      }
+      continue;
+    }
+
     if (line.includes('📋 Signals:')) {
       const signalsText = line.split('📋 Signals:')[1]?.trim() || 'none';
       rec.signals = signalsText === 'none' ? [] : signalsText.split(', ').map(s => s.trim()).filter(Boolean);
@@ -430,6 +495,15 @@ function parseAIOutput(output) {
         rec.side = selectedMatch[1].toLowerCase();
       }
       rec.entry = parseCurrency(selectedMatch[2]);
+      continue;
+    }
+
+    const suggestedMatch = line.match(/🧮 Suggested\s+(CALL|PUT)?[^@]*@\s*~?\$([0-9.]+)/i);
+    if (suggestedMatch) {
+      if (suggestedMatch[1]) {
+        rec.side = suggestedMatch[1].toLowerCase();
+      }
+      rec.entry = parseCurrency(suggestedMatch[2]);
       continue;
     }
 

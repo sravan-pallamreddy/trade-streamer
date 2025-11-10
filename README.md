@@ -220,6 +220,7 @@ Features:
 - Swing trading patterns (trend analysis, support/resistance)
 - AI-powered decision making with risk assessment
 - Automatic position sizing and risk management
+- Strategy playbooks (momentum, mean reversion, breakout) surfaced in every recommendation
 
 ⚠️ **Data Quality Note**: Uses Yahoo Finance for technical indicators. For production trading, consider paid data providers (Alpha Vantage, IEX) for higher accuracy.
 
@@ -245,6 +246,7 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 - **Risk Monitoring**: Visual risk management with position sizing
 - **Portfolio Overview**: Account balance and P&L tracking
 - **E*TRADE Integration**: Live portfolio data and account balances
+- **Strategy Playbooks**: Momentum, mean-reversion, and breakout diagnostics baked into every scan
 - **Trade Execution**: Direct trade placement (future feature)
 
 ### E*TRADE Setup

@@ -11,6 +11,7 @@ const { chatJson, DEFAULT_MODEL } = require('../ai/openai');
 const { buildSystemPrompt, buildUserPrompt } = require('../ai/prompt');
 const { fetchBarsWithFallback } = require('../providers/bars');
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals, recommendOptionStrategy } = require('../strategy/algorithms');
+const { evaluateStrategies } = require('../strategy/playbooks');
 const { selectOptimalOption, midPrice } = require('../strategy/selector');
 
 const sleep = util.promisify(setTimeout);
@@ -166,6 +167,21 @@ async function analyzeSymbol(symbol, params) {
     const analysis = params.strategy === 'swing_trade' ? swingAnalysis : dayAnalysis;
     const strategyType = params.strategy;
 
+    const strategyInsights = evaluateStrategies({
+      bars,
+      indicators,
+      price: quote.price,
+      volume: indicators.volume,
+      avgVolume: indicators.avgVolume,
+    });
+
+    if (strategyInsights?.primary) {
+      const primary = strategyInsights.primary;
+      const directionLabel = primary.bias === 'neutral' ? 'neutral bias' : `${primary.bias} bias`;
+      const scoreLabel = Number.isFinite(primary.score) ? (primary.score * 100).toFixed(1) : '0.0';
+      console.log(`🧭 Primary playbook: ${primary.label} (${directionLabel}, score ${scoreLabel}pts)`);
+    }
+
     console.log(`🎯 ${strategyType.toUpperCase()} Analysis: Strength ${(analysis.strength * 100).toFixed(0)}%`);
     console.log(`📋 Signals: ${analysis.signals.join(', ') || 'none'}`);
 
@@ -174,8 +190,8 @@ async function analyzeSymbol(symbol, params) {
       return null;
     }
 
-    // Determine option type based on signal strength
-    const side = analysis.strength > 0 ? 'call' : 'put';
+    // Determine option type based on signal strength (will reconcile with playbook bias later)
+    let side = analysis.strength > 0 ? 'call' : 'put';
 
     // Adjust parameters based on strategy
     let adjustedParams = { ...params };
@@ -185,7 +201,18 @@ async function analyzeSymbol(symbol, params) {
       adjustedParams.takeProfitMult = 1.5; // Lower target
     }
 
-    const targetDelta = computeTargetDelta(strategyType, analysis.strength, side);
+    let directionSign = analysis.strength > 0 ? 1 : -1;
+    if (strategyInsights?.primary && strategyInsights.primary.bias !== 'neutral') {
+      directionSign = strategyInsights.primary.bias === 'bullish' ? 1 : -1;
+    }
+
+    side = directionSign >= 0 ? 'call' : 'put';
+
+    const playbookStrength = strategyInsights?.primary?.magnitude ?? Math.min(Math.abs(strategyInsights?.primary?.score ?? 0), 1);
+    const combinedStrength = Math.max(Math.min(Math.abs(analysis.strength), 1), playbookStrength);
+
+  const targetDelta = computeTargetDelta(strategyType, directionSign > 0 ? combinedStrength : -combinedStrength, side);
+  const optionTimeFrame = strategyType === 'swing_trade' ? 'swing' : 'day';
 
     // Build initial option suggestion (model-based fallback)
     const suggestion = buildSuggestion({
@@ -246,6 +273,7 @@ async function analyzeSymbol(symbol, params) {
           };
           console.log(`🟢 Selected ${side.toUpperCase()} ${chosenStrike} @ ~$${suggestion.est_entry} (Δ ${suggestion.delta ?? 'N/A'}, OI ${suggestion.oi ?? 'N/A'})`);
           console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
+          console.log(`📄 Option contract: ${suggestion.contract} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
         }
       }
     } catch (chainErr) {
@@ -257,6 +285,7 @@ async function analyzeSymbol(symbol, params) {
       console.log('ℹ️  Using theoretical pricing (no live chain data)');
       console.log(`🧮 Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
       console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
+      console.log(`📄 Option contract: ${suggestion.contract} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
     }
 
     // Calculate position sizing
@@ -334,7 +363,13 @@ async function analyzeSymbol(symbol, params) {
       },
       algorithmic: {
         [strategyType]: analysis,
-        recommendedStrategy: recommendOptionStrategy(analysis.strength, analysis.strength > 0 ? 1 : -1, strategyType)
+        strategyInsights,
+        recommendedStrategy: recommendOptionStrategy(combinedStrength, directionSign, optionTimeFrame),
+        optionTimeFrame
+      },
+      strategy_playbook: {
+        primary: strategyInsights?.primary ?? null,
+        ranked: strategyInsights?.ranked?.slice(0, 3) ?? [],
       }
     };
 
@@ -343,11 +378,35 @@ async function analyzeSymbol(symbol, params) {
     const ai = await chatJson({ model: params.aiModel, system, user, timeout_ms: 20000 });
 
     console.log(`🧠 AI Decision: ${ai.decision || 'N/A'} (confidence: ${(ai.confidence ?? 0) * 100}%)`);
+    if (ai.selected_strategy) {
+      try {
+        console.log(`AI_SELECTED_STRATEGY ${JSON.stringify(ai.selected_strategy)}`);
+      } catch (err) {
+        if (params.debug) console.warn('Failed to log selected strategy JSON:', err);
+      }
+    }
+    if (Array.isArray(ai.risk_flags) && ai.risk_flags.length) {
+      try {
+        console.log(`AI_RISK_FLAGS ${JSON.stringify(ai.risk_flags)}`);
+      } catch (err) {
+        if (params.debug) console.warn('Failed to log risk flags JSON:', err);
+      }
+    }
+    if (ai.adjustments && typeof ai.adjustments === 'object') {
+      try {
+        console.log(`AI_ADJUSTMENTS ${JSON.stringify(ai.adjustments)}`);
+      } catch (err) {
+        if (params.debug) console.warn('Failed to log adjustments JSON:', err);
+      }
+    }
 
     return {
       symbol,
       quote,
-      suggestion: enrichedSuggestion,
+      suggestion: {
+        ...enrichedSuggestion,
+        strategyInsights,
+      },
       ai,
       analysis
     };
@@ -392,6 +451,11 @@ async function runScan(args, runId = 1) {
       console.log(`\n${r.symbol} ${s.side.toUpperCase()} - ${s.contract}`);
       console.log(`  Entry: $${s.est_entry} | Stop: $${s.stop} | Target: $${s.take_profit}`);
       console.log(`  Qty: ${s.qty} | Risk: $${s.risk_total}`);
+      if (s.strategyInsights?.primary) {
+        const primary = s.strategyInsights.primary;
+        const magnitude = (primary.magnitude ?? Math.abs(primary.score ?? 0));
+        console.log(`  Strategy: ${primary.label} (${primary.bias} bias, strength ${(magnitude * 100).toFixed(0)}%)`);
+      }
       if (s.tradePlan?.iterations?.length) {
         const stopSummary = Number.isFinite(s.stop) ? `$${s.stop.toFixed(2)}` : 'N/A';
         console.log(`  Plan: stop at ${stopSummary} and scale out over ${s.tradePlan.iterations.length} step(s)`);
