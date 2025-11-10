@@ -461,6 +461,39 @@ AI_PROVIDER=openai OPENAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stre
 AI_PROVIDER=xai XAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ --provider mix --interval 30 --ai --ai-provider xai
 ```
 
+#### Sample Prompt (0DTE AAPL call example)
+
+**System prompt**
+
+```text
+You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the provided strategy playbooks (momentum trend, mean reversion, breakout) and pick the single best-aligned lens. Justify with two short bullet reasons.
+2. Stress-test risk: check spread quality, volume/liquidity notes, risk-per-contract, stop distance, and broader market context hints.
+3. Deliver a binary decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if data conflicts.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+```
+
+**User prompt**
+
+```text
+Review the payload and reply with compact JSON:
+{
+   "decision": "approve|caution|reject",
+   "confidence": 0-1,
+   "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+   "risk_flags": [..],
+   "notes": "<=200 chars",
+   "strategy_type": "day_trade|swing_trade|hold",
+   "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{"suggestion":{"symbol":"AAPL","direction":"long","side":"call","underlying_price":189.42,"contract":"AAPL 2025-11-15 190C","expiry":"2025-11-15","strike":190,"multiplier":100,"est_entry":2.45,"stop":1.7,"take_profit":3.8,"assumptions":{"iv":0.28,"r":0.015,"otm_pct":0.01,"min_business_days":0,"stop_loss_pct":0.3,"take_profit_mult":1.55,"expiry_type":"0dte"},"rationale":"0DTE CALL ~1% OTM with TP 1.55x and SL 30%","qty":2,"risk_per_contract":75,"risk_total":150,"delta":0.36,"oi":6120,"volume":8344,"entry_source":"etrade_live","option_source":"etrade_live","liquidity":{"spread":0.04,"spread_pct":1.6,"oi":6120,"volume":8344,"score":0.78},"tradePlan":{"qty":2,"stop":1.7,"iterations":[{"sellQty":1,"target":3.8,"note":"Scale half at target; shift stop to breakeven."},{"sellQty":1,"target":4.2,"note":"Let runner extend; trail stop below VWAP."}]}},"context":{"price":189.42,"source":"yahoo","indicators":{"rsi":64.1,"macd":{"macd":0.62,"signal":0.48,"histogram":0.14},"bbands":{"upper":190.8,"middle":188.6,"lower":186.4},"vwap":188.95,"volume":8200000,"avgVolume":7600000,"trend_bias":"bullish"},"option":{"contract":"AAPL 2025-11-15 190C","entry":2.45,"stop":1.7,"take_profit":3.8,"delta":0.36,"oi":6120,"volume":8344,"spread_pct":1.6,"target_delta":0.35,"source":"etrade_live"},"algorithmic":{"day_trade":{"strength":0.74,"signals":["bullish_vwap_break","macd_cross_up","volume_surge"],"caution_flags":["extended_from_vwap"]},"strategyInsights":{"primary":{"id":"momentum_trend","label":"Momentum Trend","bias":"bullish","score":0.82,"notes":"Price riding upper band with positive volume delta."},"ranked":[{"id":"momentum_trend","label":"Momentum Trend","bias":"bullish","score":0.82,"notes":"VWAP reclaim with MACD confirmation."},{"id":"breakout_retest","label":"Breakout Retest","bias":"bullish","score":0.71,"notes":"Holding above prior day high after retest."}]},"recommendedStrategy":{"id":"momentum_trend","label":"Momentum Trend","bias":"bullish","conviction":0.8},"optionTimeFrame":"0dte"},"strategy_playbook":{"primary":{"id":"momentum_trend","label":"Momentum Trend","bias":"bullish","score":0.82,"notes":"VWAP reclaim with stacked moving averages."},"ranked":[{"id":"momentum_trend","label":"Momentum Trend","bias":"bullish","score":0.82,"notes":"VWAP reclaim with stacked moving averages."},{"id":"breakout_retest","label":"Breakout Retest","bias":"bullish","score":0.71,"notes":"Holding above prior day high after retest."},{"id":"mean_reversion","label":"Mean Reversion","bias":"bearish","score":0.31,"notes":"Upper band tag with declining RSI momentum."}]}},"instructions":{"objective":"Validate the option plan using provided technical diagnostics and strategy playbooks.","required_keys":["decision","confidence","selected_strategy","risk_flags","notes","strategy_type","adjustments"],"adjustments_schema":{"entry":"null or float adjustment in dollars","stop":"null or float adjustment in dollars","target":"null or float adjustment in dollars"},"selected_strategy_schema":{"name":"one of momentum|mean_reversion|breakout","bias":"bullish|bearish|neutral","score":"0..1 absolute conviction","rationale":"≤120 chars summary"}}}
+```
+
 Files:
 - `src/ai/client.js`: provider registry and selection helper.
 - `src/ai/openai.js`: minimal client wrapper returning JSON.
