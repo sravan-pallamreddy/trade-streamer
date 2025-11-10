@@ -240,6 +240,12 @@ Files:
 
 User-friendly web interface for the AI trading agent with real-time recommendations and trade execution.
 
+### Integrations at a Glance
+- **E*TRADE API** – OAuth 1.0a connection powers account discovery, live balances, positions, and the emergency option exit workflow. Sensitive account numbers and balances now render masked by default with an in-app reveal toggle.
+- **Financial Modeling Prep (FMP)** – Supplements recommendations with fundamentals (earnings calendar, float, sector stats) that enrich the AI prompt and upcoming UI sidebars.
+- **OpenAI** – Generates narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card.
+- **Quote Providers** – Yahoo Finance remains the default intraday feed, with optional Stooq/IEX/Alpha Vantage fallbacks configured via environment settings.
+
 ### Features
 - **Live Dashboard**: Real-time AI recommendations with confidence scores
 - **Trade Scanner**: One-click market scanning for trade opportunities
@@ -284,6 +290,14 @@ To enable portfolio tracking, configure E*TRADE API access:
 - **Recommendations Grid**: Color-coded cards showing AI decisions and trade details
 - **Stats Cards**: Key metrics for monitoring performance
 - **Action Buttons**: Manage notes plus a one-tap **Emergency Sell** for options that submits a market exit through E*TRADE
+
+### "Scan for Trades" Flow
+1. **Button Click** – Client posts to `POST /api/scan` with the active symbol list and strategy settings.
+2. **Server Guard** – `src/ui/server.js` rejects duplicate in-flight scans, records the request, then invokes `ai-agent` with current environment configuration.
+3. **Data Fetching** – Quotes from Yahoo (or configured provider) and FMP fundamentals are pulled, then merged with the stored playbook metadata for context.
+4. **AI Synthesis** – `src/cli/ai-agent.js` composes the OpenAI prompt, applies rule-based gates, and emits normalized recommendations (`decision`, `confidence`, `playbooks`, `risk` details).
+5. **Persist & Broadcast** – Results cache in memory and hydrate `GET /api/recommendations`, while scan metadata drives the “last scan” header chip.
+6. **UI Refresh** – The front-end poller (15s cadence) swaps in the new cards, re-renders symbol badges, and keeps status icons in sync.
 
 ### Quick Start
 ```bash

@@ -1,0 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="favTitle">
+  <title id="favTitle">Trade Streamer Icon</title>
+  <defs>
+    <linearGradient id="favBg" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#14b8a6" />
+    </linearGradient>
+    <linearGradient id="favArrow" x1="15%" y1="85%" x2="85%" y2="15%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#favBg)" />
+  <path d="M22 42l10-12 6.5 8L46 28" fill="none" stroke="url(#favArrow)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M42 22h8v8" fill="none" stroke="url(#favArrow)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

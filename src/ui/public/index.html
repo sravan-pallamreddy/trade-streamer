@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Trading Dashboard</title>
+    <title>Trade Streamer</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
@@ -12,15 +13,21 @@
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">AI Trading Dashboard</h1>
-                    <p class="text-gray-600 mt-2">Day Trading Assistant - $300-500 Daily Target</p>
+                <div class="flex flex-wrap items-center gap-6 sm:gap-8">
+                    <img src="/logo.svg" alt="Trade Streamer" class="h-10 w-auto sm:h-12">
                 </div>
-                <div class="text-right">
-                    <div id="headerBalance" class="text-2xl font-bold text-green-600">$0.00</div>
-                    <div class="text-sm text-gray-500">Account Balance</div>
+                <div class="flex items-start gap-3">
+                    <div class="text-right">
+                        <div id="headerBalance" class="text-2xl font-bold text-green-600">$****</div>
+                        <div class="text-sm text-gray-500">Account Balance</div>
+                    </div>
+                    <button id="toggleSensitiveBtn" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-2 bg-white" type="button">
+                        <i id="toggleSensitiveIcon" data-lucide="eye-off" class="w-4 h-4"></i>
+                        <span id="toggleSensitiveLabel">Show Details</span>
+                    </button>
                 </div>
             </div>
+            <h1 class="sr-only">Trade Streamer – AI Strategy Playbooks for Day Trading</h1>
         </div>
 
         <!-- Control Panel -->
@@ -133,41 +140,6 @@
 
                     <!-- Positions Tables -->
                     <div class="space-y-8">
-                        <!-- Stocks Section -->
-                        <div id="stocksSection">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
-                                Stocks
-                            </h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full table-auto">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="stocksBody" class="bg-white divide-y divide-gray-200">
-                                        <tr>
-                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                                <div class="flex flex-col items-center">
-                                                    <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
-                                                    <div class="text-lg font-medium mb-2">Select an Account</div>
-                                                    <div class="text-sm text-center max-w-md">
-                                                        <div class="text-gray-400">Choose an account from the dropdown above to view stock positions.</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
                         <!-- Options Section -->
                         <div id="optionsSection">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -203,6 +175,41 @@
                                 </table>
                             </div>
                         </div>
+
+                        <!-- Stocks Section -->
+                        <div id="stocksSection">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                                Stocks
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full table-auto">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stocksBody" class="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                                <div class="flex flex-col items-center">
+                                                    <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
+                                                    <div class="text-lg font-medium mb-2">Select an Account</div>
+                                                    <div class="text-sm text-center max-w-md">
+                                                        <div class="text-gray-400">Choose an account from the dropdown above to view stock positions.</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -225,6 +232,7 @@
         const stocksSection = document.getElementById('stocksSection');
         const optionsSection = document.getElementById('optionsSection');
         const headerBalance = document.getElementById('headerBalance');
+    const toggleSensitiveBtn = document.getElementById('toggleSensitiveBtn');
         const symbolsInput = document.getElementById('symbolsInput');
         const saveSymbolsBtn = document.getElementById('saveSymbolsBtn');
         const symbolsStatus = document.getElementById('symbolsStatus');
@@ -232,14 +240,15 @@
         const POLL_INTERVAL_MS = 15000;
         let recommendationsTimer = null;
         let currentSymbolList = [];
+    let revealSensitive = false;
+    let lastBalancePayload = null;
+    let lastPortfolioPayload = null;
+    let lastPortfolioBalance = null;
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
-            if (balanceData && balanceData.totalAccountValue) {
-                headerBalance.textContent = `$${balanceData.totalAccountValue.toFixed(2)}`;
-            } else {
-                headerBalance.textContent = '$0.00';
-            }
+            lastBalancePayload = balanceData || null;
+            renderHeaderBalance();
         }
 
         function escapeHtml(text) {
@@ -295,6 +304,96 @@
                 </div>
             `;
             lucide.createIcons();
+        }
+
+        const SENSITIVE_MASK = '****';
+
+        function maskAccountId(value) {
+            const str = value != null ? String(value) : 'N/A';
+            if (!str || str === 'N/A') {
+                return 'N/A';
+            }
+            const alphanumeric = str.replace(/[^A-Za-z0-9]/g, '');
+            const tail = alphanumeric.slice(-4) || str.slice(-4) || '----';
+            return `${SENSITIVE_MASK}${tail}`;
+        }
+
+        function getCurrencyString(value) {
+            if (!Number.isFinite(value)) {
+                return revealSensitive ? 'N/A' : `$${SENSITIVE_MASK}`;
+            }
+            const formatted = `$${value.toFixed(2)}`;
+            return revealSensitive ? formatted : `$${SENSITIVE_MASK}`;
+        }
+
+        function getAccountIdString(value) {
+            const str = value != null ? String(value) : 'N/A';
+            return revealSensitive ? str : maskAccountId(str);
+        }
+
+        function renderHeaderBalance() {
+            if (!headerBalance) return;
+            const rawValue = lastBalancePayload?.totalAccountValue;
+            const numericValue = Number(rawValue);
+            const safeValue = Number.isFinite(numericValue) ? numericValue : null;
+            headerBalance.textContent = getCurrencyString(safeValue);
+        }
+
+        function refreshPortfolioDisplay() {
+            if (lastPortfolioPayload) {
+                displayPortfolio(lastPortfolioPayload, lastPortfolioBalance, { skipStore: true });
+            }
+        }
+
+        function getAccountOptionLabels(account) {
+            const desc = account.accountDesc || 'Account';
+            const accountId = account.accountId || account.accountIdKey || 'N/A';
+            const mode = account.accountMode ? ` - ${account.accountMode}` : '';
+            const fullLabel = `${desc} (${accountId})${mode}`;
+            const maskedId = maskAccountId(accountId);
+            const maskedLabel = `${desc} (${maskedId})${mode}`;
+            return { fullLabel, maskedLabel };
+        }
+
+        function updateAccountSelectLabels(mode = 'auto') {
+            if (!accountSelect) return;
+            const desiredMode = mode === 'auto' ? (revealSensitive ? 'full' : 'masked') : mode;
+            const useFull = desiredMode === 'full';
+            Array.from(accountSelect.options).forEach(option => {
+                if (!option.dataset || !option.dataset.fullLabel) return;
+                const fullLabel = option.dataset.fullLabel;
+                const maskedLabel = option.dataset.maskedLabel || fullLabel;
+                option.textContent = useFull ? fullLabel : maskedLabel;
+            });
+            const selected = accountSelect.options[accountSelect.selectedIndex];
+            if (selected && selected.dataset && selected.dataset.fullLabel) {
+                const fullLabel = selected.dataset.fullLabel;
+                const maskedLabel = selected.dataset.maskedLabel || fullLabel;
+                const shouldShowFull = revealSensitive || useFull;
+                selected.textContent = shouldShowFull ? fullLabel : maskedLabel;
+            }
+        }
+
+        function updateSensitiveControls() {
+            if (!toggleSensitiveBtn) return;
+            const iconName = revealSensitive ? 'eye' : 'eye-off';
+            const label = revealSensitive ? 'Hide Details' : 'Show Details';
+            toggleSensitiveBtn.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                <span>${label}</span>
+            `;
+            lucide.createIcons();
+        }
+
+        if (toggleSensitiveBtn) {
+            updateSensitiveControls();
+            toggleSensitiveBtn.addEventListener('click', () => {
+                revealSensitive = !revealSensitive;
+                updateSensitiveControls();
+                renderHeaderBalance();
+                refreshPortfolioDisplay();
+                updateAccountSelectLabels();
+            });
         }
 
         function applyScanConfig(config, options = {}) {
@@ -495,9 +594,14 @@
                 accountsData.accounts.forEach(account => {
                     const option = document.createElement('option');
                     option.value = account.accountIdKey;
-                    option.textContent = `${account.accountDesc} (${account.accountId}) - ${account.accountMode}`;
+                    const labels = getAccountOptionLabels(account);
+                    option.dataset.fullLabel = labels.fullLabel;
+                    option.dataset.maskedLabel = labels.maskedLabel;
+                    option.textContent = revealSensitive ? labels.fullLabel : labels.maskedLabel;
                     accountSelect.appendChild(option);
                 });
+
+                updateAccountSelectLabels();
 
                 portfolioSection.classList.remove('hidden');
                 scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Portfolio loaded - Select an account to view details';
@@ -512,12 +616,38 @@
             }
         });
 
+        accountSelect.addEventListener('mousedown', (event) => {
+            if (event.button !== 0) return;
+            updateAccountSelectLabels('full');
+        });
+
+        accountSelect.addEventListener('click', () => {
+            updateAccountSelectLabels();
+        });
+
+        accountSelect.addEventListener('keydown', (event) => {
+            const keysThatOpen = ['ArrowDown', 'ArrowUp', 'Enter', ' ', 'Space', 'Spacebar'];
+            if (!keysThatOpen.includes(event.key)) return;
+            updateAccountSelectLabels('full');
+        });
+
+        accountSelect.addEventListener('keyup', (event) => {
+            if (['Escape', 'Enter', ' ', 'Space', 'Spacebar'].includes(event.key)) {
+                updateAccountSelectLabels();
+            }
+        });
+
+        accountSelect.addEventListener('blur', () => {
+            updateAccountSelectLabels();
+        });
+
         // Account selection change
         accountSelect.addEventListener('change', async (e) => {
+            updateAccountSelectLabels();
             const accountIdKey = e.target.value;
             window.selectedAccountIdKey = accountIdKey || null;
             if (!accountIdKey) {
-                updateHeaderBalance(null); // Reset to $0.00 when no account selected
+                updateHeaderBalance(null); // Reset balance display when no account selected
                 return;
             }
 
@@ -579,7 +709,7 @@
                 const accountDetails = window.availableAccounts?.find(acc => acc.accountIdKey === e.target.value);
                 if (accountDetails) {
                     displayBasicAccountInfo(accountDetails);
-                    updateHeaderBalance(null); // Reset to $0.00 when no balance data
+                    updateHeaderBalance(null); // Reset balance display when no balance data
                 } else {
                     accountSummary.innerHTML = `
                         <div class="col-span-4 text-center py-8">
@@ -756,20 +886,6 @@
                 return escapeHtml(JSON.stringify(value));
             };
 
-            const formatExpiryDate = (value) => {
-                if (!value) {
-                    return 'N/A';
-                }
-                const trimmed = String(value).trim();
-                if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-                    const parsed = new Date(`${trimmed}T00:00:00Z`);
-                    if (!Number.isNaN(parsed.getTime())) {
-                        return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                    }
-                }
-                return trimmed;
-            };
-
             if (!recs || recs.length === 0) {
                 recommendations.innerHTML = `
                     <div class="bg-white rounded-lg shadow-md p-6 text-center">
@@ -792,7 +908,7 @@
 
                 const entryBlock = Number.isFinite(rec.entry) || Number.isFinite(rec.stop) || Number.isFinite(rec.target)
                     ? `
-                        <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-3 gap-4">
                             <div class="text-center">
                                 <div class="text-lg font-bold text-blue-600">${Number.isFinite(rec.entry) ? `$${rec.entry.toFixed(2)}` : 'N/A'}</div>
                                 <div class="text-sm text-gray-600">Entry</div>
@@ -810,7 +926,7 @@
 
                 const sizingBlock = Number.isFinite(rec.qty) || Number.isFinite(rec.risk) || Number.isFinite(rec.riskPerContract)
                     ? `
-                        <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-3 gap-4">
                             <div class="text-center">
                                 <div class="text-lg font-bold text-indigo-600">${Number.isFinite(rec.qty) ? rec.qty : 'N/A'}</div>
                                 <div class="text-sm text-gray-600">Contracts</div>
@@ -829,7 +945,7 @@
                 const selectedStrategy = rec.ai?.selectedStrategy;
                 const strategyBlock = selectedStrategy
                     ? `
-                        <div class="border border-indigo-100 bg-indigo-50 rounded-lg p-4 mb-4">
+                        <div class="border border-indigo-100 bg-indigo-50 rounded-lg p-4">
                             <div class="text-sm font-semibold text-indigo-700 mb-1 flex items-center gap-2">
                                 <i data-lucide="compass" class="w-4 h-4 text-indigo-600"></i>
                                 Strategy Alignment
@@ -847,7 +963,7 @@
                 const riskFlags = Array.isArray(rec.ai?.riskFlags) ? rec.ai.riskFlags.filter(Boolean) : [];
                 const riskBlock = riskFlags.length
                     ? `
-                        <div class="border border-red-100 bg-red-50 rounded-lg p-4 mb-4">
+                        <div class="border border-red-100 bg-red-50 rounded-lg p-4">
                             <div class="text-sm font-semibold text-red-700 mb-2 flex items-center gap-2">
                                 <i data-lucide="shield-alert" class="w-4 h-4 text-red-600"></i>
                                 Risk Flags
@@ -865,7 +981,7 @@
 
                 const adjustmentsBlock = adjustmentsEntries.length
                     ? `
-                        <div class="border border-amber-100 bg-amber-50 rounded-lg p-4 mb-4">
+                        <div class="border border-amber-100 bg-amber-50 rounded-lg p-4">
                             <div class="text-sm font-semibold text-amber-700 mb-2 flex items-center gap-2">
                                 <i data-lucide="settings-2" class="w-4 h-4 text-amber-600"></i>
                                 Suggested Adjustments
@@ -891,12 +1007,12 @@
 
                 const optionDetailsBlock = rec.contract
                     ? `
-                        <div class="border border-slate-200 bg-slate-50 rounded-lg p-4 mb-4">
+                        <div class="border border-slate-200 bg-slate-50 rounded-lg p-4">
                             <div class="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
                                 <i data-lucide="ticket" class="w-4 h-4 text-slate-500"></i>
                                 Option Contract
                             </div>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-slate-700">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm text-slate-700">
                                 <div>
                                     <div class="text-xs text-slate-500 uppercase tracking-wide">Contract</div>
                                     <div class="font-semibold">${escapeHtml(rec.contract)}</div>
@@ -909,11 +1025,7 @@
                                     <div class="text-xs text-slate-500 uppercase tracking-wide">Strike</div>
                                     <div class="font-semibold">${strikeLabel}</div>
                                 </div>
-                                <div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-wide">Expiry</div>
-                                    <div class="font-semibold">${escapeHtml(formatExpiryDate(rec.expiry))}</div>
-                                </div>
-                                <div class="md:col-span-2">
+                                <div class="col-span-2 md:col-span-3">
                                     <div class="text-xs text-slate-500 uppercase tracking-wide">Source</div>
                                     <div class="font-semibold">${optionSourceLabel}</div>
                                 </div>
@@ -939,7 +1051,7 @@
 
                 const planBlock = planSteps
                     ? `
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <div class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                                 <i data-lucide="layers" class="w-4 h-4 text-gray-500"></i>
                                 Scaling Plan
@@ -952,7 +1064,7 @@
 
                 const warningBlock = rec.warning
                     ? `
-                        <div class="border border-yellow-200 bg-yellow-50 rounded-lg p-4 mb-4 flex items-start gap-3">
+                        <div class="border border-yellow-200 bg-yellow-50 rounded-lg p-4 flex items-start gap-3">
                             <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mt-0.5"></i>
                             <div class="text-sm text-yellow-800">${escapeHtml(rec.warning)}</div>
                         </div>
@@ -960,7 +1072,7 @@
 
                 const notesBlock = rec.ai?.notes
                     ? `
-                        <div class="bg-white border border-blue-100 rounded-lg p-4 mb-4">
+                        <div class="bg-white border border-blue-100 rounded-lg p-4">
                             <div class="text-sm font-semibold text-blue-700 mb-1 flex items-center gap-2">
                                 <i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i>
                                 AI Notes
@@ -972,7 +1084,6 @@
                 const signalText = rec.signals?.length ? rec.signals.map(signal => escapeHtml(signal)).join(', ') : 'No signals';
                 const symbolLabel = escapeHtml(rec.symbol || 'UNKNOWN');
                 const borderAccent = decision === 'approve' ? 'border-l-4 border-green-200' : decision === 'caution' ? 'border-l-4 border-yellow-200' : 'border-l-4 border-red-200';
-                const openAttr = idx === 0 ? ' open' : '';
 
                 const actionButtons = `
                         <div class="flex flex-wrap gap-2">
@@ -987,53 +1098,92 @@
                         </div>
                 `;
 
+                const leftColumn = [strategyBlock, riskBlock, warningBlock, notesBlock, adjustmentsBlock].filter(Boolean).join('');
+                const rightColumn = [optionDetailsBlock, entryBlock, sizingBlock].filter(Boolean).join('');
+                const columnsClass = leftColumn && rightColumn ? 'md:grid-cols-2' : 'md:grid-cols-1';
+                const leftColumnHtml = leftColumn ? `<div class="space-y-4">${leftColumn}</div>` : '';
+                const rightColumnHtml = rightColumn ? `<div class="space-y-4">${rightColumn}</div>` : '';
+                const columnsBlock = leftColumnHtml || rightColumnHtml
+                    ? `
+                        <div class="grid grid-cols-1 ${columnsClass} gap-4">
+                            ${leftColumnHtml}
+                            ${rightColumnHtml}
+                        </div>
+                    `
+                    : '';
+
+                const extraId = `rec-extra-${idx}`;
+                const moreSection = planBlock
+                    ? `
+                        <div class="border-t border-gray-100 pt-3">
+                            <button type="button" class="text-sm font-semibold text-blue-600 hover:text-blue-700 focus:outline-none flex items-center gap-2" data-extra-target="${extraId}" aria-expanded="false">
+                                <span data-toggle-label>Show Scaling Plan</span>
+                            </button>
+                            <div id="${extraId}" class="hidden mt-3 space-y-3">
+                                ${planBlock}
+                            </div>
+                        </div>
+                    `
+                    : '';
+
                 recommendations.innerHTML += `
-                    <details class="group bg-white rounded-lg shadow-md border border-gray-100 ${borderAccent}"${openAttr}>
-                        <summary class="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer select-none">
-                            <div class="flex items-center gap-3">
+                    <div class="bg-white rounded-lg shadow-md border border-gray-100 ${borderAccent} p-5 space-y-4">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div class="flex items-start gap-3">
                                 <i data-lucide="${icon}" class="w-6 h-6 ${iconColor}"></i>
                                 <div>
                                     <h3 class="text-lg font-bold text-gray-800">${symbolLabel}</h3>
                                     <p class="text-xs text-gray-500">${signalText || 'No signals'}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3 text-right">
-                                <div>
-                                    <div class="text-sm font-semibold ${decision === 'approve' ? 'text-green-600' : decision === 'caution' ? 'text-yellow-600' : 'text-red-600'}">${decision.toUpperCase()}</div>
-                                    <div class="text-xs text-gray-500">Confidence: ${confidence}</div>
-                                </div>
-                                <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-200 group-open:-rotate-180"></i>
+                            <div class="text-left md:text-right">
+                                <div class="text-sm font-semibold ${decision === 'approve' ? 'text-green-600' : decision === 'caution' ? 'text-yellow-600' : 'text-red-600'}">${decision.toUpperCase()}</div>
+                                <div class="text-xs text-gray-500">Confidence: ${confidence}</div>
                             </div>
-                        </summary>
-                        <div class="px-4 pb-4 border-t border-gray-100 bg-white">
-                            ${strategyBlock}
-                            ${optionDetailsBlock}
-                            ${entryBlock}
-                            ${sizingBlock}
-                            ${riskBlock}
-                            ${planBlock}
-                            ${adjustmentsBlock}
-                            ${warningBlock}
-                            ${notesBlock}
+                        </div>
+                        ${columnsBlock}
+                        ${moreSection}
+                        <div class="pt-3 border-t border-gray-100">
                             ${actionButtons}
                         </div>
-                    </details>
+                    </div>
                 `;
+            });
+
+            const toggleButtons = recommendations.querySelectorAll('[data-extra-target]');
+            toggleButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const target = document.getElementById(btn.dataset.extraTarget);
+                    if (!target) return;
+                    const nowHidden = target.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', String(!nowHidden));
+                    const label = btn.querySelector('[data-toggle-label]');
+                    if (label) {
+                        label.textContent = nowHidden ? 'Show Scaling Plan' : 'Hide Scaling Plan';
+                    }
+                });
             });
 
             lucide.createIcons();
         }
 
         // Display portfolio
-        function displayPortfolio(portfolio, balanceData = null) {
+        function displayPortfolio(portfolio, balanceData = null, { skipStore = false } = {}) {
+            if (!skipStore) {
+                lastPortfolioPayload = portfolio;
+                lastPortfolioBalance = balanceData || null;
+            }
             // Find the account details from the stored accounts list
             const accountDetails = window.availableAccounts?.find(acc => acc.accountIdKey === portfolio.account.accountIdKey);
+
+            const primaryAccountId = accountDetails?.accountId || balanceData?.accountId || portfolio.account?.accountId || 'N/A';
+            const maskedAccountId = escapeHtml(getAccountIdString(primaryAccountId));
 
             // Update account summary with available information
             let balanceHtml = `
                 <div class="bg-blue-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account ID</div>
-                    <div class="text-lg font-bold text-blue-600">${accountDetails?.accountId || portfolio.account.accountId || 'N/A'}</div>
+                    <div class="text-lg font-bold text-blue-600">${maskedAccountId}</div>
                 </div>
                 <div class="bg-green-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account Type</div>
@@ -1052,26 +1202,31 @@
             // Add balance information if available
             if (balanceData) {
                 // For cash accounts, use moneyMktBalance or cashAvailableForInvestment
-                const availableCash = balanceData.moneyMktBalance || balanceData.cashAvailableForInvestment || balanceData.cashBalance || 0;
-                const totalValue = balanceData.totalAccountValue || 0;
-                const buyingPower = balanceData.cashBuyingPower || balanceData.marginBuyingPower || 0;
+                const availableCash = Number(balanceData.moneyMktBalance ?? balanceData.cashAvailableForInvestment ?? balanceData.cashBalance ?? 0);
+                const totalValue = Number(balanceData.totalAccountValue ?? 0);
+                const buyingPower = Number(balanceData.cashBuyingPower ?? balanceData.marginBuyingPower ?? 0);
+
+                const accountIdDisplay = escapeHtml(getAccountIdString(balanceData.accountId || primaryAccountId));
+                const availableCashDisplay = escapeHtml(getCurrencyString(availableCash));
+                const totalValueDisplay = escapeHtml(getCurrencyString(totalValue));
+                const buyingPowerDisplay = escapeHtml(getCurrencyString(buyingPower));
 
                 balanceHtml = `
                     <div class="bg-blue-50 p-4 rounded-lg">
                         <div class="text-sm text-gray-600">Account ID</div>
-                        <div class="text-lg font-bold text-blue-600">${accountDetails?.accountId || balanceData.accountId || 'N/A'}</div>
+                        <div class="text-lg font-bold text-blue-600">${accountIdDisplay}</div>
                     </div>
                     <div class="bg-green-50 p-4 rounded-lg">
                         <div class="text-sm text-gray-600">Available Cash</div>
-                        <div class="text-lg font-bold text-green-600">$${availableCash.toFixed(2)}</div>
+                        <div class="text-lg font-bold text-green-600">${availableCashDisplay}</div>
                     </div>
                     <div class="bg-purple-50 p-4 rounded-lg">
                         <div class="text-sm text-gray-600">Total Value</div>
-                        <div class="text-lg font-bold text-purple-600">$${totalValue.toFixed(2)}</div>
+                        <div class="text-lg font-bold text-purple-600">${totalValueDisplay}</div>
                     </div>
                     <div class="bg-orange-50 p-4 rounded-lg">
                         <div class="text-sm text-gray-600">Buying Power</div>
-                        <div class="text-lg font-bold text-orange-600">$${buyingPower.toFixed(2)}</div>
+                        <div class="text-lg font-bold text-orange-600">${buyingPowerDisplay}</div>
                     </div>
                 `;
             }
@@ -1103,6 +1258,8 @@
                     });
                 } else {
                     // No real positions available - show message in stocks section
+                    const balanceDisplay = escapeHtml(getCurrencyString(Number(balanceData?.totalAccountValue ?? 0)));
+                    const cashDisplay = escapeHtml(getCurrencyString(Number(balanceData?.moneyMktBalance ?? balanceData?.cashAvailableForInvestment ?? 0)));
                     stocksBody.innerHTML = `
                         <tr>
                             <td colspan="6" class="px-4 py-8 text-center text-gray-500">
@@ -1111,8 +1268,8 @@
                                     <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
                                     <div class="text-sm text-center max-w-md">
                                         <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails?.accountDesc || 'Individual Brokerage'}</div>
-                                        <div class="mb-2">✅ <strong>Balance Available:</strong> $${balanceData?.totalAccountValue?.toFixed(2) || '0.00'}</div>
-                                        <div class="mb-2">✅ <strong>Cash Available:</strong> $${(balanceData?.moneyMktBalance || balanceData?.cashAvailableForInvestment || 0).toFixed(2)}</div>
+                                        <div class="mb-2">✅ <strong>Balance Available:</strong> ${balanceDisplay}</div>
+                                        <div class="mb-2">✅ <strong>Cash Available:</strong> ${cashDisplay}</div>
                                         <div class="mb-3">✅ <strong>Status:</strong> ${accountDetails?.accountStatus || 'ACTIVE'}</div>
                                         <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
                                             <strong>Note:</strong> Position details are not available through the E*TRADE API for this account type. Balance information is available above. This is normal for many brokerage accounts.
@@ -1248,6 +1405,8 @@
 
             // If no positions at all, show account info with balance data
             if ((!portfolio.positions || portfolio.positions.length === 0) && stocks.length === 0 && options.length === 0) {
+                const fallbackBalanceDisplay = balanceData ? escapeHtml(getCurrencyString(Number(balanceData.totalAccountValue ?? 0))) : null;
+                const fallbackCashDisplay = balanceData ? escapeHtml(getCurrencyString(Number(balanceData.moneyMktBalance ?? balanceData.cashAvailableForInvestment ?? 0))) : null;
                 stocksBody.innerHTML = `
                     <tr>
                         <td colspan="6" class="px-4 py-8 text-center text-gray-500">
@@ -1257,8 +1416,8 @@
                                 <div class="text-sm text-center max-w-md">
                                     <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails?.accountDesc || 'Individual Brokerage'}</div>
                                     ${balanceData ? `
-                                    <div class="mb-2">✅ <strong>Balance Available:</strong> $${balanceData.totalAccountValue?.toFixed(2) || '0.00'}</div>
-                                    <div class="mb-2">✅ <strong>Cash Available:</strong> $${(balanceData.moneyMktBalance || balanceData.cashAvailableForInvestment || 0).toFixed(2)}</div>
+                                    <div class="mb-2">✅ <strong>Balance Available:</strong> ${fallbackBalanceDisplay}</div>
+                                    <div class="mb-2">✅ <strong>Cash Available:</strong> ${fallbackCashDisplay}</div>
                                     ` : ''}
                                     <div class="mb-3">✅ <strong>Status:</strong> ${accountDetails?.accountStatus || 'ACTIVE'}</div>
                                     <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
@@ -1290,10 +1449,13 @@
         // Display basic account info when portfolio fails to load
         function displayBasicAccountInfo(accountDetails) {
             const safe = (value, fallback = '') => escapeHtml(value != null ? value : fallback);
+            const accountIdDisplay = escapeHtml(getAccountIdString(accountDetails?.accountId || accountDetails?.accountIdKey || 'N/A'));
+            lastPortfolioPayload = null;
+            lastPortfolioBalance = null;
             accountSummary.innerHTML = `
                 <div class="bg-blue-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account ID</div>
-                    <div class="text-lg font-bold text-blue-600">${safe(accountDetails.accountId)}</div>
+                    <div class="text-lg font-bold text-blue-600">${accountIdDisplay}</div>
                 </div>
                 <div class="bg-green-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Account Type</div>
@@ -1409,7 +1571,7 @@
 
         // Load initial data
         async function loadInitialData() {
-            // Initialize header balance to $0.00
+            // Initialize header balance display
             updateHeaderBalance(null);
             updateScanStatus(null);
             await loadScanConfig();
