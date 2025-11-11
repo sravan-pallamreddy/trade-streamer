@@ -20,6 +20,26 @@
         .tag-chip:hover {
             background-color: #E5E7EB;
         }
+        .track-btn {
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+        .track-btn[data-track-state="tracked"] {
+            background-color: #ECFDF5;
+            color: #065F46;
+            border-color: #A7F3D0;
+        }
+        .tracked-idea-tile {
+            border-left-width: 4px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .tracked-idea-tile:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        }
+        .tracked-idea-pill {
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -117,6 +137,26 @@
                         </div>
                     </div>
                 </div>
+                <div id="trackedIdeasPanel" class="bg-white rounded-xl shadow-md border border-slate-100 p-5 space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="bookmark" class="w-4 h-4 text-amber-500"></i>
+                                Tracked Ideas
+                            </h2>
+                            <p class="text-xs text-slate-500">Pin options to monitor buy / wait / ignore cues.</p>
+                        </div>
+                        <button id="clearTrackedIdeasBtn" type="button" class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 transition" aria-label="Clear tracked ideas" disabled>
+                            Clear
+                        </button>
+                    </div>
+                    <div id="trackedIdeasEmpty" class="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-4 flex gap-2">
+                        <i data-lucide="bookmark-plus" class="w-4 h-4 text-slate-400"></i>
+                        <span>Tap “Track Idea” on any card to pin it here.</span>
+                    </div>
+                    <div id="trackedIdeasList" class="space-y-3"></div>
+                    <div id="trackedIdeasStatus" class="text-[11px] uppercase tracking-wide text-slate-400"></div>
+                </div>
             </aside>
 
             <main class="space-y-6">
@@ -192,9 +232,14 @@
         const portfolioStatus = document.getElementById('portfolioStatus');
         const symbolsInput = document.getElementById('symbolsInput');
         const saveSymbolsBtn = document.getElementById('saveSymbolsBtn');
-        const symbolsStatus = document.getElementById('symbolsStatus');
-        const strategySelect = document.getElementById('strategySelect');
-        const strategyStatus = document.getElementById('strategyStatus');
+    const symbolsStatus = document.getElementById('symbolsStatus');
+    const strategySelect = document.getElementById('strategySelect');
+    const strategyStatus = document.getElementById('strategyStatus');
+    const trackedIdeasPanel = document.getElementById('trackedIdeasPanel');
+    const trackedIdeasList = document.getElementById('trackedIdeasList');
+    const trackedIdeasEmpty = document.getElementById('trackedIdeasEmpty');
+    const trackedIdeasStatus = document.getElementById('trackedIdeasStatus');
+    const clearTrackedIdeasBtn = document.getElementById('clearTrackedIdeasBtn');
     const recommendationSummary = document.getElementById('recommendationSummary');
     const scanInsights = document.getElementById('scanInsights');
 
@@ -215,6 +260,9 @@
         let lastPortfolioBalance = null;
         let lastPortfolioRefreshAt = null;
         let portfolioAutoInitStarted = false;
+    const TRACKED_STORAGE_KEY = 'trade_streamer_tracked_ideas_v1';
+    const TRACKED_IDEA_LIMIT = 8;
+    let trackedIdeas = [];
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -255,6 +303,178 @@
             }
             return true;
         }
+
+        function normalizeDecision(value) {
+            const token = (value || '').toString().toLowerCase();
+            if (!token) return 'unknown';
+            if (token.includes('approve') || token.includes('strong') || token === 'buy') return 'approve';
+            if (token.includes('caution') || token.includes('hold') || token === 'watch') return 'caution';
+            if (token.includes('reject') || token.includes('avoid') || token.includes('sell')) return 'reject';
+            return 'unknown';
+        }
+
+        function buildIdeaId({ symbol, strike, expiry, side }) {
+            const normalizedSymbol = (symbol || '').toUpperCase();
+            const normalizedSide = (side || '').toUpperCase();
+            const strikeToken = Number.isFinite(strike) ? Number(strike).toFixed(2) : 'NA';
+            const expiryToken = expiry || 'NA';
+            return [normalizedSymbol || 'NA', strikeToken, expiryToken, normalizedSide || 'NA'].join('|');
+        }
+
+        function getDecisionStatusMeta(decision) {
+            const map = {
+                approve: { label: 'Buy', bg: '#ECFDF5', border: '#34D399', pillBg: '#D1FAE5', pillText: '#065F46' },
+                caution: { label: 'Wait', bg: '#FFFBEB', border: '#FBBF24', pillBg: '#FEF3C7', pillText: '#92400E' },
+                reject: { label: 'Ignore', bg: '#FEF2F2', border: '#F87171', pillBg: '#FECACA', pillText: '#991B1B' },
+                unknown: { label: 'Monitor', bg: '#F8FAFC', border: '#94A3B8', pillBg: '#E2E8F0', pillText: '#0F172A' },
+            };
+            return map[decision] || map.unknown;
+        }
+
+        function loadTrackedIdeasFromStorage() {
+            if (typeof localStorage === 'undefined') return [];
+            try {
+                const raw = localStorage.getItem(TRACKED_STORAGE_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.warn('Failed to load tracked ideas, resetting state.', error);
+                return [];
+            }
+        }
+
+        function saveTrackedIdeasToStorage() {
+            if (typeof localStorage === 'undefined') return;
+            try {
+                localStorage.setItem(TRACKED_STORAGE_KEY, JSON.stringify(trackedIdeas));
+            } catch (error) {
+                console.warn('Failed to persist tracked ideas.', error);
+            }
+        }
+
+        function formatTrackedPrice(value) {
+            return Number.isFinite(value) ? `$${Number(value).toFixed(2)}` : null;
+        }
+
+        function renderTrackedIdeas() {
+            if (!trackedIdeasPanel || !trackedIdeasList || !trackedIdeasEmpty) return;
+            const hasIdeas = Array.isArray(trackedIdeas) && trackedIdeas.length > 0;
+            trackedIdeasEmpty.classList.toggle('hidden', hasIdeas);
+            const tiles = hasIdeas
+                ? trackedIdeas
+                    .map((idea) => {
+                        const meta = getDecisionStatusMeta(idea.decision);
+                        const strikeLabel = idea.strike != null ? `$${Number(idea.strike).toFixed(2)}` : 'Strike TBD';
+                        const expiryLabel = idea.expiry || 'Expiry TBD';
+                        const sideLabel = (idea.side || '').toUpperCase() || 'CALL/PUT';
+                        const priceBits = [];
+                        const entryLabel = formatTrackedPrice(idea.entry);
+                        const stopLabel = formatTrackedPrice(idea.stop);
+                        const targetLabel = formatTrackedPrice(idea.target);
+                        if (entryLabel) priceBits.push(`Entry ${entryLabel}`);
+                        if (stopLabel) priceBits.push(`Stop ${stopLabel}`);
+                        if (targetLabel) priceBits.push(`Target ${targetLabel}`);
+                        const priceLine = priceBits.length ? priceBits.join(' • ') : 'No price targets set';
+                        const summary = idea.summary ? `<div class="text-xs text-slate-600">${escapeHtml(idea.summary)}</div>` : '';
+                        return `
+                            <div class="tracked-idea-tile rounded-2xl border border-slate-200 p-3" style="background-color:${meta.bg};border-left-color:${meta.border};" data-idea-id="${escapeHtml(idea.id)}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="space-y-1">
+                                        <div class="text-sm font-semibold text-slate-800">${escapeHtml(idea.symbol || '???')} <span class="text-xs font-normal text-slate-500">${escapeHtml(sideLabel)}</span></div>
+                                        <div class="text-xs text-slate-500">${escapeHtml(strikeLabel)} • ${escapeHtml(expiryLabel)}</div>
+                                        <div class="text-xs text-slate-500">${escapeHtml(priceLine)}</div>
+                                        ${summary}
+                                    </div>
+                                    <div class="flex flex-col items-end gap-2">
+                                        <span class="tracked-idea-pill inline-flex items-center px-2 py-1 rounded-full font-semibold" style="background-color:${meta.pillBg};color:${meta.pillText};">${escapeHtml(meta.label)}</span>
+                                        <button type="button" class="text-[11px] uppercase tracking-wide text-slate-400 hover:text-slate-600" data-remove-idea="true" data-idea-id="${escapeHtml(idea.id)}">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    })
+                    .join('')
+                : '';
+            trackedIdeasList.innerHTML = tiles;
+            if (clearTrackedIdeasBtn) {
+                clearTrackedIdeasBtn.disabled = !hasIdeas;
+                clearTrackedIdeasBtn.classList.toggle('opacity-50', !hasIdeas);
+            }
+            if (trackedIdeasStatus) {
+                trackedIdeasStatus.textContent = hasIdeas
+                    ? `${trackedIdeas.length} tracked ${trackedIdeas.length === 1 ? 'idea' : 'ideas'}`
+                    : '';
+            }
+            lucide.createIcons();
+        }
+
+        function addTrackedIdea(payload) {
+            if (!payload || !payload.id) return;
+            const entry = {
+                id: payload.id,
+                symbol: payload.symbol || payload.ticker || '???',
+                strike: Number.isFinite(payload.strike) ? Number(payload.strike) : null,
+                expiry: payload.expiry || null,
+                side: (payload.side || '').toUpperCase(),
+                decision: normalizeDecision(payload.decision),
+                summary: payload.summary || '',
+                entry: Number.isFinite(payload.entry) ? Number(payload.entry) : null,
+                stop: Number.isFinite(payload.stop) ? Number(payload.stop) : null,
+                target: Number.isFinite(payload.target) ? Number(payload.target) : null,
+                updatedAt: Date.now(),
+            };
+            const existingIndex = trackedIdeas.findIndex((idea) => idea.id === entry.id);
+            if (existingIndex >= 0) {
+                trackedIdeas[existingIndex] = entry;
+            } else {
+                trackedIdeas.unshift(entry);
+                if (trackedIdeas.length > TRACKED_IDEA_LIMIT) {
+                    trackedIdeas.splice(TRACKED_IDEA_LIMIT);
+                }
+            }
+            saveTrackedIdeasToStorage();
+            renderTrackedIdeas();
+            syncTrackedIdeaButtons();
+        }
+
+        function removeTrackedIdea(ideaId) {
+            if (!ideaId) return;
+            const nextIdeas = trackedIdeas.filter((idea) => idea.id !== ideaId);
+            if (nextIdeas.length === trackedIdeas.length) return;
+            trackedIdeas = nextIdeas;
+            saveTrackedIdeasToStorage();
+            renderTrackedIdeas();
+            syncTrackedIdeaButtons();
+        }
+
+        function clearTrackedIdeas() {
+            if (!trackedIdeas.length) return;
+            trackedIdeas = [];
+            saveTrackedIdeasToStorage();
+            renderTrackedIdeas();
+            syncTrackedIdeaButtons();
+        }
+
+        function updateTrackButtonState(button, isTracked) {
+            if (!button) return;
+            button.dataset.trackState = isTracked ? 'tracked' : 'idle';
+            button.setAttribute('aria-pressed', isTracked ? 'true' : 'false');
+            button.textContent = isTracked ? 'Update Tile' : 'Track Idea';
+        }
+
+        function syncTrackedIdeaButtons() {
+            if (!recommendations) return;
+            const buttons = recommendations.querySelectorAll('button[data-track-idea]');
+            buttons.forEach((button) => {
+                const ideaId = button.dataset.ideaId;
+                const isTracked = trackedIdeas.some((idea) => idea.id === ideaId);
+                updateTrackButtonState(button, isTracked);
+            });
+        }
+
+        trackedIdeas = loadTrackedIdeasFromStorage();
+        renderTrackedIdeas();
 
         function setScanPanelCollapsed(collapsed) {
             if (!scanPanelBody || !toggleScanPanelBtn || !toggleScanPanelIcon || !toggleScanPanelLabel) return;
@@ -406,6 +626,49 @@
 
         function setStrategyStatus(state, message) {
             setStatusDisplay(strategyStatus, state, message, { infoIcon: 'shuffle' });
+        }
+
+        if (trackedIdeasList) {
+            trackedIdeasList.addEventListener('click', (event) => {
+                const removeBtn = event.target.closest('button[data-remove-idea]');
+                if (removeBtn) {
+                    removeTrackedIdea(removeBtn.dataset.ideaId);
+                }
+            });
+        }
+
+        if (clearTrackedIdeasBtn) {
+            clearTrackedIdeasBtn.addEventListener('click', () => {
+                if (!trackedIdeas.length) return;
+                if (window.confirm('Clear all tracked ideas?')) {
+                    clearTrackedIdeas();
+                }
+            });
+        }
+
+        if (recommendations) {
+            recommendations.addEventListener('click', (event) => {
+                const trackButton = event.target.closest('button[data-track-idea]');
+                if (!trackButton) return;
+                event.preventDefault();
+                const payload = {
+                    id: trackButton.dataset.ideaId,
+                    symbol: trackButton.dataset.symbol,
+                    strike: trackButton.dataset.strike ? Number(trackButton.dataset.strike) : null,
+                    expiry: trackButton.dataset.expiry || null,
+                    side: trackButton.dataset.side || '',
+                    decision: trackButton.dataset.decision || 'unknown',
+                    entry: trackButton.dataset.entry ? Number(trackButton.dataset.entry) : null,
+                    stop: trackButton.dataset.stop ? Number(trackButton.dataset.stop) : null,
+                    target: trackButton.dataset.target ? Number(trackButton.dataset.target) : null,
+                    summary: trackButton.dataset.summary || '',
+                };
+                if (!payload.id) {
+                    payload.id = buildIdeaId(payload);
+                }
+                addTrackedIdea(payload);
+                updateTrackButtonState(trackButton, true);
+            });
         }
 
         function updateRecommendationSummary(stats) {
@@ -1275,14 +1538,6 @@
         function displayRecommendations(recs, context = {}) {
             recommendations.innerHTML = '';
 
-            const normalizeDecision = (value) => {
-                const token = String(value || '').toLowerCase();
-                if (token.includes('approve') || token.includes('strong') || token === 'buy') return 'approve';
-                if (token.includes('caution') || token.includes('hold') || token === 'watch') return 'caution';
-                if (token.includes('reject') || token.includes('avoid') || token.includes('sell')) return 'reject';
-                return 'unknown';
-            };
-
             const formatPrice = (value) => {
                 if (Number.isFinite(value)) {
                     return Number(value).toFixed(2);
@@ -1934,6 +2189,8 @@
                         .map((tag) => `<span class="tag-chip inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">${escapeHtml(tag)}</span>`)
                         .join('')
                     : '<span class="tag-chip inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">No signals</span>';
+                const ideaId = buildIdeaId({ symbol, strike, expiry, side: focusRec.side });
+                const isTrackedIdea = trackedIdeas.some((idea) => idea.id === ideaId);
 
                 recommendations.innerHTML += `
                     <article class="bg-white border border-[#E5E7EB] shadow-sm rounded-3xl p-6 space-y-6 text-[#111827]">
@@ -1950,6 +2207,26 @@
                                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm" style="background-color:${badgeStyle.bg};color:${badgeStyle.text};">${escapeHtml(verdict.toUpperCase())}</span>
                                 <div class="text-xs font-medium text-[#6B7280]">Confluence Score:&nbsp;<span style="color:${confluenceColor};">${escapeHtml(confluenceScoreLabel)}</span></div>
                                 <p class="text-xs text-[#6B7280] max-w-[220px] text-right" style="line-height:1.3;">${escapeHtml(decisionTldr)}</p>
+                                <button
+                                    type="button"
+                                    class="track-btn inline-flex items-center justify-center text-xs font-semibold border border-slate-200 rounded-lg px-3 py-1.5 w-full sm:w-auto"
+                                    style="min-width:7.5rem;"
+                                    data-track-idea="true"
+                                    data-idea-id="${escapeHtml(ideaId)}"
+                                    data-symbol="${escapeHtml(symbol)}"
+                                    data-strike="${strike != null ? strike : ''}"
+                                    data-expiry="${escapeHtml(expiry || '')}"
+                                    data-side="${escapeHtml(focusRec.side || '')}"
+                                    data-decision="${escapeHtml(verdict)}"
+                                    data-entry="${entryPrice != null ? entryPrice : ''}"
+                                    data-stop="${stopPrice != null ? stopPrice : ''}"
+                                    data-target="${targetPrice != null ? targetPrice : ''}"
+                                    data-summary="${escapeHtml(decisionTldr)}"
+                                    aria-pressed="${isTrackedIdea ? 'true' : 'false'}"
+                                    data-track-state="${isTrackedIdea ? 'tracked' : 'idle'}"
+                                >
+                                    ${isTrackedIdea ? 'Update Tile' : 'Track Idea'}
+                                </button>
                             </div>
                         </header>
 
@@ -2027,6 +2304,7 @@
             });
 
             lucide.createIcons();
+            syncTrackedIdeaButtons();
         }
 
         // Display portfolio

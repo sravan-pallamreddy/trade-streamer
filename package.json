@@ -15,7 +15,8 @@
     "guardian": "node src/cli/position-guardian.js",
   "guardian:watch": "node src/cli/position-guardian.js --source etrade --interval 30 --watch",
     "guardian:once": "node src/cli/position-guardian.js --source etrade --once",
-    "ui": "node src/ui/server.js"
+    "ui": "node src/ui/server.js",
+    "feeder": "node src/runner/market-open-feeder.js"
   },
   "engines": {
     "node": ">=18"

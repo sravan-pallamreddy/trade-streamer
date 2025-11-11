@@ -276,7 +276,13 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 - **Portfolio Overview**: Auto-synced portfolio rail with account summary tiles, option position cards, and masked sensitive fields
 - **E*TRADE Integration**: Live portfolio data, balance polling, and one-click emergency exits
 - **Strategy Playbooks**: Momentum, mean-reversion, and breakout diagnostics baked into every scan
+- **Idea Tracker**: Pin any option suggestion as a colored tile in the scan sidebar to monitor buy/wait/ignore states with live updates
 - **Trade Execution**: Direct trade placement (future feature)
+
+#### Tracking Option Ideas
+- Click the **Track Idea** button in any recommendation card to pin it to the left-hand “Tracked Ideas” rail. The tile stores symbol, strike, expiry, entry/stop/target, and AI summary text.
+- Tile colors mirror the verdict state: green = buy, amber = wait, red = ignore. Selecting the button again refreshes the tile with the most recent prices.
+- The rail supports up to eight active ideas, persists locally via `localStorage`, and includes one-click removal or a `Clear` action to reset the list between sessions.
 
 ### E*TRADE Setup
 To enable portfolio tracking, configure E*TRADE API access:
