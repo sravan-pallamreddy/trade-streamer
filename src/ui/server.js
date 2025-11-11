@@ -49,34 +49,100 @@ function parseSymbolList(input) {
   return out;
 }
 
-function buildAgentCommand(symbolsList) {
-  if (!Array.isArray(symbolsList) || symbolsList.length === 0) {
-    return AGENT_COMMAND;
+const ALLOWED_STRATEGIES = new Set(['day_trade', 'swing_trade']);
+
+function normalizeStrategy(input) {
+  if (typeof input !== 'string') return null;
+  const token = input.trim().toLowerCase();
+  if (ALLOWED_STRATEGIES.has(token)) return token;
+  if (token === 'day' || token === 'daytrade') return 'day_trade';
+  if (token === 'swing' || token === 'swingtrade') return 'swing_trade';
+  return null;
+}
+
+const FALLBACK_STRATEGY = 'day_trade';
+const DEFAULT_STRATEGY =
+  normalizeStrategy(process.env.UI_DEFAULT_STRATEGY)
+  || normalizeStrategy(process.env.TRADING_STRATEGY)
+  || FALLBACK_STRATEGY;
+
+const STRATEGY_DEFAULT_EXPIRY = {
+  day_trade: '0dte',
+  swing_trade: 'weekly',
+};
+
+function appendArgToCommand(command, flag, value) {
+  if (!value) return command;
+  const trimmedValue = String(value).trim();
+  if (!trimmedValue) return command;
+  const isNpmRun = /npm\s+run\s+/i.test(command);
+  if (isNpmRun) {
+    const hasDoubleDash = /\s--\s/.test(command);
+    const separator = hasDoubleDash ? ' ' : ' -- ';
+    return `${command}${separator}${flag} ${trimmedValue}`;
+  }
+  return `${command} ${flag} ${trimmedValue}`;
+}
+
+function buildAgentCommand(symbolsList, strategy, expiryType) {
+  let command = AGENT_COMMAND;
+
+  const strategyPlaceholder = command.includes('{{strategy}}');
+  const expiryPlaceholderCamel = command.includes('{{expiryType}}');
+  const expiryPlaceholderSnake = command.includes('{{expiry_type}}');
+
+  if (strategy && strategyPlaceholder) {
+    command = command.replace(/{{strategy}}/g, strategy);
   }
 
-  const symbolArg = symbolsList.join(',');
-
-  if (AGENT_COMMAND.includes('{{symbols}}')) {
-    return AGENT_COMMAND.replace(/{{symbols}}/g, symbolArg);
+  if (expiryType && expiryPlaceholderCamel) {
+    command = command.replace(/{{expiryType}}/g, expiryType);
   }
 
-  if (/npm\s+run\s+/i.test(AGENT_COMMAND)) {
-    return `${AGENT_COMMAND} -- --symbols ${symbolArg}`;
+  if (expiryType && expiryPlaceholderSnake) {
+    command = command.replace(/{{expiry_type}}/g, expiryType);
   }
 
-  return `${AGENT_COMMAND} --symbols ${symbolArg}`;
+  if (Array.isArray(symbolsList) && symbolsList.length) {
+    const symbolArg = symbolsList.join(',');
+    if (command.includes('{{symbols}}')) {
+      command = command.replace(/{{symbols}}/g, symbolArg);
+    } else {
+      command = appendArgToCommand(command, '--symbols', symbolArg);
+    }
+  }
+
+  if (strategy && !strategyPlaceholder) {
+    const hasStrategyArg = /--strategy\b/.test(command);
+    if (!hasStrategyArg) {
+      command = appendArgToCommand(command, '--strategy', strategy);
+    }
+  }
+
+  if (expiryType && !expiryPlaceholderCamel && !expiryPlaceholderSnake) {
+    const hasExpiryArg = /--expiry-type\b/.test(command);
+    if (!hasExpiryArg) {
+      command = appendArgToCommand(command, '--expiry-type', expiryType);
+    }
+  }
+
+  return command;
 }
 const DEFAULT_SYMBOLS = process.env.SCAN_SYMBOLS || 'SPY,QQQ,AAPL,TSLA,GOOGL,NVDA';
 const DEFAULT_SYMBOL_LIST = parseSymbolList(DEFAULT_SYMBOLS);
 
 let scanConfig = {
   symbols: DEFAULT_SYMBOL_LIST.length ? Array.from(DEFAULT_SYMBOL_LIST) : ['SPY', 'QQQ'],
+  strategy: DEFAULT_STRATEGY,
   updatedAt: new Date().toISOString()
 };
 
 const AGENT_COMMAND = process.env.UI_AGENT_COMMAND || 'npm run day-trade';
 const AGENT_INTERVAL_MS = Number(process.env.UI_AGENT_INTERVAL_MS || 120000);
 const AGENT_TIMEOUT_MS = Number(process.env.UI_AGENT_TIMEOUT_MS || 90000);
+const LOG_AGENT_OUTPUT = process.env.UI_AGENT_LOG_OUTPUT
+  ? String(process.env.UI_AGENT_LOG_OUTPUT).toLowerCase() !== 'false'
+  : true;
 
 function parseProviderList(value) {
   if (!value) return [];
@@ -152,12 +218,23 @@ app.post('/api/scan/config', (req, res) => {
       return res.status(400).json({ success: false, error: 'Please limit the watchlist to 24 symbols.' });
     }
 
+    const strategyInput = req.body?.strategy;
+    let strategy = scanConfig.strategy || DEFAULT_STRATEGY;
+    if (strategyInput != null) {
+      const normalizedStrategy = normalizeStrategy(strategyInput);
+      if (!normalizedStrategy) {
+        return res.status(400).json({ success: false, error: 'Invalid strategy. Use day_trade or swing_trade.' });
+      }
+      strategy = normalizedStrategy;
+    }
+
     scanConfig = {
       symbols: normalized,
+      strategy,
       updatedAt: new Date().toISOString()
     };
 
-    console.log(`Updated scan symbols: ${scanConfig.symbols.join(', ')}`);
+    console.log(`Updated scan config: symbols=${scanConfig.symbols.join(', ')} | strategy=${strategy}`);
     nextScanDelayOverride = null;
     if (isScanning) {
       nextScanDelayOverride = 1500;
@@ -173,6 +250,13 @@ app.post('/api/scan/config', (req, res) => {
 });
 
 // Portfolio endpoints
+app.get('/api/portfolio/config', (req, res) => {
+  res.json({
+    success: true,
+    defaultAccountIdKey: process.env.ETRADE_DEFAULT_ACCOUNT_KEY || null,
+  });
+});
+
 app.get('/api/portfolio/accounts', async (req, res) => {
   try {
     const accounts = await getAccounts();
@@ -258,6 +342,7 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
     const orderResult = await placeOptionMarketOrder({
       accountIdKey,
       optionSymbol: chosenSymbol,
+      underlyingSymbol: symbol,
       quantity: numericQty,
       orderAction,
       callPut,
@@ -277,7 +362,15 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
     });
   } catch (error) {
     console.error('Emergency sell error:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to submit emergency sell order.' });
+    const brokerMessage = error?.payload?.Error?.message
+      || error?.payload?.message
+      || error?.body
+      || error?.message;
+    res.status(500).json({
+      success: false,
+      error: brokerMessage || 'Failed to submit emergency sell order.',
+      brokerResponse: error?.payload || null,
+    });
   }
 });
 
@@ -377,6 +470,21 @@ function parseAIOutput(output, { provider, model } = {}) {
         if (rec) {
           rec.side = summaryMatch[2].toLowerCase();
           rec.contract = summaryMatch[3].trim();
+        }
+        continue;
+      }
+
+      const optionSymbolLine = line.match(/^Option symbol:\s*([^\s(]+)(?:\s*\(([^)]+)\))?/i);
+      if (optionSymbolLine && summarySymbol) {
+        const rec = ensureRec(summarySymbol);
+        if (rec) {
+          const value = optionSymbolLine[1]?.trim();
+          if (value && value.toUpperCase() !== 'N/A') {
+            rec.optionSymbol = value;
+          }
+          if (optionSymbolLine[2]) {
+            rec.optionSource = optionSymbolLine[2];
+          }
         }
         continue;
       }
@@ -486,6 +594,13 @@ function parseAIOutput(output, { provider, model } = {}) {
             const value = part.slice('strike'.length).trim().replace(/^:/, '').trim();
             const numeric = Number(value.replace(/[^0-9.\-]/g, ''));
             rec.strike = Number.isFinite(numeric) ? numeric : rec.strike ?? null;
+            continue;
+          }
+          if (part.toLowerCase().startsWith('symbol')) {
+            const value = part.slice('symbol'.length).trim().replace(/^:/, '').trim();
+            if (value && value.toUpperCase() !== 'N/A') {
+              rec.optionSymbol = value;
+            }
             continue;
           }
           if (part.toLowerCase().startsWith('source')) {
@@ -636,19 +751,25 @@ async function triggerScan(source = 'auto') {
   clearPendingTimer();
 
   const symbolsList = Array.isArray(scanConfig.symbols) ? scanConfig.symbols : [];
+  const strategy = normalizeStrategy(scanConfig.strategy) || DEFAULT_STRATEGY;
+  const expiryType = STRATEGY_DEFAULT_EXPIRY[strategy] || STRATEGY_DEFAULT_EXPIRY[FALLBACK_STRATEGY];
   const providers = resolveUiProviders();
   const envBase = { ...process.env };
   if (symbolsList.length) {
     envBase.SCAN_SYMBOLS = symbolsList.join(',');
   }
+  envBase.TRADING_STRATEGY = strategy;
+  envBase.EXPIRY_TYPE = expiryType;
+  envBase.UI_SELECTED_STRATEGY = strategy;
+  envBase.UI_SELECTED_EXPIRY_TYPE = expiryType;
 
-  let commandToRun = buildAgentCommand(symbolsList);
+  let commandToRun = buildAgentCommand(symbolsList, strategy, expiryType);
   const runSummaries = [];
   const runErrors = [];
   let response;
 
   try {
-    console.log(`Starting ${source} AI scan with command: ${commandToRun} (symbols: ${symbolsList.join(', ') || 'default'})`);
+    console.log(`Starting ${source} AI scan with command: ${commandToRun} (symbols: ${symbolsList.join(', ') || 'default'}, strategy: ${strategy}, expiry: ${expiryType})`);
     console.log(`Providers: ${providers.join(', ')}`);
 
     try {
@@ -669,6 +790,16 @@ async function triggerScan(source = 'auto') {
             timeout: AGENT_TIMEOUT_MS,
             env: runEnv,
           });
+          if (LOG_AGENT_OUTPUT) {
+            if (stdout && stdout.trim()) {
+              console.log(`[${providerId}] agent stdout:\n${stdout}`);
+            } else {
+              console.log(`[${providerId}] agent stdout: <empty>`);
+            }
+            if (stderr && stderr.trim()) {
+              console.warn(`[${providerId}] agent stderr:\n${stderr}`);
+            }
+          }
           const parsed = parseAIOutput(stdout, { provider: providerId, model: runEnv.AI_MODEL });
           runSummaries.push({
             provider: parsed.meta.provider || providerId,
@@ -680,14 +811,26 @@ async function triggerScan(source = 'auto') {
             completedAt: new Date().toISOString(),
             durationMs: Date.now() - runStartedMs,
             command: commandToRun,
+            strategy,
+            expiryType,
           });
         } catch (providerError) {
           console.error(`Provider ${providerId} scan error:`, providerError.message);
+          if (LOG_AGENT_OUTPUT) {
+            if (providerError.stdout && providerError.stdout.trim()) {
+              console.log(`[${providerId}] agent stdout (error case):\n${providerError.stdout}`);
+            }
+            if (providerError.stderr && providerError.stderr.trim()) {
+              console.warn(`[${providerId}] agent stderr (error case):\n${providerError.stderr}`);
+            }
+          }
           runErrors.push({
             provider: providerId,
             message: providerError.message,
             stdout: providerError.stdout,
             stderr: providerError.stderr,
+            strategy,
+            expiryType,
           });
         }
       }
@@ -710,6 +853,8 @@ async function triggerScan(source = 'auto') {
         success: false,
         symbols: Array.from(symbolsList),
         providers,
+        strategy,
+        expiryType,
         errors: runErrors,
       };
       lastScanError = {
@@ -760,6 +905,8 @@ async function triggerScan(source = 'auto') {
         source,
         symbols: Array.from(symbolsList),
         providers,
+        strategy,
+        expiryType,
         errors: runErrors,
       };
 
@@ -771,6 +918,8 @@ async function triggerScan(source = 'auto') {
         success: true,
         symbols: Array.from(symbolsList),
         providers: runSummaries.map((run) => ({ provider: run.provider, model: run.model })),
+        strategy,
+        expiryType,
         errors: runErrors,
       };
       lastScanError = runErrors.length ? { message: 'One or more providers failed', providers: runErrors } : null;

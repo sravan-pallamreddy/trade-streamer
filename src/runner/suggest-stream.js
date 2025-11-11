@@ -9,7 +9,8 @@ const { getClient } = require('../ai/client');
 const { buildSystemPrompt, buildUserPrompt } = require('../ai/prompt');
 const gates = require('../rules/gates');
 const bars = require('../providers/bars');
-const { pickByDelta, pickByPremium, midPrice } = require('../strategy/selector');
+const { pickByDelta, pickByPremium, pickNearestStrike, selectOptimalOption, midPrice } = require('../strategy/selector');
+const { fetchOptionChain } = require('../providers/options-chain');
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals, recommendOptionStrategy, detectBreakout, detectReversal } = require('../strategy/algorithms');
 
 function parseArgs(argv) {
@@ -22,7 +23,7 @@ function parseArgs(argv) {
     riskPct: process.env.RISK_PCT ? Number(process.env.RISK_PCT) : 0.01,
     iv: process.env.DEFAULT_IV ? Number(process.env.DEFAULT_IV) : 0.2,
     r: process.env.RISK_FREE ? Number(process.env.RISK_FREE) : 0.01,
-    otmPct: process.env.OTM_PCT ? Number(process.env.OTM_PCT) : 0.02,
+  otmPct: process.env.OTM_PCT != null ? Number(process.env.OTM_PCT) : null,
     minBusinessDays: process.env.MIN_BUSINESS_DAYS ? Number(process.env.MIN_BUSINESS_DAYS) : 2,
     stopLossPct: process.env.STOP_LOSS_PCT ? Number(process.env.STOP_LOSS_PCT) : 0.5,
     takeProfitMult: process.env.TAKE_PROFIT_MULT ? Number(process.env.TAKE_PROFIT_MULT) : 2.0,
@@ -57,7 +58,7 @@ function parseArgs(argv) {
     if (a === '--risk-pct' && args[i + 1]) { out.riskPct = Number(args[++i]); continue; }
     if (a === '--iv' && args[i + 1]) { out.iv = Number(args[++i]); continue; }
     if (a === '--r' && args[i + 1]) { out.r = Number(args[++i]); continue; }
-    if (a === '--otm-pct' && args[i + 1]) { out.otmPct = Number(args[++i]); continue; }
+  if (a === '--otm-pct' && args[i + 1]) { out.otmPct = Number(args[++i]); continue; }
     if (a === '--min-days' && args[i + 1]) { out.minBusinessDays = Number(args[++i]); continue; }
     if (a === '--sl-pct' && args[i + 1]) { out.stopLossPct = Number(args[++i]); continue; }
     if (a === '--tp-mult' && args[i + 1]) { out.takeProfitMult = Number(args[++i]); continue; }
@@ -89,7 +90,11 @@ function parseArgs(argv) {
       const dd = String(dt.getDate()).padStart(2, '0');
       out.expiry = `${yyyy}-${mm}-${dd}`;
       if (out.minBusinessDays > 0) out.minBusinessDays = 0;
-      if (!process.env.OTM_PCT) out.otmPct = Math.min(out.otmPct, 0.01);
+      if (out.otmPct == null) {
+        out.otmPct = 0.01;
+      } else {
+        out.otmPct = Math.min(out.otmPct, 0.01);
+      }
       continue;
     }
     if (a === '--target-delta' && args[i + 1]) { out.targetDelta = Number(args[++i]); continue; }
@@ -104,8 +109,8 @@ function usage() {
   `Env: ACCOUNT_SIZE, SCAN_SYMBOLS, RISK_PCT, DEFAULT_IV, RISK_FREE, OTM_PCT, MIN_BUSINESS_DAYS, STOP_LOSS_PCT, TAKE_PROFIT_MULT, STREAM_INTERVAL_SEC, QUOTE_PROVIDER, USE_AI, AI_PROVIDER, AI_MODEL, AI_INTERVAL_SEC`);
 }
 
-function makeSuggestion({ symbol, price, side, params }) {
-  const s = buildSuggestion({
+async function makeSuggestion({ symbol, price, side, params }) {
+  const suggestion = buildSuggestion({
     symbol,
     side,
     underlyingPrice: price,
@@ -118,9 +123,80 @@ function makeSuggestion({ symbol, price, side, params }) {
     stopLossPct: params.stopLossPct,
     takeProfitMult: params.takeProfitMult,
   });
-  const sizing = computeQty({ accountSize: params.account, riskPct: params.riskPct, entry: s.est_entry, stop: s.stop, multiplier: s.multiplier });
+  let chainSource = null;
+  let liveOption = null;
+
+  try {
+    const chainResult = await fetchOptionChain({ symbol, expiry: suggestion.expiry, includeGreeks: true });
+    chainSource = chainResult.source || null;
+    const chain = Array.isArray(chainResult.options) ? chainResult.options : [];
+
+    if (!chain.length && params.debug) {
+      console.warn(`Option chain empty for ${symbol} ${suggestion.expiry}; using theoretical pricing`);
+    }
+
+    let candidate = null;
+    if (params.targetDelta) candidate = pickByDelta(chain, side, params.targetDelta);
+    if (!candidate && params.targetPremium) candidate = pickByPremium(chain, side, params.targetPremium);
+    if (!candidate) {
+      const defaultDelta = side === 'put' ? -0.35 : 0.35;
+      candidate = selectOptimalOption(chain, side, {
+        targetDelta: defaultDelta,
+        maxSpreadPct: 0.4,
+        minOpenInterest: 100,
+      });
+    }
+    if (!candidate) {
+      candidate = pickNearestStrike(chain, side, suggestion.strike);
+    }
+
+    if (candidate) {
+      liveOption = candidate;
+      const chosenStrike = Number(candidate.strike);
+      if (Number.isFinite(chosenStrike)) {
+        suggestion.contract = `${symbol} ${suggestion.expiry} ${chosenStrike}${side.toUpperCase().startsWith('C') ? 'C' : 'P'}`;
+        suggestion.strike = chosenStrike;
+      }
+      const entry = midPrice(candidate) ?? candidate.ask ?? candidate.last ?? candidate.bid;
+      if (Number.isFinite(entry)) {
+        const spread = candidate.bid != null && candidate.ask != null ? candidate.ask - candidate.bid : null;
+        const spreadPct = spread != null && entry > 0 ? (spread / entry) * 100 : null;
+        suggestion.est_entry = Number(entry.toFixed(2));
+        suggestion.stop = Number((entry * (1 - params.stopLossPct)).toFixed(2));
+        suggestion.take_profit = Number((entry * (1 + params.takeProfitMult)).toFixed(2));
+        suggestion.bid = Number.isFinite(candidate.bid) ? Number(candidate.bid.toFixed(2)) : null;
+        suggestion.ask = Number.isFinite(candidate.ask) ? Number(candidate.ask.toFixed(2)) : null;
+        suggestion.last = Number.isFinite(candidate.last) ? Number(candidate.last.toFixed(2)) : null;
+        suggestion.delta = candidate.delta ?? null;
+        suggestion.oi = Number.isFinite(candidate.oi) ? candidate.oi : null;
+        suggestion.volume = Number.isFinite(candidate.vol) ? candidate.vol : null;
+        suggestion.entry_source = chainSource ? `${chainSource}_chain` : 'options_chain';
+        suggestion.option_symbol = candidate.optionSymbol ?? suggestion.option_symbol ?? null;
+        suggestion.liquidity = {
+          spread: spread != null ? Number(spread.toFixed(2)) : null,
+          spread_pct: spreadPct != null ? Number(spreadPct.toFixed(2)) : null,
+          oi: suggestion.oi,
+          volume: suggestion.volume,
+        };
+      } else if (Number.isFinite(suggestion.strike)) {
+        suggestion.entry_source = 'model_chain_fallback';
+        suggestion.option_symbol = candidate.optionSymbol ?? suggestion.option_symbol ?? null;
+      }
+    }
+  } catch (err) {
+    if (params.debug) {
+      console.warn(`Option chain fetch failed for ${symbol}: ${err.message}`);
+    }
+  }
+
+  if (!liveOption) {
+    suggestion.entry_source = 'model';
+  }
+
+  const sizing = computeQty({ accountSize: params.account, riskPct: params.riskPct, entry: suggestion.est_entry, stop: suggestion.stop, multiplier: suggestion.multiplier });
   return {
-    ...s,
+    ...suggestion,
+    chain_source: chainSource,
     qty: sizing.qty,
     risk_per_contract: Number(sizing.perContractRisk.toFixed(2)),
     risk_total: Number(sizing.totalRisk.toFixed(2)),
@@ -259,47 +335,7 @@ async function loop(params) {
         let anyPrinted = false;
         for (const sd of sides) {
           try {
-            let sug;
-            // If E*TRADE chain selection requested and feasible, use live chain to select contract by delta/premium
-            const canUseChain = (params.provider === 'etrade' || params.provider === 'mix') && (params.targetDelta || params.targetPremium) && params.expiry && (sym === 'SPY' || sym === 'QQQ');
-            if (canUseChain) {
-              try {
-                const chain = await etrade.getOptionChain({ symbol: sym, expiry: params.expiry, includeGreeks: true });
-                let chosen = null;
-                if (params.targetDelta) chosen = pickByDelta(chain, sd, params.targetDelta);
-                if (!chosen && params.targetPremium) chosen = pickByPremium(chain, sd, params.targetPremium);
-                if (chosen) {
-                  const entry = midPrice(chosen);
-                  const stop = Math.max(0.01, entry * (1 - params.stopLossPct));
-                  const tp = entry * (1 + params.takeProfitMult);
-                  const sizing = computeQty({ accountSize: params.account, riskPct: params.riskPct, entry, stop, multiplier: 100 });
-                  sug = {
-                    symbol: sym,
-                    direction: 'long',
-                    side: sd,
-                    underlying_price: q.price,
-                    contract: `${sym} ${params.expiry} ${chosen.strike}${sd.toUpperCase().startsWith('C')?'C':'P'}`,
-                    expiry: params.expiry,
-                    strike: chosen.strike,
-                    multiplier: 100,
-                    est_entry: Number(entry.toFixed(2)),
-                    stop: Number(stop.toFixed(2)),
-                    take_profit: Number(tp.toFixed(2)),
-                    assumptions: { mode: 'live_chain', target_delta: params.targetDelta, target_premium: params.targetPremium },
-                    rationale: `Live chain ${sd.toUpperCase()} via ${params.targetDelta ? 'delta ' + params.targetDelta : 'premium ' + params.targetPremium}`,
-                    qty: sizing.qty,
-                    risk_per_contract: Number(sizing.perContractRisk.toFixed(2)),
-                    risk_total: Number(sizing.totalRisk.toFixed(2)),
-                    meta: { price: q.price, side: sd },
-                  };
-                }
-              } catch (e) {
-                if (params.debug) console.log('chain selection error', e.message || String(e));
-              }
-            }
-            if (!sug) {
-              sug = makeSuggestion({ symbol: sym, price: q.price, side: sd, params: { ...params, expiry: params.expiry } });
-            }
+            const sug = await makeSuggestion({ symbol: sym, price: q.price, side: sd, params: { ...params, expiry: params.expiry } });
             // Apply rules if enabled
             let rule = { pass: true, reasons: [] };
             if (params.rules) {
@@ -310,7 +346,9 @@ async function loop(params) {
             if (!params.table) {
               const header = `${sym} ${sd.toUpperCase()} @ ${q.price.toFixed(2)} | ${sug.contract}`;
               const line1 = `  Entry ~$${sug.est_entry} | Stop $${sug.stop} | TP $${sug.take_profit}`;
-              const line2 = `  Qty ${sug.qty} | Risk/ct $${sug.risk_per_contract} | Risk total $${sug.risk_total}`;
+              const sourceLabel = sug.entry_source ? `source ${sug.entry_source}` : 'source model';
+              const chainLabel = sug.chain_source ? ` | chain ${sug.chain_source}` : '';
+              const line2 = `  Qty ${sug.qty} | Risk/ct $${sug.risk_per_contract} | Risk total $${sug.risk_total} (${sourceLabel}${chainLabel})`;
               console.log(header); console.log(line1); console.log(line2); console.log('');
               if (params.rules) {
                 console.log(`  Rules: ${rule.pass ? 'PASS' : 'FAIL'} ${rule.reasons.join(',')}`);

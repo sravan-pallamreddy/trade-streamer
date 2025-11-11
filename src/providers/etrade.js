@@ -59,8 +59,16 @@ async function etFetch(path, { method = 'GET', query = {}, body } = {}) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
+    let payload;
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {/* ignore parse errors */}
+    }
     const e = new Error(`E*TRADE HTTP ${res.status}: ${text}`);
     e.status = res.status;
+    e.body = text;
+    if (payload) e.payload = payload;
     throw e;
   }
   return res.json();
@@ -94,7 +102,21 @@ async function getOptionChain({ symbol, expiry, includeGreeks = true }) {
   const query = { symbol, expiryDate: expiry, includeGreeks: includeGreeks ? 'true' : 'false' };
   // API path per E*TRADE docs
   const data = await etFetch(`/v1/market/optionchains.json`, { query });
+  if (process.env.DEBUG_ETRADE_CHAIN) {
+    console.log('E*TRADE option chain raw keys:', Object.keys(data || {}));
+  }
   const root = data?.OptionChainResponse || data?.OptionChain || data;
+  if (process.env.DEBUG_ETRADE_CHAIN) {
+    const pairCount = Array.isArray(root?.OptionPair) ? root.OptionPair.length : 0;
+    const sample = pairCount ? root.OptionPair[0] : null;
+    console.log('E*TRADE option chain meta:', {
+      keys: Object.keys(root || {}),
+      pairCount,
+      sampleStrike: sample?.strikePrice ?? sample?.Call?.strikePrice ?? null,
+      sampleCallBid: sample?.Call?.bid ?? null,
+      samplePutBid: sample?.Put?.bid ?? null,
+    });
+  }
   const list = [];
   function pushOpt(x) {
     if (!x) return;
@@ -108,14 +130,39 @@ async function getOptionChain({ symbol, expiry, includeGreeks = true }) {
     const oi = Number(x.openInterest ?? x.OI ?? x.openint ?? 0);
     const vol = Number(x.totalVolume ?? x.volume ?? 0);
     if (!Number.isFinite(strike)) return;
-    list.push({ strike, type, bid: Number.isFinite(bid) ? bid : null, ask: Number.isFinite(ask) ? ask : null, last: Number.isFinite(last) ? last : null, delta, oi, vol });
+    const optionSymbol = x.optionSymbol || x.contractSymbol || x.osiKey || x.symbol || x.displaySymbol || null;
+    list.push({
+      strike,
+      type,
+      bid: Number.isFinite(bid) ? bid : null,
+      ask: Number.isFinite(ask) ? ask : null,
+      last: Number.isFinite(last) ? last : null,
+      delta: Number.isFinite(delta) ? delta : null,
+      oi: Number.isFinite(oi) ? oi : null,
+      vol: Number.isFinite(vol) ? vol : null,
+      optionSymbol,
+      raw: x,
+    });
   }
   // Common structures: OptionPair array containing call and put, or flat arrays
   const pairs = root?.OptionPair || root?.optionPairs || root?.Pairs;
   if (Array.isArray(pairs)) {
     for (const p of pairs) {
-      if (p?.Call) pushOpt({ ...(p.Call || {}), optionType: 'CALL', strikePrice: p?.strikePrice ?? p?.StrikePrice });
-      if (p?.Put) pushOpt({ ...(p.Put || {}), optionType: 'PUT', strikePrice: p?.strikePrice ?? p?.StrikePrice });
+      const pairStrike = Number(p?.strikePrice ?? p?.StrikePrice);
+      if (p?.Call) {
+        const callCopy = { ...(p.Call || {}) };
+        if (!Number.isFinite(Number(callCopy.strikePrice)) && Number.isFinite(pairStrike)) {
+          callCopy.strikePrice = pairStrike;
+        }
+        pushOpt({ ...callCopy, optionType: 'CALL' });
+      }
+      if (p?.Put) {
+        const putCopy = { ...(p.Put || {}) };
+        if (!Number.isFinite(Number(putCopy.strikePrice)) && Number.isFinite(pairStrike)) {
+          putCopy.strikePrice = pairStrike;
+        }
+        pushOpt({ ...putCopy, optionType: 'PUT' });
+      }
       if (!p?.Call && !p?.Put) {
         // Some variants
         pushOpt(p?.call);
@@ -329,33 +376,150 @@ function collectOrderMessages(root) {
   return Array.from(new Set(buckets.filter(Boolean)));
 }
 
-function buildOptionProduct({ optionSymbol, callPut, strike, expiry }) {
-  const product = {
-    securityType: 'OPTION',
-  };
+function inferUnderlyingSymbol(rawSymbol, callPut) {
+  if (!rawSymbol) return rawSymbol;
+  const upper = rawSymbol.toString().toUpperCase();
+  if (callPut && /^[A-Z0-9]{1,6}\d{6}[CP]\d{8}$/.test(upper)) {
+    return upper.replace(/\d{6}[CP]\d{8}$/, '').trim();
+  }
+  const noSpaces = upper.replace(/\s+/g, '');
+  if (/^[A-Z0-9]{1,6}\d{6}[CP]\d{8}$/.test(noSpaces)) {
+    return noSpaces.replace(/\d{6}[CP]\d{8}$/, '').trim();
+  }
+  const spaceSplit = upper.split(' ');
+  if (spaceSplit.length > 1) return spaceSplit[0];
+  const dashSplit = upper.split('-');
+  if (dashSplit.length > 1) return dashSplit[0];
+  const letters = upper.match(/^[A-Z0-9]+/);
+  return letters ? letters[0] : upper;
+}
 
-  if (optionSymbol) {
-    product.symbol = optionSymbol;
-  }
-  if (callPut) {
-    product.callPut = callPut.toUpperCase();
-  }
-  if (strike != null && strike !== '') {
-    const numericStrike = Number(strike);
-    if (Number.isFinite(numericStrike)) {
-      product.strikePrice = numericStrike;
+function parseExpiryParts(expiry) {
+  if (!expiry) return null;
+  if (typeof expiry === 'object' && expiry.year && expiry.month && expiry.day) {
+    const year = Number(expiry.year);
+    const month = Number(expiry.month);
+    const day = Number(expiry.day);
+    if ([year, month, day].every(Number.isFinite)) {
+      return { year, month, day };
     }
   }
-  if (expiry) {
-    const parts = String(expiry).split('-').map((p) => Number(p));
-    if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
-      const [year, month, day] = parts;
-      product.expiryYear = year;
-      product.expiryMonth = month;
-      product.expiryDay = day;
+  const digits = String(expiry).replace(/[^0-9]/g, '');
+  if (digits.length === 8) {
+    const year = Number(digits.slice(0, 4));
+    const month = Number(digits.slice(4, 6));
+    const day = Number(digits.slice(6, 8));
+    if ([year, month, day].every(Number.isFinite)) {
+      return { year, month, day };
     }
   }
-  return product;
+  if (digits.length === 6) {
+    const shortYear = Number(digits.slice(0, 2));
+    const year = shortYear >= 70 ? 1900 + shortYear : 2000 + shortYear;
+    const month = Number(digits.slice(2, 4));
+    const day = Number(digits.slice(4, 6));
+    if ([year, month, day].every(Number.isFinite)) {
+      return { year, month, day };
+    }
+  }
+  return null;
+}
+
+function buildOccSymbol({ underlying, callPut, strike, expiry }) {
+  if (!underlying || !callPut || !Number.isFinite(strike) || !expiry) return null;
+  const base = underlying.toUpperCase().padEnd(6, ' ').slice(0, 6);
+  const flag = callPut.toUpperCase().startsWith('P') ? 'P' : 'C';
+  const strikeInt = Math.round(Number(strike) * 1000);
+  const strikeStr = String(strikeInt).padStart(8, '0');
+  const year2 = String(expiry.year % 100).padStart(2, '0');
+  const month2 = String(expiry.month).padStart(2, '0');
+  const day2 = String(expiry.day).padStart(2, '0');
+  return `${base}${year2}${month2}${day2}${flag}${strikeStr}`;
+}
+
+function normalizeOptionContract({ optionSymbol, underlyingSymbol, callPut, strike, expiry }) {
+  const rawSymbol = optionSymbol || underlyingSymbol;
+  let inferredUnderlying = inferUnderlyingSymbol(rawSymbol, callPut) || (underlyingSymbol ? underlyingSymbol.toUpperCase() : null);
+  if (inferredUnderlying) {
+    inferredUnderlying = inferredUnderlying.toUpperCase().trim();
+  }
+
+  let normalizedCallPut = callPut ? callPut.toString().toUpperCase() : null;
+  if (normalizedCallPut === 'C') normalizedCallPut = 'CALL';
+  if (normalizedCallPut === 'P') normalizedCallPut = 'PUT';
+  if (normalizedCallPut !== 'CALL' && normalizedCallPut !== 'PUT') {
+    normalizedCallPut = null;
+  }
+
+  let numericStrike = Number(strike);
+  if (!Number.isFinite(numericStrike)) {
+    numericStrike = null;
+  }
+
+  let expiryParts = parseExpiryParts(expiry);
+
+  const compactSymbol = rawSymbol ? rawSymbol.toString().toUpperCase().replace(/\s+/g, '') : '';
+  const occMatch = compactSymbol.match(/^([A-Z0-9]{1,6})(\d{6})([CP])(\d{8})$/);
+  if (occMatch) {
+    inferredUnderlying = occMatch[1].trim();
+    if (!normalizedCallPut) {
+      normalizedCallPut = occMatch[3] === 'P' ? 'PUT' : 'CALL';
+    }
+    if (!numericStrike) {
+      const strikeRaw = Number(occMatch[4]);
+      if (Number.isFinite(strikeRaw)) {
+        numericStrike = strikeRaw / 1000;
+      }
+    }
+    if (!expiryParts) {
+      const [yy, mm, dd] = [occMatch[2].slice(0, 2), occMatch[2].slice(2, 4), occMatch[2].slice(4, 6)].map((x) => Number(x));
+      const year = yy >= 70 ? 1900 + yy : 2000 + yy;
+      expiryParts = { year, month: mm, day: dd };
+    }
+  }
+
+  if (!numericStrike || !Number.isFinite(numericStrike)) {
+    numericStrike = null;
+  }
+
+  const occSymbol = buildOccSymbol({
+    underlying: inferredUnderlying,
+    callPut: normalizedCallPut,
+    strike: numericStrike,
+    expiry: expiryParts,
+  });
+
+  return {
+    underlying: inferredUnderlying,
+    callPut: normalizedCallPut,
+    strike: numericStrike,
+    expiry: expiryParts,
+    occSymbol,
+    rawSymbol: optionSymbol || underlyingSymbol || null,
+  };
+}
+
+function buildOptionProduct(contract) {
+  if (!contract.underlying || !contract.callPut || !contract.expiry || !Number.isFinite(contract.strike)) {
+    throw new Error('Incomplete option contract details for E*TRADE order payload');
+  }
+
+  const { year, month, day } = contract.expiry;
+  if (![year, month, day].every(Number.isFinite)) {
+    throw new Error('Invalid option expiry components for E*TRADE order payload');
+  }
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+
+  return {
+    symbol: contract.underlying,
+    securityType: 'OPTN',
+    callPut: contract.callPut.toUpperCase(),
+    strikePrice: Number(contract.strike),
+    expiryYear: String(year),
+    expiryMonth: pad2(month),
+    expiryDay: pad2(day),
+  };
 }
 
 function buildClientOrderId(prefix = 'SOS') {
@@ -367,6 +531,7 @@ function buildClientOrderId(prefix = 'SOS') {
 async function placeOptionMarketOrder({
   accountIdKey,
   optionSymbol,
+  underlyingSymbol,
   quantity,
   orderAction,
   callPut,
@@ -374,23 +539,53 @@ async function placeOptionMarketOrder({
   expiry,
 }) {
   if (!accountIdKey) throw new Error('Account ID (accountIdKey) is required');
-  const symbol = optionSymbol;
-  if (!symbol) throw new Error('Option symbol is required for emergency sell');
+  if (!optionSymbol && !underlyingSymbol) {
+    throw new Error('Option symbol or underlying symbol is required for emergency sell');
+  }
 
   const rawQty = Number(quantity);
   if (!Number.isFinite(rawQty) || rawQty === 0) {
     throw new Error('Quantity must be a non-zero number');
   }
 
-  const absQty = Math.abs(rawQty);
+  const absQty = Math.abs(Math.trunc(rawQty));
+  if (!absQty) {
+    throw new Error('Quantity must be at least one contract');
+  }
   const action = orderAction || (rawQty > 0 ? 'SELL_TO_CLOSE' : 'BUY_TO_COVER');
 
-  const product = buildOptionProduct({ optionSymbol: symbol, callPut, strike, expiry });
+  const contract = normalizeOptionContract({ optionSymbol, underlyingSymbol, callPut, strike, expiry });
+  if (!contract.underlying) {
+    throw new Error('Unable to infer underlying symbol for option contract');
+  }
+  if (!contract.callPut) {
+    throw new Error('Option call/put side is required');
+  }
+  if (!Number.isFinite(contract.strike)) {
+    throw new Error('Option strike price is required');
+  }
+  if (!contract.expiry) {
+    throw new Error('Option expiry is required');
+  }
+
+  const product = buildOptionProduct(contract);
   const clientOrderId = buildClientOrderId();
+
+  const debugOrders = !!process.env.DEBUG_ETRADE_ORDERS;
+  if (debugOrders) {
+    console.log('E*TRADE emergency sell contract:', {
+      optionSymbol,
+      underlyingSymbol,
+      normalized: contract,
+      product,
+      action,
+      quantity: absQty,
+    });
+  }
 
   const baseRequest = {
     PlaceOrderRequest: {
-      orderType: 'OPTION',
+      orderType: 'OPTN',
       clientOrderId,
       orderTerm: 'GOOD_FOR_DAY',
       marketSession: 'REGULAR',
@@ -406,6 +601,10 @@ async function placeOptionMarketOrder({
       ],
     },
   };
+
+  if (debugOrders) {
+    console.log('E*TRADE emergency sell preview payload:', JSON.stringify(baseRequest, null, 2));
+  }
 
   const previewPath = `/v1/accounts/${accountIdKey}/orders/preview.json`;
   const previewResponse = await etFetch(previewPath, { method: 'POST', body: baseRequest });

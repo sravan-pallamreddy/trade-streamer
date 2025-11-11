@@ -7,6 +7,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body {
+            font-family: "Inter", "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-feature-settings: "ss01" on, "ss02" on;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8">
@@ -30,198 +36,121 @@
             <h1 class="sr-only">Trade Streamer – AI Strategy Playbooks for Day Trading</h1>
         </div>
 
-        <!-- Control Panel -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex flex-col gap-4">
-                <div class="flex flex-wrap gap-4 items-center">
-                    <button id="scanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
-                        <i data-lucide="search" class="w-5 h-5"></i>
-                        Scan for Trades
-                    </button>
-                    <button id="portfolioBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2">
-                        <i data-lucide="wallet" class="w-5 h-5"></i>
-                        Load Portfolio
-                    </button>
-                    <div id="scanStatus" class="text-gray-600 flex items-center gap-2">
-                        <i data-lucide="clock" class="w-4 h-4"></i>
-                        Waiting for first scan
-                    </div>
-                </div>
-                <div class="w-full">
-                    <label for="symbolsInput" class="text-sm font-semibold text-gray-700">Symbols to scan</label>
-                    <div class="flex flex-col sm:flex-row gap-2 mt-2">
-                        <input id="symbolsInput" type="text" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter comma-separated symbols e.g. SPY, QQQ, AAPL">
-                        <button id="saveSymbolsBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2">
-                            <i data-lucide="save" class="w-4 h-4"></i>
-                            Save Symbols
-                        </button>
-                    </div>
-                    <div id="symbolsStatus" class="mt-2 text-sm text-gray-500 flex items-center gap-2">
-                        <i data-lucide="info" class="w-4 h-4"></i>
-                        Loading symbol list...
-                    </div>
-                </div>
-            </div>
+        <div class="flex justify-end gap-2 mb-4">
+            <button id="collapseLeftBtn" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg px-3 py-2 bg-white shadow-sm">
+                <i id="collapseLeftIcon" data-lucide="chevron-left" class="w-4 h-4"></i>
+                <span id="collapseLeftLabel">Hide Scan Panel</span>
+            </button>
+            <button id="collapseRightBtn" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg px-3 py-2 bg-white shadow-sm">
+                <i id="collapseRightIcon" data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span id="collapseRightLabel">Hide Portfolio Rail</span>
+            </button>
         </div>
 
-        <!-- Dashboard Content -->
-        <div class="lg:grid lg:grid-cols-[1.35fr_1fr] gap-6 items-start">
-            <div class="space-y-6">
-                <div id="recommendations" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+    <div id="layoutGrid" class="xl:grid xl:grid-cols-[320px_minmax(0,1.4fr)_360px] gap-8 items-start">
+            <aside id="scanSidebar" class="space-y-6 xl:sticky xl:top-6">
+                <div class="bg-white rounded-xl shadow-md border border-slate-100 p-6" id="scanPanel">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 space-y-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button id="scanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2">
+                                    <i data-lucide="search" class="w-5 h-5"></i>
+                                    Scan for Trades
+                                </button>
+                                <span class="text-xs font-semibold uppercase tracking-wide text-emerald-600">Portfolio auto-sync enabled</span>
+                            </div>
+                            <div id="scanStatus" class="text-sm text-slate-600 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                <i data-lucide="clock" class="w-4 h-4"></i>
+                                Waiting for first scan
+                            </div>
+                        </div>
+                        <button id="toggleScanPanelBtn" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-2.5 py-2 bg-white" aria-expanded="true">
+                            <i id="toggleScanPanelIcon" data-lucide="chevron-up" class="w-4 h-4"></i>
+                            <span id="toggleScanPanelLabel">Collapse</span>
+                        </button>
+                    </div>
+                    <div id="scanPanelBody" class="mt-5 space-y-5">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label for="symbolsInput" class="text-sm font-semibold text-slate-700">Symbols to scan</label>
+                                <span class="text-[11px] uppercase tracking-wide text-slate-400">Max 24</span>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <input id="symbolsInput" type="text" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="SPY, QQQ, AAPL, ...">
+                                <button id="saveSymbolsBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 justify-center">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                    Save Scan Settings
+                                </button>
+                            </div>
+                            <div id="symbolsStatus" class="text-xs text-slate-500 flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                                Loading scan settings...
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="strategySelect" class="text-sm font-semibold text-slate-700">Strategy focus</label>
+                            <select id="strategySelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="day_trade">Day Trade (intraday)</option>
+                                <option value="swing_trade">Swing Trade (multi-day)</option>
+                            </select>
+                            <div id="strategyStatus" class="text-xs text-slate-500 flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                                Loading strategy preference...
+                            </div>
+                        </div>
+                        <div class="border-t border-slate-200 pt-4 space-y-3">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick Insights</div>
+                            <ul id="scanInsights" class="space-y-2 text-sm text-slate-600">
+                                <li class="flex items-start gap-2">
+                                    <i data-lucide="activity" class="w-4 h-4 text-blue-500 mt-0.5"></i>
+                                    <span>Awaiting initial scan...</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="space-y-6">
+                <div id="recommendationSummary" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+                <div id="recommendations" class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 auto-rows-fr">
                     <!-- Recommendations will be inserted here -->
                 </div>
+            </main>
 
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div class="bg-white rounded-lg shadow-md p-4">
-                        <div class="flex items-center">
-                            <div class="bg-green-100 p-3 rounded-full">
-                                <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
-                            </div>
-                            <div class="ml-3">
-                                <div class="text-lg font-bold text-green-600">$0</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-wide">Today's P&L</div>
-                            </div>
+            <aside id="portfolioRail" class="hidden xl:flex xl:flex-col gap-4">
+                <div id="portfolioSummaryCard" class="bg-white rounded-xl shadow-md border border-slate-100 p-5 space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="wallet" class="w-4 h-4 text-emerald-500"></i>
+                                Options Portfolio
+                            </h2>
+                            <span id="portfolioStatus" class="text-xs text-slate-500"></span>
                         </div>
+                        <button id="refreshPortfolioBtn" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg px-3 py-2 bg-white">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                            <span>Refresh</span>
+                        </button>
                     </div>
-
-                    <div class="bg-white rounded-lg shadow-md p-4">
-                        <div class="flex items-center">
-                            <div class="bg-blue-100 p-3 rounded-full">
-                                <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
-                            </div>
-                            <div class="ml-3">
-                                <div class="text-lg font-bold text-blue-600">0</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-wide">Active Trades</div>
-                            </div>
-                        </div>
+                    <div id="accountSummary" class="grid grid-cols-2 gap-3 text-sm"></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md border border-slate-100 p-4 flex-1 overflow-y-auto max-h-[70vh]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-purple-500"></i>
+                            Active Options
+                        </h3>
+                        <span class="text-[11px] uppercase tracking-wide text-slate-400" id="portfolioOptionsMeta"></span>
                     </div>
-
-                    <div class="bg-white rounded-lg shadow-md p-4">
-                        <div class="flex items-center">
-                            <div class="bg-yellow-100 p-3 rounded-full">
-                                <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600"></i>
-                            </div>
-                            <div class="ml-3">
-                                <div class="text-lg font-bold text-yellow-600">$5</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-wide">Max Risk/Trade</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-lg shadow-md p-4">
-                        <div class="flex items-center">
-                            <div class="bg-purple-100 p-3 rounded-full">
-                                <i data-lucide="zap" class="w-5 h-5 text-purple-600"></i>
-                            </div>
-                            <div class="ml-3">
-                                <div class="text-lg font-bold text-purple-600">82%</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-wide">AI Confidence</div>
-                            </div>
-                        </div>
+                    <div id="portfolioOptionsList" class="space-y-3"></div>
+                    <div id="portfolioEmptyState" class="text-center text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-5 hidden">
+                        <i data-lucide="archive" class="w-6 h-6 text-slate-300 mx-auto mb-2"></i>
+                        <div>No options positions yet.</div>
+                        <div class="text-xs text-slate-400">Connect your account or refresh to see updates.</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Portfolio Section -->
-            <div id="portfolioColumn" class="space-y-4">
-                <div id="portfolioSection" class="bg-white rounded-lg shadow-md p-6 hidden max-h-[70vh] overflow-y-auto">
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <h2 class="text-2xl font-bold text-gray-800">Portfolio</h2>
-                            <span id="portfolioStatus" class="text-xs text-gray-500"></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button id="refreshPortfolioBtn" type="button" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-2 bg-white">
-                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                                <span>Refresh</span>
-                            </button>
-                            <select id="accountSelect" class="border border-gray-300 rounded px-3 py-2">
-                                <option value="">Select Account</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Account Summary -->
-                    <div id="accountSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <!-- Account summary will be inserted here -->
-                    </div>
-
-                    <!-- Positions Tables -->
-                    <div class="space-y-8">
-                        <!-- Options Section -->
-                        <div id="optionsSection">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <i data-lucide="zap" class="w-5 h-5 text-purple-600"></i>
-                                Options
-                            </h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full table-auto">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="optionsBody" class="bg-white divide-y divide-gray-200">
-                                        <tr>
-                                            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                                                <div class="flex flex-col items-center">
-                                                    <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
-                                                    <div class="text-lg font-medium mb-2">Select an Account</div>
-                                                    <div class="text-sm text-center max-w-md">
-                                                        <div class="text-gray-400">Choose an account from the dropdown above to view options positions.</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Stocks Section -->
-                        <div id="stocksSection">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
-                                Stocks
-                            </h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full table-auto">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market Value</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unrealized P&L</th>
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L %</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="stocksBody" class="bg-white divide-y divide-gray-200">
-                                        <tr>
-                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                                <div class="flex flex-col items-center">
-                                                    <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
-                                                    <div class="text-lg font-medium mb-2">Select an Account</div>
-                                                    <div class="text-sm text-center max-w-md">
-                                                        <div class="text-gray-400">Choose an account from the dropdown above to view stock positions.</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </aside>
         </div>
     </div>
 
@@ -229,17 +158,26 @@
         // Initialize Lucide icons
         lucide.createIcons();
 
-        const scanBtn = document.getElementById('scanBtn');
-        const scanStatus = document.getElementById('scanStatus');
-        const recommendations = document.getElementById('recommendations');
-        const portfolioBtn = document.getElementById('portfolioBtn');
-        const portfolioSection = document.getElementById('portfolioSection');
-        const accountSelect = document.getElementById('accountSelect');
-        const accountSummary = document.getElementById('accountSummary');
-        const stocksBody = document.getElementById('stocksBody');
-        const optionsBody = document.getElementById('optionsBody');
-        const stocksSection = document.getElementById('stocksSection');
-        const optionsSection = document.getElementById('optionsSection');
+    const scanSidebar = document.getElementById('scanSidebar');
+    const scanBtn = document.getElementById('scanBtn');
+    const scanStatus = document.getElementById('scanStatus');
+    const recommendations = document.getElementById('recommendations');
+    const portfolioRail = document.getElementById('portfolioRail');
+    const accountSummary = document.getElementById('accountSummary');
+    const portfolioOptionsList = document.getElementById('portfolioOptionsList');
+    const portfolioEmptyState = document.getElementById('portfolioEmptyState');
+    const portfolioOptionsMeta = document.getElementById('portfolioOptionsMeta');
+    const layoutGrid = document.getElementById('layoutGrid');
+    const collapseLeftBtn = document.getElementById('collapseLeftBtn');
+    const collapseLeftIcon = document.getElementById('collapseLeftIcon');
+    const collapseLeftLabel = document.getElementById('collapseLeftLabel');
+    const collapseRightBtn = document.getElementById('collapseRightBtn');
+    const collapseRightIcon = document.getElementById('collapseRightIcon');
+    const collapseRightLabel = document.getElementById('collapseRightLabel');
+    const toggleScanPanelBtn = document.getElementById('toggleScanPanelBtn');
+    const toggleScanPanelIcon = document.getElementById('toggleScanPanelIcon');
+    const toggleScanPanelLabel = document.getElementById('toggleScanPanelLabel');
+    const scanPanelBody = document.getElementById('scanPanelBody');
         const headerBalance = document.getElementById('headerBalance');
         const toggleSensitiveBtn = document.getElementById('toggleSensitiveBtn');
         const refreshPortfolioBtn = document.getElementById('refreshPortfolioBtn');
@@ -247,17 +185,28 @@
         const symbolsInput = document.getElementById('symbolsInput');
         const saveSymbolsBtn = document.getElementById('saveSymbolsBtn');
         const symbolsStatus = document.getElementById('symbolsStatus');
+        const strategySelect = document.getElementById('strategySelect');
+        const strategyStatus = document.getElementById('strategyStatus');
+    const recommendationSummary = document.getElementById('recommendationSummary');
+    const scanInsights = document.getElementById('scanInsights');
 
         const POLL_INTERVAL_MS = 15000;
         const PORTFOLIO_REFRESH_INTERVAL_MS = 60000;
         let recommendationsTimer = null;
         let portfolioRefreshTimer = null;
         let currentSymbolList = [];
+        let currentStrategy = 'day_trade';
+    let lastRecommendationStats = null;
+    let lastScanMetaPayload = null;
+    let scanPanelCollapsed = false;
+    let leftSidebarCollapsed = false;
+    let rightSidebarCollapsed = false;
         let revealSensitive = false;
         let lastBalancePayload = null;
         let lastPortfolioPayload = null;
         let lastPortfolioBalance = null;
         let lastPortfolioRefreshAt = null;
+        let portfolioAutoInitStarted = false;
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -290,6 +239,102 @@
             return out;
         }
 
+        function arraysShallowEqual(a, b) {
+            if (!Array.isArray(a) || !Array.isArray(b)) return false;
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+        function setScanPanelCollapsed(collapsed) {
+            if (!scanPanelBody || !toggleScanPanelBtn || !toggleScanPanelIcon || !toggleScanPanelLabel) return;
+            scanPanelCollapsed = !!collapsed;
+            if (scanPanelCollapsed) {
+                scanPanelBody.classList.add('hidden');
+                toggleScanPanelBtn.setAttribute('aria-expanded', 'false');
+                toggleScanPanelIcon.setAttribute('data-lucide', 'chevron-down');
+                toggleScanPanelLabel.textContent = 'Expand';
+            } else {
+                scanPanelBody.classList.remove('hidden');
+                toggleScanPanelBtn.setAttribute('aria-expanded', 'true');
+                toggleScanPanelIcon.setAttribute('data-lucide', 'chevron-up');
+                toggleScanPanelLabel.textContent = 'Collapse';
+            }
+            lucide.createIcons();
+        }
+
+        if (toggleScanPanelBtn) {
+            toggleScanPanelBtn.addEventListener('click', () => {
+                setScanPanelCollapsed(!scanPanelCollapsed);
+            });
+        }
+
+        setScanPanelCollapsed(false);
+
+        function updateLayoutColumns() {
+            if (!layoutGrid) return;
+            if (leftSidebarCollapsed && rightSidebarCollapsed) {
+                layoutGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
+            } else if (leftSidebarCollapsed) {
+                layoutGrid.style.gridTemplateColumns = 'minmax(0, 1fr) 360px';
+            } else if (rightSidebarCollapsed) {
+                layoutGrid.style.gridTemplateColumns = '320px minmax(0, 1fr)';
+            } else {
+                layoutGrid.style.gridTemplateColumns = '320px minmax(0, 1.4fr) 360px';
+            }
+        }
+
+        function updateSidebarToggleUI() {
+            if (collapseLeftIcon && collapseLeftLabel) {
+                if (leftSidebarCollapsed) {
+                    collapseLeftIcon.setAttribute('data-lucide', 'chevron-right');
+                    collapseLeftLabel.textContent = 'Show Scan Panel';
+                } else {
+                    collapseLeftIcon.setAttribute('data-lucide', 'chevron-left');
+                    collapseLeftLabel.textContent = 'Hide Scan Panel';
+                }
+            }
+            if (collapseRightIcon && collapseRightLabel) {
+                if (rightSidebarCollapsed) {
+                    collapseRightIcon.setAttribute('data-lucide', 'chevron-left');
+                    collapseRightLabel.textContent = 'Show Portfolio Rail';
+                } else {
+                    collapseRightIcon.setAttribute('data-lucide', 'chevron-right');
+                    collapseRightLabel.textContent = 'Hide Portfolio Rail';
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function updateSidebarVisibility() {
+            if (scanSidebar) {
+                scanSidebar.style.display = leftSidebarCollapsed ? 'none' : '';
+            }
+            if (portfolioRail) {
+                portfolioRail.style.display = rightSidebarCollapsed ? 'none' : '';
+            }
+            updateLayoutColumns();
+            updateSidebarToggleUI();
+        }
+
+        if (collapseLeftBtn) {
+            collapseLeftBtn.addEventListener('click', () => {
+                leftSidebarCollapsed = !leftSidebarCollapsed;
+                updateSidebarVisibility();
+            });
+        }
+
+        if (collapseRightBtn) {
+            collapseRightBtn.addEventListener('click', () => {
+                rightSidebarCollapsed = !rightSidebarCollapsed;
+                updateSidebarVisibility();
+            });
+        }
+
+        updateSidebarVisibility();
+
         function formatSymbolSummary(list) {
             if (!Array.isArray(list) || list.length === 0) {
                 return 'No symbols configured';
@@ -300,23 +345,255 @@
             return `${countLabel}: ${preview.join(', ')}${suffix}`;
         }
 
-        function setSymbolsStatus(state, message) {
-            if (!symbolsStatus) return;
+        const STRATEGY_METADATA = {
+            day_trade: {
+                label: 'Day Trade',
+                description: 'Intraday focus with faster exits and 0DTE exposure.'
+            },
+            swing_trade: {
+                label: 'Swing Trade',
+                description: 'Multi-day positioning with weekly expirations.'
+            }
+        };
+
+        function resolveStrategyMeta(strategy) {
+            const key = typeof strategy === 'string' ? strategy.trim().toLowerCase() : '';
+            return STRATEGY_METADATA[key] || {
+                label: key || 'Unknown',
+                description: 'Custom strategy mode.'
+            };
+        }
+
+        function formatStrategyLabel(strategy) {
+            return resolveStrategyMeta(strategy).label;
+        }
+
+        function formatStrategyDescription(strategy) {
+            return resolveStrategyMeta(strategy).description;
+        }
+
+        function setStatusDisplay(target, state, message, { infoIcon = 'info' } = {}) {
+            if (!target) return;
             const states = {
                 loading: { icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin' },
                 success: { icon: 'check', color: 'text-green-600', iconClass: '' },
                 error: { icon: 'x', color: 'text-red-600', iconClass: '' },
                 warning: { icon: 'alert-triangle', color: 'text-yellow-600', iconClass: '' },
-                info: { icon: 'info', color: 'text-gray-600', iconClass: '' }
+                info: { icon: infoIcon, color: 'text-gray-600', iconClass: '' }
             };
             const meta = states[state] || states.info;
             const iconHtml = `<i data-lucide="${meta.icon}" class="w-4 h-4 ${meta.iconClass}"></i>`;
-            symbolsStatus.innerHTML = `
+            target.innerHTML = `
                 <div class="flex items-center gap-2 text-sm ${meta.color}">
                     ${iconHtml}
                     <span>${escapeHtml(message)}</span>
                 </div>
             `;
+            lucide.createIcons();
+        }
+
+        function setSymbolsStatus(state, message) {
+            setStatusDisplay(symbolsStatus, state, message, { infoIcon: 'list' });
+        }
+
+        function setStrategyStatus(state, message) {
+            setStatusDisplay(strategyStatus, state, message, { infoIcon: 'shuffle' });
+        }
+
+        function updateRecommendationSummary(stats) {
+            if (!recommendationSummary) return;
+
+            if (!stats || !stats.totalSymbols) {
+                recommendationSummary.innerHTML = `
+                    <div class="bg-white border border-dashed border-slate-200 rounded-xl p-5 flex items-center gap-3 text-slate-500">
+                        <i data-lucide="compass" class="w-5 h-5"></i>
+                        <div>
+                            <div class="text-sm font-semibold">Awaiting trade ideas</div>
+                            <div class="text-xs text-slate-400">Run a scan to populate AI suggestions.</div>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            const cards = [
+                {
+                    icon: 'radar',
+                    title: 'Trade Ideas',
+                    value: stats.totalSymbols,
+                    accent: 'text-blue-600',
+                    description: `${stats.totalIdeas} AI reads · ${stats.providerCount} providers`,
+                },
+                {
+                    icon: 'check-circle',
+                    title: 'Approved',
+                    value: stats.decisionCounts.approve,
+                    accent: 'text-emerald-600',
+                    description: `${stats.callPutCounts.call} calls · ${stats.callPutCounts.put} puts`,
+                },
+                {
+                    icon: 'alert-triangle',
+                    title: 'Caution',
+                    value: stats.decisionCounts.caution,
+                    accent: 'text-amber-600',
+                    description: `${stats.decisionCounts.reject} rejects · ${stats.decisionCounts.unknown} needs review`,
+                },
+                {
+                    icon: 'shield-alert',
+                    title: 'Risk Flags',
+                    value: stats.riskFlagSymbols.length,
+                    accent: 'text-rose-600',
+                    description: `${stats.totalRiskFlags} alerts across watchlist`,
+                },
+            ];
+
+            recommendationSummary.innerHTML = cards
+                .map((card) => `
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-start gap-3">
+                        <div class="shrink-0 rounded-lg bg-slate-100 p-2">
+                            <i data-lucide="${card.icon}" class="w-5 h-5 ${card.accent}"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">${escapeHtml(card.title)}</div>
+                            <div class="text-2xl font-bold ${card.accent}">${escapeHtml(String(card.value))}</div>
+                            <div class="text-xs text-slate-500">${escapeHtml(card.description)}</div>
+                        </div>
+                    </div>
+                `)
+                .join('');
+
+            lucide.createIcons();
+        }
+
+        function renderSidebarInsights() {
+            if (!scanInsights) return;
+
+            const insights = [];
+            const strategyLabel = formatStrategyLabel(currentStrategy);
+            const symbolSummary = escapeHtml(formatSymbolSummary(currentSymbolList));
+
+            insights.push(`
+                <li class="flex items-start gap-2">
+                    <i data-lucide="list" class="w-4 h-4 text-slate-500 mt-0.5"></i>
+                    <span><span class="font-semibold text-slate-700">${symbolSummary}</span></span>
+                </li>
+            `);
+
+            insights.push(`
+                <li class="flex items-start gap-2">
+                    <i data-lucide="shuffle" class="w-4 h-4 text-indigo-500 mt-0.5"></i>
+                    <span><span class="font-semibold text-slate-700">${escapeHtml(strategyLabel)}</span> strategy active</span>
+                </li>
+            `);
+
+            if (lastRecommendationStats) {
+                const stats = lastRecommendationStats;
+                const formatDecisionLabel = (value) => {
+                    if (!value) return '';
+                    return String(value)
+                        .replace(/[_-]+/g, ' ')
+                        .replace(/\b\w/g, (char) => char.toUpperCase());
+                };
+                insights.push(`
+                    <li class="flex items-start gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-emerald-500 mt-0.5"></i>
+                        <span>${escapeHtml(String(stats.totalSymbols))} symbols · ${escapeHtml(String(stats.totalIdeas))} AI reads · ${escapeHtml(String(stats.providerCount))} providers</span>
+                    </li>
+                `);
+
+                const decisionSummary = Object.entries(stats.decisionCounts || {})
+                    .filter(([, count]) => Number(count) > 0)
+                    .map(([key, count]) => `${escapeHtml(String(count))} ${escapeHtml(formatDecisionLabel(key))}`)
+                    .join(' · ');
+                if (decisionSummary) {
+                    insights.push(`
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="scale" class="w-4 h-4 text-indigo-500 mt-0.5"></i>
+                            <span>${decisionSummary}</span>
+                        </li>
+                    `);
+                }
+
+                const cp = stats.callPutCounts || {};
+                if ((cp.call || 0) > 0 || (cp.put || 0) > 0) {
+                    insights.push(`
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="columns" class="w-4 h-4 text-slate-500 mt-0.5"></i>
+                            <span>${escapeHtml(String(cp.call || 0))} calls · ${escapeHtml(String(cp.put || 0))} puts</span>
+                        </li>
+                    `);
+                }
+
+                if (stats.topSignals.length) {
+                    const signalText = stats.topSignals
+                        .map((sig) => `${escapeHtml(sig.name)} (${escapeHtml(String(sig.count))})`)
+                        .join(', ');
+                    insights.push(`
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-blue-500 mt-0.5"></i>
+                            <span>Top signals: ${signalText}</span>
+                        </li>
+                    `);
+                }
+
+                if (stats.riskFlagSymbols.length) {
+                    const risky = stats.riskFlagSymbols
+                        .slice(0, 3)
+                        .map((sym) => escapeHtml(sym))
+                        .join(', ');
+                    const suffix = stats.riskFlagSymbols.length > 3 ? '…' : '';
+                    insights.push(`
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-500 mt-0.5"></i>
+                            <span>Risk alerts on ${escapeHtml(String(stats.riskFlagSymbols.length))} symbols (${risky}${suffix})</span>
+                        </li>
+                    `);
+                }
+            }
+
+            if (lastScanMetaPayload) {
+                const providerLabel = Array.isArray(lastScanMetaPayload.providers)
+                    ? lastScanMetaPayload.providers
+                        .map((p) => (p && typeof p === 'object' ? p.provider || '' : p))
+                        .filter(Boolean)
+                        .map((name) => escapeHtml(String(name).toUpperCase()))
+                        .join(', ')
+                    : null;
+                const lastRun = lastScanMetaPayload.completedAt
+                    ? `Last scan ${escapeHtml(formatRelativeTime(lastScanMetaPayload.completedAt))}`
+                    : 'Scan pending';
+                const providerDetail = providerLabel ? ` · ${providerLabel}` : '';
+                insights.push(`
+                    <li class="flex items-start gap-2">
+                        <i data-lucide="history" class="w-4 h-4 text-slate-500 mt-0.5"></i>
+                        <span>${lastRun}${providerDetail}</span>
+                    </li>
+                `);
+
+                const failureCount = Array.isArray(lastScanMetaPayload.errors)
+                    ? lastScanMetaPayload.errors.filter((err) => err && (err.provider || err.message)).length
+                    : 0;
+                if (failureCount) {
+                    insights.push(`
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-500 mt-0.5"></i>
+                            <span>${escapeHtml(String(failureCount))} provider${failureCount === 1 ? '' : 's'} reported errors</span>
+                        </li>
+                    `);
+                }
+            }
+
+            if (!insights.length) {
+                insights.push(`
+                    <li class="flex items-start gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-slate-400 mt-0.5"></i>
+                        <span>Awaiting initial scan...</span>
+                    </li>
+                `);
+            }
+
+            scanInsights.innerHTML = insights.join('');
             lucide.createIcons();
         }
 
@@ -356,35 +633,6 @@
         function refreshPortfolioDisplay() {
             if (lastPortfolioPayload) {
                 displayPortfolio(lastPortfolioPayload, lastPortfolioBalance, { skipStore: true });
-            }
-        }
-
-        function getAccountOptionLabels(account) {
-            const desc = account.accountDesc || 'Account';
-            const accountId = account.accountId || account.accountIdKey || 'N/A';
-            const mode = account.accountMode ? ` - ${account.accountMode}` : '';
-            const fullLabel = `${desc} (${accountId})${mode}`;
-            const maskedId = maskAccountId(accountId);
-            const maskedLabel = `${desc} (${maskedId})${mode}`;
-            return { fullLabel, maskedLabel };
-        }
-
-        function updateAccountSelectLabels(mode = 'auto') {
-            if (!accountSelect) return;
-            const desiredMode = mode === 'auto' ? (revealSensitive ? 'full' : 'masked') : mode;
-            const useFull = desiredMode === 'full';
-            Array.from(accountSelect.options).forEach(option => {
-                if (!option.dataset || !option.dataset.fullLabel) return;
-                const fullLabel = option.dataset.fullLabel;
-                const maskedLabel = option.dataset.maskedLabel || fullLabel;
-                option.textContent = useFull ? fullLabel : maskedLabel;
-            });
-            const selected = accountSelect.options[accountSelect.selectedIndex];
-            if (selected && selected.dataset && selected.dataset.fullLabel) {
-                const fullLabel = selected.dataset.fullLabel;
-                const maskedLabel = selected.dataset.maskedLabel || fullLabel;
-                const shouldShowFull = revealSensitive || useFull;
-                selected.textContent = shouldShowFull ? fullLabel : maskedLabel;
             }
         }
 
@@ -450,7 +698,6 @@
                 updateSensitiveControls();
                 renderHeaderBalance();
                 refreshPortfolioDisplay();
-                updateAccountSelectLabels();
             });
         }
 
@@ -459,6 +706,11 @@
             if (!config) return;
             const list = Array.isArray(config.symbols) ? config.symbols : [];
             currentSymbolList = list;
+            const configuredStrategy = typeof config.strategy === 'string' ? config.strategy : currentStrategy;
+            currentStrategy = configuredStrategy;
+            if (strategySelect && strategySelect.value !== configuredStrategy) {
+                strategySelect.value = configuredStrategy;
+            }
             if (updateInput && symbolsInput && document.activeElement !== symbolsInput) {
                 symbolsInput.value = list.join(', ');
             }
@@ -468,7 +720,11 @@
                 } else {
                     setSymbolsStatus('info', formatSymbolSummary(list));
                 }
+                const strategyLabel = formatStrategyLabel(configuredStrategy);
+                const strategyDescription = formatStrategyDescription(configuredStrategy);
+                setStrategyStatus('info', `${strategyLabel} • ${strategyDescription}`);
             }
+            renderSidebarInsights();
         }
 
         function renderScanStatus({ icon, color = 'text-gray-600', message, suffix = '', iconClass = '' }) {
@@ -512,24 +768,42 @@
                 applyScanConfig(payload.config, { updateInput: false, updateStatus: true });
             }
 
+            if (payload?.scanMeta) {
+                lastScanMetaPayload = payload.scanMeta;
+            } else if (payload?.results?.scanMeta) {
+                lastScanMetaPayload = payload.results.scanMeta;
+            }
+
             const symbolSuffix = currentSymbolList.length
                 ? `<span class="text-xs text-gray-400 ml-2">[${escapeHtml(currentSymbolList.join(', '))}]</span>`
                 : '';
+            const strategyLabel = formatStrategyLabel(currentStrategy);
+            const strategySuffix = currentStrategy
+                ? `<span class="text-xs text-indigo-500 ml-2 uppercase">Strategy: ${escapeHtml(strategyLabel)}</span>`
+                : '';
+            const statusSuffix = `${symbolSuffix}${strategySuffix}`;
+
+            const finish = () => {
+                renderSidebarInsights();
+            };
 
             if (error) {
-                renderScanStatus({ icon: 'x', color: 'text-red-600', message: error, suffix: symbolSuffix });
+                renderScanStatus({ icon: 'x', color: 'text-red-600', message: error, suffix: statusSuffix });
+                finish();
                 return;
             }
 
             if (!payload) {
                 renderScanStatus({ icon: 'clock', message: 'Waiting for first scan', suffix: symbolSuffix });
+                finish();
                 return;
             }
 
             const { isScanning, scanMeta, lastError } = payload;
 
             if (isScanning) {
-                renderScanStatus({ icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin', message: 'Running day-trade scan...', suffix: symbolSuffix });
+                renderScanStatus({ icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin', message: `Running ${strategyLabel} scan...`, suffix: statusSuffix });
+                finish();
                 return;
             }
 
@@ -554,8 +828,9 @@
                     icon: 'check',
                     color: 'text-green-600',
                     message: `Last scan ${completed} (${sourceLabel}${providerLabel}${failureLabel})`,
-                    suffix: symbolSuffix
+                    suffix: statusSuffix
                 });
+                finish();
                 return;
             }
 
@@ -566,12 +841,14 @@
                     icon: 'alert-triangle',
                     color: 'text-yellow-600',
                     message: `Scan error ${completed}: ${errorMessage}`,
-                    suffix: symbolSuffix
+                    suffix: statusSuffix
                 });
+                finish();
                 return;
             }
 
-            renderScanStatus({ icon: 'clock', message: 'Waiting for first scan', suffix: symbolSuffix });
+            renderScanStatus({ icon: 'clock', message: 'Waiting for first scan', suffix: statusSuffix });
+            finish();
         }
 
         async function fetchRecommendations() {
@@ -580,7 +857,7 @@
                 const data = await response.json();
 
                 if (data.results) {
-                    displayRecommendations(data.results.parsed);
+                    displayRecommendations(data.results.parsed, data.results);
                 }
 
                 updateScanStatus(data);
@@ -606,7 +883,17 @@
             const suffix = currentSymbolList.length
                 ? `<span class="text-xs text-gray-400 ml-2">[${escapeHtml(currentSymbolList.join(', '))}]</span>`
                 : '';
-            renderScanStatus({ icon: 'loader', color: 'text-blue-600', iconClass: 'animate-spin', message: 'Running manual scan...', suffix });
+            const strategyLabel = formatStrategyLabel(currentStrategy);
+            const strategySuffix = currentStrategy
+                ? `<span class="text-xs text-indigo-500 ml-2 uppercase">Strategy: ${escapeHtml(strategyLabel)}</span>`
+                : '';
+            renderScanStatus({
+                icon: 'loader',
+                color: 'text-blue-600',
+                iconClass: 'animate-spin',
+                message: `Running manual ${strategyLabel} scan...`,
+                suffix: `${suffix}${strategySuffix}`
+            });
 
             try {
                 const response = await fetch('/api/scan', { method: 'POST' });
@@ -631,7 +918,7 @@
 
         if (saveSymbolsBtn) {
             saveSymbolsBtn.addEventListener('click', async () => {
-                await saveSymbols();
+                await saveScanSettings();
             });
         }
 
@@ -639,101 +926,138 @@
             symbolsInput.addEventListener('keydown', async (event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
-                    await saveSymbols();
+                    await saveScanSettings();
                 }
             });
         }
 
-        // Load portfolio
-        portfolioBtn.addEventListener('click', async () => {
-            portfolioBtn.disabled = true;
-            portfolioBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Loading...';
+        if (strategySelect) {
+            strategySelect.addEventListener('change', async () => {
+                await saveScanSettings();
+            });
+        }
+
+        let portfolioConfigLoaded = false;
+        const portfolioConfig = { defaultAccountIdKey: null };
+
+        async function loadPortfolioConfig() {
+            if (portfolioConfigLoaded) {
+                return portfolioConfig;
+            }
+            try {
+                const response = await fetch('/api/portfolio/config');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data?.success && data.defaultAccountIdKey) {
+                        portfolioConfig.defaultAccountIdKey = data.defaultAccountIdKey;
+                    }
+                }
+            } catch (error) {
+                console.warn('Portfolio config fetch failed:', error);
+            } finally {
+                portfolioConfigLoaded = true;
+            }
+            return portfolioConfig;
+        }
+
+        function resolveDefaultAccountIdKey(accounts) {
+            if (!Array.isArray(accounts) || accounts.length === 0) {
+                return null;
+            }
+            if (portfolioConfig.defaultAccountIdKey) {
+                const match = accounts.find((acc) => acc.accountIdKey === portfolioConfig.defaultAccountIdKey);
+                if (match) {
+                    return match.accountIdKey;
+                }
+            }
+            return accounts[0].accountIdKey;
+        }
+
+        function revealPortfolioRail() {
+            if (portfolioRail) {
+                portfolioRail.classList.remove('hidden');
+            }
+        }
+
+        function renderPortfolioLoadingState() {
+            if (accountSummary) {
+                accountSummary.innerHTML = `
+                    <div class="col-span-2 flex items-center justify-center py-6">
+                        <div class="flex items-center gap-2 text-slate-500">
+                            <i data-lucide="loader" class="w-4 h-4 animate-spin text-blue-500"></i>
+                            <span>Loading account details…</span>
+                        </div>
+                    </div>
+                `;
+            }
+            if (portfolioOptionsList) {
+                portfolioOptionsList.innerHTML = `
+                    <div class="border border-dashed border-slate-200 rounded-lg p-4 animate-pulse bg-slate-50">
+                        <div class="h-3 bg-slate-200 rounded w-1/2 mb-3"></div>
+                        <div class="space-y-2">
+                            <div class="h-2.5 bg-slate-200 rounded"></div>
+                            <div class="h-2.5 bg-slate-200 rounded"></div>
+                            <div class="h-2.5 bg-slate-200 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            if (portfolioOptionsMeta) {
+                portfolioOptionsMeta.textContent = 'Loading…';
+            }
+            if (portfolioEmptyState) {
+                portfolioEmptyState.classList.add('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        async function initializePortfolioRail({ force = false } = {}) {
+            if (portfolioAutoInitStarted && !force) {
+                return;
+            }
+            portfolioAutoInitStarted = true;
 
             try {
-                // First get accounts
+                await loadPortfolioConfig();
+            } catch (error) {
+                console.warn('Portfolio config unavailable:', error);
+            }
+
+            try {
                 const accountsResponse = await fetch('/api/portfolio/accounts');
                 const accountsData = await accountsResponse.json();
 
-                if (!accountsData.success || !accountsData.accounts.length) {
-                    throw new Error('No accounts found. Please check E*TRADE authentication.');
+                if (!accountsData.success || !Array.isArray(accountsData.accounts) || accountsData.accounts.length === 0) {
+                    throw new Error('No accounts found. Please verify brokerage authentication.');
                 }
 
-                // Store accounts data for later use
                 window.availableAccounts = accountsData.accounts;
+                const accountIdKey = resolveDefaultAccountIdKey(accountsData.accounts);
+                if (!accountIdKey) {
+                    throw new Error('Default account not available.');
+                }
 
-                // Populate account selector
-                accountSelect.innerHTML = '<option value="">Select Account</option>';
-                accountsData.accounts.forEach(account => {
-                    const option = document.createElement('option');
-                    option.value = account.accountIdKey;
-                    const labels = getAccountOptionLabels(account);
-                    option.dataset.fullLabel = labels.fullLabel;
-                    option.dataset.maskedLabel = labels.maskedLabel;
-                    option.textContent = revealSensitive ? labels.fullLabel : labels.maskedLabel;
-                    accountSelect.appendChild(option);
-                });
-
-                updateAccountSelectLabels();
-                clearPortfolioRefreshTimer();
+                window.selectedAccountIdKey = accountIdKey;
+                revealPortfolioRail();
+                renderPortfolioLoadingState();
+                setPortfolioStatus('Loading latest portfolio…', 'info');
                 updateHeaderBalance(null);
-                window.selectedAccountIdKey = null;
-                setPortfolioStatus('Select an account to view details');
-
-                portfolioSection.classList.remove('hidden');
-                scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Portfolio loaded - Select an account to view details';
-
+                await loadAccountDetails(accountIdKey, { showLoading: false, reason: 'manual' });
+                schedulePortfolioRefresh(accountIdKey);
+                if (scanStatus) {
+                    scanStatus.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Portfolio synced';
+                    lucide.createIcons();
+                }
             } catch (error) {
-                console.error('Portfolio load error:', error);
-                scanStatus.innerHTML = '<i data-lucide="x" class="w-4 h-4 text-red-600"></i> Portfolio error: ' + error.message;
+                console.error('Portfolio auto-load error:', error);
+                if (scanStatus) {
+                    scanStatus.innerHTML = '<i data-lucide="x" class="w-4 h-4 text-red-600"></i> Portfolio error: ' + escapeHtml(error.message);
+                    lucide.createIcons();
+                }
                 setPortfolioStatus('Portfolio load failed: ' + error.message, 'error');
-            } finally {
-                portfolioBtn.disabled = false;
-                portfolioBtn.innerHTML = '<i data-lucide="wallet" class="w-5 h-5"></i> Load Portfolio';
-                lucide.createIcons();
+                portfolioAutoInitStarted = false;
             }
-        });
-
-        accountSelect.addEventListener('mousedown', (event) => {
-            if (event.button !== 0) return;
-            updateAccountSelectLabels('full');
-        });
-
-        accountSelect.addEventListener('click', () => {
-            updateAccountSelectLabels();
-        });
-
-        accountSelect.addEventListener('keydown', (event) => {
-            const keysThatOpen = ['ArrowDown', 'ArrowUp', 'Enter', ' ', 'Space', 'Spacebar'];
-            if (!keysThatOpen.includes(event.key)) return;
-            updateAccountSelectLabels('full');
-        });
-
-        accountSelect.addEventListener('keyup', (event) => {
-            if (['Escape', 'Enter', ' ', 'Space', 'Spacebar'].includes(event.key)) {
-                updateAccountSelectLabels();
-            }
-        });
-
-        accountSelect.addEventListener('blur', () => {
-            updateAccountSelectLabels();
-        });
-
-        // Account selection change
-        accountSelect.addEventListener('change', async (e) => {
-            updateAccountSelectLabels();
-            const accountIdKey = e.target.value;
-            window.selectedAccountIdKey = accountIdKey || null;
-            clearPortfolioRefreshTimer();
-
-            if (!accountIdKey) {
-                updateHeaderBalance(null); // Reset balance display when no account selected
-                setPortfolioStatus('Select an account to view details');
-                return;
-            }
-
-            await loadAccountDetails(accountIdKey, { showLoading: true, reason: 'manual' });
-            schedulePortfolioRefresh(accountIdKey);
-        });
+        }
 
         async function loadAccountDetails(accountIdKey, { showLoading = true, reason = 'manual' } = {}) {
             if (!accountIdKey) {
@@ -741,32 +1065,9 @@
             }
 
             if (showLoading) {
-                accountSummary.innerHTML = `
-                    <div class="col-span-4 flex items-center justify-center py-8">
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="loader" class="w-5 h-5 animate-spin text-blue-600"></i>
-                            <span class="text-gray-600">Loading account details...</span>
-                        </div>
-                    </div>
-                `;
-                stocksBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
-                            <div>Loading stock positions...</div>
-                        </td>
-                    </tr>
-                `;
-                optionsBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                            <i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
-                            <div>Loading options positions...</div>
-                        </td>
-                    </tr>
-                `;
-                lucide.createIcons();
-                setPortfolioStatus('Loading account data...', 'info');
+                revealPortfolioRail();
+                renderPortfolioLoadingState();
+                setPortfolioStatus('Loading account data…', 'info');
             } else {
                 setPortfolioStatus(reason === 'auto' ? 'Auto refresh in progress…' : 'Refreshing portfolio…', 'info');
             }
@@ -792,6 +1093,7 @@
                     throw new Error(portfolioData.error || 'Failed to load portfolio');
                 }
 
+                revealPortfolioRail();
                 displayPortfolio(portfolioData.portfolio, balanceData);
                 updateHeaderBalance(balanceData);
                 lastPortfolioRefreshAt = Date.now();
@@ -806,31 +1108,33 @@
                     displayBasicAccountInfo(accountDetails);
                     updateHeaderBalance(null);
                 } else {
-                    accountSummary.innerHTML = `
-                        <div class="col-span-4 text-center py-8">
-                            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
-                            <div class="text-red-600 font-medium">Error Loading Account</div>
-                            <div class="text-sm text-gray-500 mt-1">${escapeHtml(error.message)}</div>
+                    if (accountSummary) {
+                        accountSummary.innerHTML = `
+                            <div class="col-span-2 text-center py-6">
+                                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 mx-auto mb-2"></i>
+                                <div class="text-red-600 font-medium">Error Loading Account</div>
+                                <div class="text-xs text-slate-500 mt-1">${escapeHtml(error.message)}</div>
+                            </div>
+                        `;
+                    }
+                }
+                if (portfolioOptionsList) {
+                    portfolioOptionsList.innerHTML = `
+                        <div class="border border-red-200 bg-red-50 text-red-600 rounded-lg p-4 text-sm">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+                                <span>Unable to load positions.</span>
+                            </div>
+                            <div class="text-xs text-red-500 mt-2">${escapeHtml(error.message)}</div>
                         </div>
                     `;
                 }
-
-                stocksBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
-                            <div class="text-red-600">Error loading positions</div>
-                        </td>
-                    </tr>
-                `;
-                optionsBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500 mx-auto mb-2"></i>
-                            <div class="text-red-600">Error loading positions</div>
-                        </td>
-                    </tr>
-                `;
+                if (portfolioOptionsMeta) {
+                    portfolioOptionsMeta.textContent = '';
+                }
+                if (portfolioEmptyState) {
+                    portfolioEmptyState.classList.add('hidden');
+                }
                 lucide.createIcons();
                 setPortfolioStatus(`Portfolio refresh failed: ${error.message}`, 'error');
                 return false;
@@ -840,7 +1144,8 @@
         if (refreshPortfolioBtn) {
             refreshPortfolioBtn.addEventListener('click', async () => {
                 if (!window.selectedAccountIdKey) {
-                    setPortfolioStatus('Select an account before refreshing', 'warning');
+                    setPortfolioStatus('Attempting to load default account…', 'info');
+                    await initializePortfolioRail({ force: true });
                     return;
                 }
                 await loadAccountDetails(window.selectedAccountIdKey, { showLoading: false, reason: 'manual' });
@@ -852,8 +1157,8 @@
             clearPortfolioRefreshTimer();
         });
 
-        if (optionsBody) {
-            optionsBody.addEventListener('click', async (event) => {
+        if (portfolioOptionsList) {
+            portfolioOptionsList.addEventListener('click', async (event) => {
                 const button = event.target.closest('button[data-action]');
                 if (!button) {
                     return;
@@ -867,7 +1172,7 @@
                 event.preventDefault();
                 const accountIdKey = window.selectedAccountIdKey;
                 if (!accountIdKey) {
-                    alert('Select an account before submitting an emergency sell.');
+                    alert('Load your default account before submitting an emergency sell.');
                     return;
                 }
 
@@ -947,10 +1252,7 @@
                     }
 
                     alert(messageLines.join('\n'));
-
-                    if (accountSelect) {
-                        accountSelect.dispatchEvent(new Event('change'));
-                    }
+                    await loadAccountDetails(accountIdKey, { showLoading: false, reason: 'manual' });
                 } catch (err) {
                     alert(`Emergency sell failed: ${err.message}`);
                 } finally {
@@ -962,307 +1264,244 @@
         }
 
         // Display recommendations
-        function displayRecommendations(recs) {
+        function displayRecommendations(recs, context = {}) {
             recommendations.innerHTML = '';
 
-            const formatStrategyScore = (score) => {
-                if (!Number.isFinite(score)) {
+            const normalizeDecision = (value) => {
+                const token = String(value || '').toLowerCase();
+                if (token.includes('approve') || token.includes('strong') || token === 'buy') return 'approve';
+                if (token.includes('caution') || token.includes('hold') || token === 'watch') return 'caution';
+                if (token.includes('reject') || token.includes('avoid') || token.includes('sell')) return 'reject';
+                return 'unknown';
+            };
+
+            const formatPrice = (value) => {
+                if (Number.isFinite(value)) {
+                    return Number(value).toFixed(2);
+                }
+                return '—';
+            };
+
+            const formatQuantity = (value) => {
+                if (Number.isFinite(value)) {
+                    return String(value);
+                }
+                return '—';
+            };
+
+            const formatPriceLabel = (value) => {
+                const raw = formatPrice(value);
+                return raw === '—' ? '—' : `$${raw}`;
+            };
+
+            const slugify = (value, fallback = 'item') => {
+                if (!value) return fallback;
+                return String(value)
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    || fallback;
+            };
+
+            const formatSideLabel = (side, contract = '') => {
+                const token = typeof side === 'string' ? side.trim().toUpperCase() : '';
+                if (token === 'CALL' || token === 'PUT') {
+                    return token;
+                }
+                const text = typeof contract === 'string' ? contract.toUpperCase() : '';
+                if (text.includes(' CALL')) return 'CALL';
+                if (text.includes(' PUT')) return 'PUT';
+                return null;
+            };
+
+            const parseExpiryDate = (value) => {
+                if (!value) return null;
+                const text = String(value).trim();
+                if (!text) return null;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+                    const iso = new Date(`${text}T00:00:00Z`);
+                    return Number.isNaN(iso.getTime()) ? null : iso;
+                }
+                const parsed = new Date(text);
+                return Number.isNaN(parsed.getTime()) ? null : parsed;
+            };
+
+            const calculateHoldGuidance = (rec, fallbackExpiry) => {
+                if (rec?.ai?.holdGuidance) {
+                    return rec.ai.holdGuidance;
+                }
+                const expiryDate = parseExpiryDate(rec?.expiry || fallbackExpiry);
+                if (!expiryDate) {
+                    return 'Reassess daily; exit if momentum stalls to limit theta decay.';
+                }
+                const now = new Date();
+                const diffMs = expiryDate.getTime() - now.getTime();
+                const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+                if (diffDays <= 1) {
+                    return 'Exit or roll today—expiration is imminent and theta risk is extreme.';
+                }
+                if (diffDays <= 3) {
+                    return `Keep a tight leash; roll or exit within ${Math.max(1, diffDays - 1)} day(s) if momentum stays flat.`;
+                }
+                if (diffDays <= 7) {
+                    return `Review after ${Math.max(1, diffDays - 2)} day(s); plan to roll early if price fails to move.`;
+                }
+                return `Target follow-through within ${Math.max(2, Math.round(diffDays / 2))} day(s); exit sooner if momentum breaks.`;
+            };
+
+            const formatConfidence = (rec) => {
+                const raw = rec?.ai?.confidence;
+                if (typeof raw === 'number') {
+                    return `${Math.round(raw)}%`;
+                }
+                if (typeof raw === 'string' && raw.trim()) {
+                    return raw.includes('%') ? raw.trim() : `${raw.trim()}%`;
+                }
+                if (Number.isFinite(rec?.ai?.strength)) {
+                    return `${Math.round(rec.ai.strength)}%`;
+                }
+                return '—';
+            };
+
+            const createSparkline = (rec) => {
+                const pointsSource = Array.isArray(rec?.sparkline)
+                    ? rec.sparkline
+                    : Array.isArray(rec?.sparklinePoints)
+                        ? rec.sparklinePoints
+                        : null;
+
+                let series = null;
+                if (pointsSource && pointsSource.length >= 2) {
+                    series = pointsSource
+                        .map((value) => Number(value))
+                        .filter((value) => Number.isFinite(value));
+                } else {
+                    const fallback = [rec?.stop, rec?.entry, rec?.target]
+                        .map((value) => Number(value))
+                        .filter((value) => Number.isFinite(value));
+                    series = fallback.length >= 2 ? fallback : null;
+                }
+
+                if (!Array.isArray(series) || series.length < 2) {
                     return null;
                 }
-                const normalized = score <= 1 ? score * 100 : score;
-                return `${Math.round(normalized)}%`;
+
+                const width = 160;
+                const height = 48;
+                const min = Math.min(...series);
+                const max = Math.max(...series);
+                const range = max - min || 1;
+                const step = width / (series.length - 1);
+                const path = series
+                    .map((value, index) => {
+                        const x = (index * step).toFixed(1);
+                        const y = (height - ((value - min) / range) * height).toFixed(1);
+                        return `${index === 0 ? 'M' : 'L'}${x},${y}`;
+                    })
+                    .join(' ');
+
+                const gradientId = `spark-${(rec?.symbol || 'line').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                const formattedValues = series.map((value) => Number.isFinite(value) ? Number(value.toFixed(2)) : value);
+
+                return {
+                    svg: `
+                        <svg viewBox="0 0 ${width} ${height}" class="w-full h-12" preserveAspectRatio="none" role="img" aria-label="Price sparkline">
+                            <defs>
+                                <linearGradient id="${gradientId}">
+                                    <stop offset="0%" stop-color="#2563eb" />
+                                    <stop offset="100%" stop-color="#10b981" />
+                                </linearGradient>
+                            </defs>
+                            <path d="${path}" fill="none" stroke="url(#${gradientId})" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    `,
+                    values: formattedValues,
+                };
             };
 
-            const normalizeBias = (bias) => {
-                if (!bias) {
-                    return 'neutral';
-                }
-                return String(bias).replace(/[_-]+/g, ' ');
+            const formatSignalTag = (text) => {
+                if (!text) return '';
+                return text
+                    .toString()
+                    .trim()
+                    .replace(/[_-]+/g, ' ')
+                    .replace(/\b\w/g, (char) => char.toUpperCase());
             };
 
-            const formatAdjustmentValue = (value) => {
-                if (value == null) {
-                    return '<span class="text-gray-400">n/a</span>';
+            const extractOptionMeta = (rec) => {
+                const result = {
+                    strike: Number.isFinite(rec?.strike) ? rec.strike : null,
+                    expiry: rec?.expiry || null,
+                };
+                if ((!result.expiry || !result.strike) && typeof rec?.contract === 'string') {
+                    const match = rec.contract.match(/(\d{4}-\d{2}-\d{2})/);
+                    if (!result.expiry && match) {
+                        result.expiry = match[1];
+                    }
+                    const strikeMatch = rec.contract.match(/\b(\d+(?:\.\d+)?)\s*(?:C|P)\b/i);
+                    if (!result.strike && strikeMatch) {
+                        result.strike = Number.parseFloat(strikeMatch[1]);
+                    }
                 }
-                if (typeof value === 'string') {
-                    return escapeHtml(value);
-                }
-                if (typeof value === 'number') {
-                    const formatted = Number.isFinite(value) ? value.toFixed(value % 1 === 0 ? 0 : 2) : String(value);
-                    return escapeHtml(formatted);
-                }
-                if (Array.isArray(value)) {
-                    return value
-                        .map((item) => (typeof item === 'string' ? escapeHtml(item) : escapeHtml(JSON.stringify(item))))
-                        .join(', ');
-                }
-                return escapeHtml(JSON.stringify(value));
+                return result;
             };
 
-            const sanitizeForId = (value) => {
-                return value ? String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'na';
-            };
-
-            const renderProviderColumn = (symbol, rec, columnIndex) => {
-                const providerId = rec.ai?.provider || rec.provider || 'AI';
-                const providerLabel = providerId ? providerId.toString().toUpperCase() : 'AI';
-                const modelLabel = rec.ai?.model ? String(rec.ai.model) : '';
-                const decision = rec.ai?.decision || 'unknown';
-                const confidence = rec.ai?.confidence || (Number.isFinite(rec.ai?.strength) ? `${rec.ai.strength}%` : 'N/A');
-                const icon = decision === 'approve' ? 'check-circle'
-                    : decision === 'caution' ? 'alert-triangle' : 'x-circle';
-                const iconColor = decision === 'approve' ? 'text-green-600'
-                    : decision === 'caution' ? 'text-yellow-600' : 'text-red-600';
-
-                const priceBlock = Number.isFinite(rec.price)
-                    ? `<div class="text-xs text-gray-500">Underlying: <span class="font-semibold text-gray-700">$${rec.price.toFixed(2)}</span>${rec.priceSource ? ` · ${escapeHtml(String(rec.priceSource))}` : ''}</div>`
-                    : '';
-
-                const entryBlock = Number.isFinite(rec.entry) || Number.isFinite(rec.stop) || Number.isFinite(rec.target)
-                    ? `
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="text-center">
-                                <div class="text-base font-bold text-blue-600">${Number.isFinite(rec.entry) ? `$${rec.entry.toFixed(2)}` : 'N/A'}</div>
-                                <div class="text-xs text-gray-500">Entry</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-base font-bold text-red-600">${Number.isFinite(rec.stop) ? `$${rec.stop.toFixed(2)}` : 'N/A'}</div>
-                                <div class="text-xs text-gray-500">Stop Loss</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-base font-bold text-green-600">${Number.isFinite(rec.target) ? `$${rec.target.toFixed(2)}` : 'N/A'}</div>
-                                <div class="text-xs text-gray-500">Target</div>
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const sizingBlock = Number.isFinite(rec.qty) || Number.isFinite(rec.risk) || Number.isFinite(rec.riskPerContract)
-                    ? `
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="text-center">
-                                <div class="text-base font-bold text-indigo-600">${Number.isFinite(rec.qty) ? rec.qty : 'N/A'}</div>
-                                <div class="text-xs text-gray-500">Contracts</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-base font-bold text-amber-600">${Number.isFinite(rec.risk) ? `$${rec.risk.toFixed(2)}` : 'N/A'}</div>
-                                <div class="text-xs text-gray-500">Risk Budget</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-base font-bold text-purple-600">${Number.isFinite(rec.riskPerContract) ? `$${rec.riskPerContract.toFixed(2)}` : 'N/A'}</div>
-                                <div class="text-xs text-gray-500">Per Contract</div>
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const selectedStrategy = rec.ai?.selectedStrategy;
-                const strategyBlock = selectedStrategy
-                    ? `
-                        <div class="border border-indigo-100 bg-indigo-50 rounded-lg p-4">
-                            <div class="text-sm font-semibold text-indigo-700 mb-1 flex items-center gap-2">
-                                <i data-lucide="compass" class="w-4 h-4 text-indigo-600"></i>
-                                Strategy Alignment
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3 text-sm text-indigo-900">
-                                <span class="font-semibold">${escapeHtml(selectedStrategy.name || 'Primary')}</span>
-                                <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wide">${escapeHtml(normalizeBias(selectedStrategy.bias || 'neutral'))}</span>
-                                ${formatStrategyScore(selectedStrategy.score) ? `<span class="text-xs text-indigo-700">Score ${formatStrategyScore(selectedStrategy.score)}</span>` : ''}
-                            </div>
-                            ${selectedStrategy.rationale ? `<div class="text-xs text-gray-600 mt-2">${escapeHtml(selectedStrategy.rationale)}</div>` : ''}
-                        </div>
-                    `
-                    : '';
-
-                const riskFlags = Array.isArray(rec.ai?.riskFlags) ? rec.ai.riskFlags.filter(Boolean) : [];
-                const riskBlock = riskFlags.length
-                    ? `
-                        <div class="border border-red-100 bg-red-50 rounded-lg p-4">
-                            <div class="text-sm font-semibold text-red-700 mb-2 flex items-center gap-2">
-                                <i data-lucide="shield-alert" class="w-4 h-4 text-red-600"></i>
-                                Risk Flags
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                ${riskFlags.map((flag) => `<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-[11px] font-medium">${escapeHtml(flag)}</span>`).join('')}
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const adjustmentsEntries = rec.ai?.adjustments && typeof rec.ai.adjustments === 'object'
-                    ? Object.entries(rec.ai.adjustments).filter(([, value]) => value != null)
-                    : [];
-
-                const adjustmentsBlock = adjustmentsEntries.length
-                    ? `
-                        <div class="border border-amber-100 bg-amber-50 rounded-lg p-4">
-                            <div class="text-sm font-semibold text-amber-700 mb-2 flex items-center gap-2">
-                                <i data-lucide="settings-2" class="w-4 h-4 text-amber-600"></i>
-                                Suggested Adjustments
-                            </div>
-                            <div class="space-y-2 text-sm text-gray-700">
-                                ${adjustmentsEntries.map(([key, value]) => `
-                                    <div>
-                                        <div class="text-xs uppercase text-amber-600 font-semibold tracking-wide">${escapeHtml(String(key).replace(/[_-]+/g, ' '))}</div>
-                                        <div>${formatAdjustmentValue(value)}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const strikeLabel = Number.isFinite(rec.strike)
-                    ? `$${rec.strike.toFixed(rec.strike % 1 === 0 ? 0 : 2)}`
-                    : 'N/A';
-                const optionSourceLabel = rec.optionSource
-                    ? escapeHtml(String(rec.optionSource).replace(/[_-]+/g, ' '))
-                    : '<span class="text-gray-400">unknown</span>';
-
-                const optionDetailsBlock = rec.contract
-                    ? `
-                        <div class="border border-slate-200 bg-slate-50 rounded-lg p-4">
-                            <div class="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                <i data-lucide="ticket" class="w-4 h-4 text-slate-500"></i>
-                                Option Contract
-                            </div>
-                            <div class="grid grid-cols-2 gap-3 text-sm text-slate-700">
-                                <div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-wide">Contract</div>
-                                    <div class="font-semibold">${escapeHtml(rec.contract)}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-wide">Type</div>
-                                    <div class="font-semibold">${escapeHtml((rec.side || 'N/A').toUpperCase())}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-wide">Strike</div>
-                                    <div class="font-semibold">${strikeLabel}</div>
-                                </div>
-                                <div class="text-xs text-slate-500 uppercase tracking-wide col-span-2">Source</div>
-                                <div class="font-semibold col-span-2">${optionSourceLabel}</div>
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const warningBlock = rec.warning
-                    ? `
-                        <div class="border border-yellow-200 bg-yellow-50 rounded-lg p-4 flex items-start gap-3">
-                            <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mt-0.5"></i>
-                            <div class="text-sm text-yellow-800">${escapeHtml(rec.warning)}</div>
-                        </div>
-                    `
-                    : '';
-
-                const notesBlock = rec.ai?.notes
-                    ? `
-                        <div class="bg-white border border-blue-100 rounded-lg p-4">
-                            <div class="text-sm font-semibold text-blue-700 mb-1 flex items-center gap-2">
-                                <i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i>
-                                AI Notes
-                            </div>
-                            <div class="text-sm text-gray-700">${escapeHtml(rec.ai.notes)}</div>
-                        </div>
-                    `
-                    : '';
-
-                const planSteps = Array.isArray(rec.scalingPlan)
-                    ? rec.scalingPlan
-                        .slice()
-                        .sort((a, b) => a.step - b.step)
-                        .map((step) => {
-                            const targetLabel = step.target != null ? `$${step.target.toFixed(2)}` : escapeHtml(step.targetLabel || 'Market strength');
-                            return `
-                                <div class="flex items-start gap-3 text-sm text-gray-700">
-                                    <div class="font-semibold text-gray-900">${step.step}.</div>
-                                    <div>
-                                        <div class="font-medium">Sell ${step.sellQty} @ ${targetLabel}</div>
-                                        <div class="text-xs text-gray-500">${escapeHtml(step.note)}</div>
-                                    </div>
-                                </div>
-                            `;
-                        })
-                        .join('')
-                    : '';
-
-                const planBlock = planSteps
-                    ? `
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <div class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                <i data-lucide="layers" class="w-4 h-4 text-gray-500"></i>
-                                Scaling Plan
-                            </div>
-                            <div class="space-y-2">
-                                ${planSteps}
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const extraId = `plan-${sanitizeForId(symbol)}-${sanitizeForId(providerId)}-${columnIndex}`;
-                const planToggle = planBlock
-                    ? `
-                        <div class="border-t border-gray-100 pt-3">
-                            <button type="button" class="text-xs font-semibold text-blue-600 hover:text-blue-700 focus:outline-none flex items-center gap-2" data-extra-target="${extraId}" aria-expanded="false">
-                                <span data-toggle-label>Show Scaling Plan</span>
-                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
-                            </button>
-                            <div id="${extraId}" class="hidden mt-3 space-y-3">
-                                ${planBlock}
-                            </div>
-                        </div>
-                    `
-                    : '';
-
-                const actionButtons = `
-                    <div class="pt-3 border-t border-gray-100">
-                        <div class="flex flex-wrap gap-2">
-                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2">
-                                <i data-lucide="play" class="w-4 h-4"></i>
-                                Execute Trade
-                            </button>
-                            <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded flex items-center gap-2">
-                                <i data-lucide="eye" class="w-4 h-4"></i>
-                                View Chart
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                const detailBlocks = [optionDetailsBlock, priceBlock, entryBlock, sizingBlock].filter(Boolean).join('');
-                const insightBlocks = [strategyBlock, riskBlock, warningBlock, notesBlock, adjustmentsBlock].filter(Boolean).join('');
-
-                return `
-                    <div class="border border-gray-200 rounded-lg p-4 space-y-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-start gap-2">
-                                <i data-lucide="${icon}" class="w-5 h-5 ${iconColor}"></i>
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-800">${escapeHtml(providerLabel)}${modelLabel ? ` · ${escapeHtml(modelLabel)}` : ''}</div>
-                                    <div class="text-xs text-gray-500">Decision: ${escapeHtml(decision.toUpperCase())}</div>
-                                </div>
-                            </div>
-                            <div class="text-xs text-gray-500">Confidence: ${escapeHtml(String(confidence))}</div>
-                        </div>
-                        ${detailBlocks ? `<div class="space-y-3">${detailBlocks}</div>` : ''}
-                        ${insightBlocks ? `<div class="space-y-3">${insightBlocks}</div>` : ''}
-                        ${planToggle}
-                        ${actionButtons}
-                    </div>
-                `;
-            };
-
-            if (!recs || recs.length === 0) {
+            if (!Array.isArray(recs) || recs.length === 0) {
+                lastRecommendationStats = null;
+                updateRecommendationSummary(null);
+                renderSidebarInsights();
                 recommendations.innerHTML = `
-                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
-                        <i data-lucide="alert-circle" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
-                        <h3 class="text-lg font-semibold text-gray-600">No Recommendations</h3>
-                        <p class="text-gray-500">Market conditions not favorable for trades today.</p>
+                    <div class="bg-white border border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-500">
+                        <i data-lucide="alert-circle" class="w-10 h-10 text-slate-300 mx-auto mb-3"></i>
+                        <div class="text-sm font-semibold">No active trade ideas</div>
+                        <div class="text-xs text-slate-400">Run a scan to surface the latest AI suggestions.</div>
                     </div>
                 `;
+                lucide.createIcons();
                 return;
             }
+
+            const providerSet = new Set();
+            const signalFrequency = new Map();
+            const riskFlagSymbols = new Set();
+            let totalRiskFlags = 0;
+            const decisionCounts = { approve: 0, caution: 0, reject: 0, unknown: 0 };
+            const callPutCounts = { call: 0, put: 0 };
+
+            recs.forEach((rec) => {
+                const decisionKey = normalizeDecision(rec.ai?.decision);
+                decisionCounts[decisionKey] = (decisionCounts[decisionKey] || 0) + 1;
+
+                const providerKey = String(rec.ai?.provider || rec.provider || 'AI').toUpperCase();
+                providerSet.add(providerKey);
+
+                if (Array.isArray(rec.ai?.riskFlags) && rec.ai.riskFlags.length) {
+                    riskFlagSymbols.add(String(rec.symbol || '').toUpperCase());
+                    totalRiskFlags += rec.ai.riskFlags.filter(Boolean).length;
+                }
+
+                let sideToken = String(rec.side || '').toLowerCase();
+                if (!sideToken && typeof rec.contract === 'string') {
+                    const contractUpper = rec.contract.toUpperCase();
+                    if (contractUpper.includes('CALL')) {
+                        sideToken = 'call';
+                    } else if (contractUpper.includes('PUT')) {
+                        sideToken = 'put';
+                    }
+                }
+                if (sideToken === 'call' || sideToken === 'put') {
+                    callPutCounts[sideToken] = (callPutCounts[sideToken] || 0) + 1;
+                }
+
+                if (Array.isArray(rec.signals)) {
+                    rec.signals.forEach((sig) => {
+                        if (!sig) return;
+                        const trimmed = sig.toString().trim();
+                        if (!trimmed) return;
+                        signalFrequency.set(trimmed, (signalFrequency.get(trimmed) || 0) + 1);
+                    });
+                }
+            });
 
             const groupsMap = new Map();
             recs.forEach((rec, idx) => {
@@ -1283,8 +1522,8 @@
                         return item;
                     }
                     if (itemStrength === bestStrength) {
-                        const itemRank = decisionRank[item.ai?.decision || 'unknown'] || 0;
-                        const bestRank = decisionRank[best.ai?.decision || 'unknown'] || 0;
+                        const itemRank = decisionRank[normalizeDecision(item.ai?.decision)] || 0;
+                        const bestRank = decisionRank[normalizeDecision(best.ai?.decision)] || 0;
                         if (itemRank > bestRank) {
                             return item;
                         }
@@ -1303,92 +1542,330 @@
                 return a.symbol.localeCompare(b.symbol);
             });
 
+            const topSignals = Array.from(signalFrequency.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([name, count]) => ({ name, count }));
+
+            lastRecommendationStats = {
+                totalSymbols: grouped.length,
+                totalIdeas: recs.length,
+                providerCount: providerSet.size,
+                decisionCounts,
+                riskFlagSymbols: Array.from(riskFlagSymbols).filter(Boolean),
+                totalRiskFlags,
+                topSignals,
+                callPutCounts: {
+                    call: callPutCounts.call || 0,
+                    put: callPutCounts.put || 0,
+                },
+            };
+
+            updateRecommendationSummary(lastRecommendationStats);
+            renderSidebarInsights();
+
+            const parseConfidenceValue = (value) => {
+                if (value == null) return null;
+                let numeric = value;
+                if (typeof numeric === 'string') {
+                    const stripped = numeric.replace(/%/g, '').trim();
+                    if (!stripped) return null;
+                    numeric = Number(stripped);
+                }
+                if (!Number.isFinite(numeric)) return null;
+                if (numeric <= 1) {
+                    numeric *= 100;
+                }
+                return Math.max(0, Math.min(100, Number(numeric.toFixed(1))));
+            };
+
+            const formatConfidencePercent = (value) => {
+                if (!Number.isFinite(value)) return '—';
+                return `${value.toFixed(0)}%`;
+            };
+
+            const signalConditionLookup = new Map([
+                ['macd bullish', 'MACD histogram stays positive with signal line above zero'],
+                ['high volume', 'Volume ≥ 1.3× 20-period average on confirmation candle'],
+                ['support bounce', 'Price prints higher low off intraday support before entry'],
+                ['near resistance', 'Break and hold above immediate resistance on strong tape'],
+                ['vwap hold', 'Price holds above VWAP on 5m close prior to entry'],
+                ['ema support', 'Maintain closes above EMA support zone through entry trigger'],
+            ]);
+
+            const deriveBuyConditions = (signals) => {
+                const conditions = [];
+                const seen = new Set();
+                signals.forEach((label) => {
+                    const key = label.toLowerCase();
+                    if (signalConditionLookup.has(key) && !seen.has(key)) {
+                        seen.add(key);
+                        conditions.push(signalConditionLookup.get(key));
+                    }
+                });
+                if (!conditions.length) {
+                    conditions.push('Candle close above VWAP with expanding volume confirmation');
+                }
+                return conditions;
+            };
+
+            const deriveExitConditions = ({ stop, target, expiryLabel, tradePlan, holdGuidance }) => {
+                const exits = [];
+                if (Number.isFinite(stop)) {
+                    exits.push(`Stop loss trigger at $${Number(stop).toFixed(2)} or loss of VWAP on closing basis`);
+                } else {
+                    exits.push('Honor hard stop per risk plan or exit if VWAP fails');
+                }
+                if (expiryLabel && expiryLabel !== '—') {
+                    exits.push(`Time stop: exit by ${expiryLabel} if target not achieved, respect ${holdGuidance}`);
+                } else {
+                    exits.push(`Time stop: exit before final trading hour if target not achieved (${holdGuidance})`);
+                }
+                if (Array.isArray(tradePlan?.iterations) && tradePlan.iterations.length) {
+                    const steps = tradePlan.iterations
+                        .map((step) => {
+                            const targetLabel = step.target != null ? `$${Number(step.target).toFixed(2)}` : 'strength pop';
+                            return `${step.sellQty} @ ${targetLabel}`;
+                        })
+                        .join(', ');
+                    exits.push(`Scaling plan: trim ${steps}`);
+                } else if (Number.isFinite(target)) {
+                    exits.push(`Scaling plan: take partials near $${Number(target).toFixed(2)} and trail remainder tightly`);
+                } else {
+                    exits.push('Scaling plan: scale out into local resistance levels while trailing stop-up');
+                }
+                return exits;
+            };
+
             grouped.forEach(({ symbol, items, bestRec }) => {
-                const decision = bestRec?.ai?.decision || 'unknown';
-                const confidence = bestRec?.ai?.confidence || (Number.isFinite(bestRec?.ai?.strength) ? `${bestRec.ai.strength}%` : 'N/A');
-                const icon = decision === 'approve' ? 'check-circle'
-                    : decision === 'caution' ? 'alert-triangle' : 'x-circle';
-                const iconColor = decision === 'approve' ? 'text-green-600'
-                    : decision === 'caution' ? 'text-yellow-600' : 'text-red-600';
+                const focusRec = bestRec || items[0];
+                const baseDecision = normalizeDecision(focusRec?.ai?.decision);
+                const { strike, expiry } = extractOptionMeta(focusRec);
+                const strikeLabel = Number.isFinite(strike) ? `$${strike.toFixed(strike % 1 === 0 ? 0 : 2)}` : '—';
+                const sideLabel = formatSideLabel(focusRec.side, focusRec.contract);
+                const strikeDescriptor = sideLabel ? `${strikeLabel} ${sideLabel}` : strikeLabel;
+                const expiryLabel = expiry || '—';
 
                 const signalSet = new Set();
                 items.forEach((item) => {
-                    (item.signals || []).forEach((sig) => signalSet.add(sig));
+                    (item.signals || []).forEach((sig) => signalSet.add(formatSignalTag(sig)));
                 });
-                const signalText = signalSet.size ? Array.from(signalSet).map((sig) => escapeHtml(sig)).join(', ') : 'No signals';
-
-                const providerSet = new Set();
-                const providerChips = items
-                    .map((rec) => rec.ai?.provider || rec.provider || 'AI')
-                    .filter((provider) => {
-                        if (!provider) {
-                            return false;
-                        }
-                        const key = String(provider).toUpperCase();
-                        if (providerSet.has(key)) {
-                            return false;
-                        }
-                        providerSet.add(key);
-                        return true;
-                    })
-                    .map((provider) => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold uppercase tracking-wide">${escapeHtml(String(provider).toUpperCase())}</span>`)
+                const signalChips = Array.from(signalSet)
+                    .filter(Boolean)
+                    .slice(0, 6)
+                    .map((label) => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">${escapeHtml(label)}</span>`)
                     .join('');
+                const signalChipLabels = Array.from(signalSet)
+                    .filter(Boolean)
+                    .map((label) => label.replace(/\s+/g, ' ').trim())
+                    .join(', ');
 
-                const providerColumns = items
+                const providerDetails = items
                     .slice()
                     .sort((a, b) => {
                         const providerA = String(a.ai?.provider || a.provider || '').toLowerCase();
                         const providerB = String(b.ai?.provider || b.provider || '').toLowerCase();
                         return providerA.localeCompare(providerB);
                     })
-                    .map((rec, idx) => renderProviderColumn(symbol, rec, idx))
+                    .map((rec) => {
+                        const providerName = String(rec.ai?.provider || rec.provider || 'AI');
+                        const confidenceFromAI = rec.ai?.confidence ?? rec.ai?.strength ?? null;
+                        const confidence = parseConfidenceValue(confidenceFromAI);
+                        const entry = Number.isFinite(rec.entry) ? Number(rec.entry) : null;
+                        const stop = Number.isFinite(rec.stop) ? Number(rec.stop) : null;
+                        const target = Number.isFinite(rec.target) ? Number(rec.target) : null;
+                        const notes = [];
+                        if (rec.ai?.notes) {
+                            notes.push(rec.ai.notes);
+                        }
+                        if (Array.isArray(rec.ai?.riskFlags) && rec.ai.riskFlags.length) {
+                            rec.ai.riskFlags.filter(Boolean).forEach((flag) => notes.push(flag));
+                        }
+                        if (rec.ai?.adjustments && typeof rec.ai.adjustments === 'object') {
+                            const adj = Object.entries(rec.ai.adjustments)
+                                .filter(([, value]) => value != null)
+                                .map(([key, value]) => `${key}: ${value}`);
+                            if (adj.length) {
+                                notes.push(`Adjustments -> ${adj.join(', ')}`);
+                            }
+                        }
+                        const noteLines = notes.length ? notes : ['No additional commentary'];
+                        return {
+                            provider: providerName,
+                            confidence,
+                            entry,
+                            stop,
+                            target,
+                            noteLines,
+                        };
+                    });
+
+                const confidenceValues = providerDetails
+                    .map((detail) => detail.confidence)
+                    .filter((value) => Number.isFinite(value));
+                const confluenceScore = confidenceValues.length
+                    ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length
+                    : null;
+                const confluenceScoreLabel = Number.isFinite(confluenceScore) ? `${confluenceScore.toFixed(1)}%` : 'N/A';
+
+                const confidenceSpread = confidenceValues.length >= 2
+                    ? Math.max(...confidenceValues) - Math.min(...confidenceValues)
+                    : 0;
+                const hasDisagreement = confidenceSpread > 25;
+
+                const entryPrice = Number.isFinite(focusRec.entry) ? Number(focusRec.entry) : null;
+                const stopPrice = Number.isFinite(focusRec.stop) ? Number(focusRec.stop) : null;
+                const targetPrice = Number.isFinite(focusRec.target) ? Number(focusRec.target) : null;
+                let rewardToRisk = null;
+                if (entryPrice != null && stopPrice != null && targetPrice != null) {
+                    const risk = entryPrice - stopPrice;
+                    const reward = targetPrice - entryPrice;
+                    if (risk > 0 && reward > 0) {
+                        rewardToRisk = reward / risk;
+                    }
+                }
+
+                const spreadPct = Number.isFinite(focusRec?.spread_pct)
+                    ? Number(focusRec.spread_pct)
+                    : Number.isFinite(focusRec?.option_details?.spread_pct)
+                        ? Number(focusRec.option_details.spread_pct)
+                        : Number.isFinite(focusRec?.liquidity?.spread_pct)
+                            ? Number(focusRec.liquidity.spread_pct)
+                            : null;
+                const wideSpreadRisk = Number.isFinite(spreadPct) && spreadPct > 5;
+
+                let verdict = baseDecision;
+                if (rewardToRisk != null && rewardToRisk < 2.5) {
+                    verdict = 'reject';
+                } else if (Number.isFinite(confluenceScore) && confluenceScore < 70) {
+                    verdict = 'caution';
+                }
+                if (!verdict || verdict === 'unknown') {
+                    verdict = Number.isFinite(confluenceScore) && confluenceScore >= 70 ? 'approve' : 'caution';
+                }
+
+                const verdictBadge = verdict === 'approve'
+                    ? 'text-emerald-600 bg-emerald-50'
+                    : verdict === 'caution'
+                        ? 'text-amber-600 bg-amber-50'
+                        : 'text-rose-600 bg-rose-50';
+
+                const providerRows = providerDetails
+                    .map((detail) => `
+                        <tr class="text-sm text-slate-700">
+                            <td class="px-3 py-2 font-semibold">${escapeHtml(detail.provider)}</td>
+                            <td class="px-3 py-2 text-center">${escapeHtml(formatConfidencePercent(detail.confidence))}</td>
+                            <td class="px-3 py-2 text-right">${detail.entry != null ? escapeHtml(detail.entry.toFixed(2)) : '—'}</td>
+                            <td class="px-3 py-2 text-right">${detail.stop != null ? escapeHtml(detail.stop.toFixed(2)) : '—'}</td>
+                            <td class="px-3 py-2 text-right">${detail.target != null ? escapeHtml(detail.target.toFixed(2)) : '—'}</td>
+                        </tr>
+                    `)
                     .join('');
 
-                const providerCount = items.length;
-                const columnsClass = providerCount >= 3 ? 'md:grid-cols-3'
-                    : providerCount === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1';
+                const providerNotesSection = providerDetails
+                    .map((detail) => `
+                        <div class="space-y-1 text-sm text-slate-700">
+                            <div class="font-semibold text-slate-900">${escapeHtml(detail.provider)} Notes:</div>
+                            ${detail.noteLines.map((line) => `<div>- ${escapeHtml(line)}</div>`).join('')}
+                        </div>
+                    `)
+                    .join('');
+
+                const holdGuidance = calculateHoldGuidance(focusRec, expiryLabel);
+                const buyConditions = deriveBuyConditions(Array.from(signalSet));
+                const tradePlanPayload = focusRec.tradePlan
+                    ? focusRec.tradePlan
+                    : (Array.isArray(focusRec.scalingPlan) ? { iterations: focusRec.scalingPlan } : null);
+                const exitConditions = deriveExitConditions({
+                    stop: stopPrice,
+                    target: targetPrice,
+                    expiryLabel,
+                    tradePlan: tradePlanPayload,
+                    holdGuidance,
+                });
+
+                const sparklineData = createSparkline(focusRec);
+                const sparklineLabel = sparklineData
+                    ? `Sparkline: [${sparklineData.values.map((value) => Number(value).toFixed(2)).join(', ')}]`
+                    : 'Sparkline: [insufficient data]';
+
+                const alertChips = [];
+                if (hasDisagreement) alertChips.push('Provider disagreement');
+                if (wideSpreadRisk) alertChips.push('Wide spread risk');
+                if (rewardToRisk != null && rewardToRisk < 2.5) alertChips.push(`R/R ${rewardToRisk.toFixed(2)} (<2.5)`);
 
                 recommendations.innerHTML += `
-                    <div class="bg-white rounded-lg shadow-md border border-gray-100 p-5 space-y-5">
-                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                            <div class="flex items-start gap-3">
-                                <i data-lucide="${icon}" class="w-6 h-6 ${iconColor}"></i>
-                                <div>
-                                    <h3 class="text-lg font-bold text-gray-800">${escapeHtml(symbol)}</h3>
-                                    <p class="text-xs text-gray-500">${signalText}</p>
-                                    ${providerChips ? `<div class="flex flex-wrap gap-2 mt-1">${providerChips}</div>` : ''}
-                                </div>
+                    <article class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-5">
+                        <header class="space-y-2 text-sm font-semibold text-slate-700">
+                            <div>TICKER: [${escapeHtml(symbol)}]</div>
+                            <div>STRIKE: [${escapeHtml(strikeDescriptor)}]</div>
+                            <div>EXPIRY: [${escapeHtml(expiryLabel)}]</div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span>VERDICT: ${escapeHtml(verdict.toUpperCase())}</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${verdictBadge}">${escapeHtml(verdict.toUpperCase())}</span>
                             </div>
-                            <div class="text-left md:text-right">
-                                <div class="text-sm font-semibold ${decision === 'approve' ? 'text-green-600' : decision === 'caution' ? 'text-yellow-600' : 'text-red-600'}">${escapeHtml(decision.toUpperCase())}</div>
-                                <div class="text-xs text-gray-500">Confidence: ${escapeHtml(String(confidence))}</div>
+                            <div>CONFLUENCE_SCORE: [${escapeHtml(confluenceScoreLabel)}]</div>
+                        </header>
+                        <div class="text-sm text-slate-600">TAG_CHIPS (comma separated): ${signalChipLabels ? escapeHtml(signalChipLabels) : 'None'}</div>
+                        ${signalChips ? `<div class="flex flex-wrap gap-2 text-xs">${signalChips}</div>` : ''}
+                        ${alertChips.length ? `<div class="flex flex-wrap gap-2 text-[11px] text-rose-600">${alertChips.map((chip) => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-50 font-semibold">${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+                        <section class="border border-slate-200 rounded-xl overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                    <tr>
+                                        <th class="px-3 py-2">Provider</th>
+                                        <th class="px-3 py-2 text-center">Confidence</th>
+                                        <th class="px-3 py-2 text-right">Entry</th>
+                                        <th class="px-3 py-2 text-right">Stop</th>
+                                        <th class="px-3 py-2 text-right">Target</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${providerRows}
+                                </tbody>
+                            </table>
+                        </section>
+                        <section class="space-y-3">
+                            <div class="text-sm font-semibold text-slate-900">PROVIDER_NOTES (LONG FORM GOES HERE, NOT IN THE GRID):</div>
+                            ${providerNotesSection}
+                        </section>
+                        <section class="space-y-2 text-sm text-slate-700">
+                            <div class="text-sm font-semibold text-slate-900">BUY CONDITIONS:</div>
+                            <div class="space-y-1">
+                                ${buyConditions.map((item) => `<div>- ${escapeHtml(item)}</div>`).join('')}
                             </div>
-                        </div>
-                        <div class="grid grid-cols-1 ${columnsClass} gap-4">
-                            ${providerColumns}
-                        </div>
-                    </div>
+                        </section>
+                        <section class="space-y-2 text-sm text-slate-700">
+                            <div class="text-sm font-semibold text-slate-900">EXIT CONDITIONS:</div>
+                            <div class="space-y-1">
+                                ${exitConditions.map((item) => `<div>- ${escapeHtml(item)}</div>`).join('')}
+                            </div>
+                        </section>
+                        <section class="space-y-2 text-sm text-slate-700">
+                            <div class="text-sm font-semibold text-slate-900">SCALING PLAN:</div>
+                            <div class="space-y-1">
+                                ${(Array.isArray(tradePlanPayload?.iterations) && tradePlanPayload.iterations.length)
+                                    ? tradePlanPayload.iterations.map((step, index) => {
+                                        const targetLabel = step.target != null ? `$${Number(step.target).toFixed(2)}` : 'market strength';
+                                        return `<div>- Trim ${escapeHtml(String(step.sellQty ?? index + 1))} at ${escapeHtml(targetLabel)}</div>`;
+                                    }).join('')
+                                    : Number.isFinite(targetPrice)
+                                        ? `<div>- Trim position at $${escapeHtml(targetPrice.toFixed(2))}</div>`
+                                        : '<div>- No scaling instructions provided</div>'}
+                            </div>
+                        </section>
+                        <section class="space-y-2 text-sm text-slate-700">
+                            <div class="text-sm font-semibold text-slate-900">RULES ENFORCED:</div>
+                            <div>- If CONFLUENCE_SCORE &lt; 70 → VERDICT = CAUTION</div>
+                            <div>- If R/R &lt; 2.5 → VERDICT = REJECT</div>
+                        </section>
+                        <section class="space-y-2 text-sm text-slate-700">
+                            <div class="text-sm font-semibold text-slate-900">SPARKLINE DATA:</div>
+                            <div class="text-xs text-slate-500">${escapeHtml(sparklineLabel)}</div>
+                            ${sparklineData ? `<div class="pt-1 border-t border-slate-100">${sparklineData.svg}</div>` : ''}
+                        </section>
+                    </article>
                 `;
-            });
-
-            const toggleButtons = recommendations.querySelectorAll('[data-extra-target]');
-            toggleButtons.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const target = document.getElementById(btn.dataset.extraTarget);
-                    if (!target) {
-                        return;
-                    }
-                    const nowHidden = target.classList.toggle('hidden');
-                    btn.setAttribute('aria-expanded', String(!nowHidden));
-                    const label = btn.querySelector('[data-toggle-label]');
-                    if (label) {
-                        label.textContent = nowHidden ? 'Show Scaling Plan' : 'Hide Scaling Plan';
-                    }
-                    const icon = btn.querySelector('[data-lucide="chevron-down"]');
-                    if (icon) {
-                        icon.classList.toggle('rotate-180', !nowHidden);
-                    }
-                });
             });
 
             lucide.createIcons();
@@ -1396,278 +1873,230 @@
 
         // Display portfolio
         function displayPortfolio(portfolio, balanceData = null, { skipStore = false } = {}) {
+            if (!portfolio) {
+                return;
+            }
+
             if (!skipStore) {
                 lastPortfolioPayload = portfolio;
                 lastPortfolioBalance = balanceData || null;
             }
-            // Find the account details from the stored accounts list
-            const accountDetails = window.availableAccounts?.find(acc => acc.accountIdKey === portfolio.account.accountIdKey);
 
+            revealPortfolioRail();
+
+            const accountIdKey = portfolio?.account?.accountIdKey || window.selectedAccountIdKey;
+            const accountDetails = window.availableAccounts?.find((acc) => acc.accountIdKey === accountIdKey);
             const primaryAccountId = accountDetails?.accountId || balanceData?.accountId || portfolio.account?.accountId || 'N/A';
-            const maskedAccountId = escapeHtml(getAccountIdString(primaryAccountId));
+            const summaryItems = [];
 
-            // Update account summary with available information
-            let balanceHtml = `
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Account ID</div>
-                    <div class="text-lg font-bold text-blue-600">${maskedAccountId}</div>
-                </div>
-                <div class="bg-green-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Account Type</div>
-                    <div class="text-lg font-bold text-green-600">${accountDetails?.accountType || 'INDIVIDUAL'}</div>
-                </div>
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Account Mode</div>
-                    <div class="text-lg font-bold text-purple-600">${accountDetails?.accountMode || 'CASH'}</div>
-                </div>
-                <div class="bg-orange-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Status</div>
-                    <div class="text-lg font-bold text-orange-600">${accountDetails?.accountStatus || 'ACTIVE'}</div>
-                </div>
-            `;
-
-            // Add balance information if available
             if (balanceData) {
-                // For cash accounts, use moneyMktBalance or cashAvailableForInvestment
                 const availableCash = Number(balanceData.moneyMktBalance ?? balanceData.cashAvailableForInvestment ?? balanceData.cashBalance ?? 0);
                 const totalValue = Number(balanceData.totalAccountValue ?? 0);
                 const buyingPower = Number(balanceData.cashBuyingPower ?? balanceData.marginBuyingPower ?? 0);
-
-                const accountIdDisplay = escapeHtml(getAccountIdString(balanceData.accountId || primaryAccountId));
-                const availableCashDisplay = escapeHtml(getCurrencyString(availableCash));
-                const totalValueDisplay = escapeHtml(getCurrencyString(totalValue));
-                const buyingPowerDisplay = escapeHtml(getCurrencyString(buyingPower));
-
-                balanceHtml = `
-                    <div class="bg-blue-50 p-4 rounded-lg">
-                        <div class="text-sm text-gray-600">Account ID</div>
-                        <div class="text-lg font-bold text-blue-600">${accountIdDisplay}</div>
-                    </div>
-                    <div class="bg-green-50 p-4 rounded-lg">
-                        <div class="text-sm text-gray-600">Available Cash</div>
-                        <div class="text-lg font-bold text-green-600">${availableCashDisplay}</div>
-                    </div>
-                    <div class="bg-purple-50 p-4 rounded-lg">
-                        <div class="text-sm text-gray-600">Total Value</div>
-                        <div class="text-lg font-bold text-purple-600">${totalValueDisplay}</div>
-                    </div>
-                    <div class="bg-orange-50 p-4 rounded-lg">
-                        <div class="text-sm text-gray-600">Buying Power</div>
-                        <div class="text-lg font-bold text-orange-600">${buyingPowerDisplay}</div>
-                    </div>
-                `;
+                summaryItems.push(
+                    {
+                        label: 'Account ID',
+                        value: getAccountIdString(balanceData.accountId || primaryAccountId),
+                        accent: 'text-blue-600',
+                    },
+                    {
+                        label: 'Available Cash',
+                        value: getCurrencyString(availableCash),
+                        accent: 'text-emerald-600',
+                    },
+                    {
+                        label: 'Total Value',
+                        value: getCurrencyString(totalValue),
+                        accent: 'text-purple-600',
+                    },
+                    {
+                        label: 'Buying Power',
+                        value: getCurrencyString(buyingPower),
+                        accent: 'text-amber-600',
+                    }
+                );
+            } else {
+                summaryItems.push(
+                    {
+                        label: 'Account ID',
+                        value: getAccountIdString(primaryAccountId),
+                        accent: 'text-blue-600',
+                    },
+                    {
+                        label: 'Account Type',
+                        value: accountDetails?.accountType || 'INDIVIDUAL',
+                        accent: 'text-emerald-600',
+                    },
+                    {
+                        label: 'Account Mode',
+                        value: accountDetails?.accountMode || 'CASH',
+                        accent: 'text-purple-600',
+                    },
+                    {
+                        label: 'Status',
+                        value: accountDetails?.accountStatus || 'ACTIVE',
+                        accent: 'text-amber-600',
+                    }
+                );
             }
 
-            accountSummary.innerHTML = balanceHtml;
+            if (accountSummary) {
+                accountSummary.innerHTML = summaryItems
+                    .map((item) => `
+                        <div class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">${escapeHtml(item.label)}</div>
+                            <div class="text-base font-semibold ${item.accent}">${escapeHtml(String(item.value))}</div>
+                        </div>
+                    `)
+                    .join('');
+            }
 
-            // Separate positions into stocks and options
-            const stocks = [];
-            const options = [];
+            const positions = Array.isArray(portfolio.positions) ? portfolio.positions : [];
+            const optionPositions = positions.filter((position) => {
+                if (!position) {
+                    return false;
+                }
+                const desc = position.symbolDescription ? position.symbolDescription.toLowerCase() : '';
+                const sym = position.symbol || '';
+                return (
+                    desc.includes('call') ||
+                    desc.includes('put') ||
+                    desc.includes('option') ||
+                    sym.includes(' ') ||
+                    /\d{6}[CP]\d+/.test(sym)
+                );
+            });
 
-            if (portfolio.positions && portfolio.positions.length > 0) {
-                // Check if positions are real or placeholder
-                const hasRealPositions = portfolio.positions.some(pos => pos.symbol !== 'UNKNOWN' && pos.symbol !== '');
+            const hasOptions = optionPositions.length > 0;
+            const totalMarketValue = optionPositions.reduce((sum, pos) => {
+                const value = Number(pos.marketValue);
+                return Number.isFinite(value) ? sum + value : sum;
+            }, 0);
 
-                if (hasRealPositions) {
-                    portfolio.positions.forEach(position => {
-                        // Check if it's an option by looking for option indicators in the symbol or description
-                        const isOption = position.symbol.includes(' ') ||
-                                       position.symbolDescription?.toLowerCase().includes('call') ||
-                                       position.symbolDescription?.toLowerCase().includes('put') ||
-                                       position.symbolDescription?.toLowerCase().includes('option') ||
-                                       position.symbol?.match(/\d{6}[CP]\d+/); // Option symbol pattern
-
-                        if (isOption) {
-                            options.push(position);
-                        } else {
-                            stocks.push(position);
-                        }
-                    });
+            if (portfolioOptionsMeta) {
+                if (hasOptions) {
+                    portfolioOptionsMeta.textContent = `${optionPositions.length} position${optionPositions.length === 1 ? '' : 's'} · ${getCurrencyString(totalMarketValue)}`;
                 } else {
-                    // No real positions available - show message in stocks section
-                    const balanceDisplay = escapeHtml(getCurrencyString(Number(balanceData?.totalAccountValue ?? 0)));
-                    const cashDisplay = escapeHtml(getCurrencyString(Number(balanceData?.moneyMktBalance ?? balanceData?.cashAvailableForInvestment ?? 0)));
-                    stocksBody.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
-                                    <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
-                                    <div class="text-sm text-center max-w-md">
-                                        <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails?.accountDesc || 'Individual Brokerage'}</div>
-                                        <div class="mb-2">✅ <strong>Balance Available:</strong> ${balanceDisplay}</div>
-                                        <div class="mb-2">✅ <strong>Cash Available:</strong> ${cashDisplay}</div>
-                                        <div class="mb-3">✅ <strong>Status:</strong> ${accountDetails?.accountStatus || 'ACTIVE'}</div>
-                                        <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
-                                            <strong>Note:</strong> Position details are not available through the E*TRADE API for this account type. Balance information is available above. This is normal for many brokerage accounts.
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    optionsBody.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
-                                    <div class="text-lg font-medium mb-2">No Options Positions</div>
-                                    <div class="text-sm text-center max-w-md">
-                                        <div class="text-gray-400">No options positions found in this account.</div>
-                                        <div class="text-xs text-gray-400 mt-2">Options positions will appear here when available.</div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    lucide.createIcons();
-                    return; // Exit early since we're showing the account info message
+                    portfolioOptionsMeta.textContent = '';
                 }
             }
 
-            // Display stocks
-            stocksBody.innerHTML = '';
-            if (stocks.length > 0) {
-                stocks.forEach(position => {
-                    const pnlClass = position.unrealizedGainLoss >= 0 ? 'text-green-600' : 'text-red-600';
-                    const pnlPercentClass = position.unrealizedGainLossPercent >= 0 ? 'text-green-600' : 'text-red-600';
+            if (portfolioOptionsList) {
+                if (hasOptions) {
+                    const renderValue = (value, { currency = false, fallback = 'N/A', decimals = 2 } = {}) => {
+                        const numeric = Number(value);
+                        if (!Number.isFinite(numeric)) {
+                            return fallback;
+                        }
+                        if (currency) {
+                            return getCurrencyString(numeric);
+                        }
+                        return numeric.toFixed(decimals);
+                    };
 
-                    stocksBody.innerHTML += `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">${position.symbol}</div>
-                                <div class="text-sm text-gray-500">${position.symbolDescription || ''}</div>
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                ${position.quantity}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                $${position.currentPrice.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                $${position.marketValue.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlClass}">
-                                $${position.unrealizedGainLoss.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlPercentClass}">
-                                ${position.unrealizedGainLossPercent.toFixed(2)}%
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                stocksBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            <div class="flex flex-col items-center">
-                                <i data-lucide="trending-up" class="w-8 h-8 text-green-400 mb-2"></i>
-                                <div class="text-lg font-medium mb-2">No Stock Positions</div>
-                                <div class="text-sm text-center max-w-md">
-                                    <div class="text-gray-400">No stock positions found in this account.</div>
-                                    <div class="text-xs text-gray-400 mt-2">Stock positions will appear here when available.</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
+                    const renderPercent = (value) => {
+                        const numeric = Number(value);
+                        if (!Number.isFinite(numeric)) {
+                            return 'N/A';
+                        }
+                        return `${numeric.toFixed(2)}%`;
+                    };
 
-            // Display options
-            optionsBody.innerHTML = '';
-            if (options.length > 0) {
-                options.forEach(position => {
-                    const pnlClass = position.unrealizedGainLoss >= 0 ? 'text-green-600' : 'text-red-600';
-                    const pnlPercentClass = position.unrealizedGainLossPercent >= 0 ? 'text-green-600' : 'text-red-600';
+                    const formatCallPut = (value, fallbackSymbol) => {
+                        const token = String(value || '').toUpperCase();
+                        if (token === 'CALL' || token === 'PUT') {
+                            return token;
+                        }
+                        const upperSym = String(fallbackSymbol || '').toUpperCase();
+                        if (upperSym.includes(' CALL')) return 'CALL';
+                        if (upperSym.includes(' PUT')) return 'PUT';
+                        return 'OPTION';
+                    };
 
-                    optionsBody.innerHTML += `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">${position.symbol}</div>
-                                <div class="text-sm text-gray-500">${position.symbolDescription || ''}</div>
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                ${position.quantity}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                $${position.currentPrice.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                $${position.marketValue.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlClass}">
-                                $${position.unrealizedGainLoss.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm ${pnlPercentClass}">
-                                ${position.unrealizedGainLossPercent.toFixed(2)}%
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm">
-                                <div class="flex justify-end gap-2">
-                                    <button class="px-3 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition" data-symbol="${escapeHtml(position.symbol)}" data-option-symbol="${escapeHtml(position.symbol)}" data-quantity="${Number.isFinite(position.quantity) ? position.quantity : 0}" data-position-id="${escapeHtml(position.positionId || '')}" data-call-put="${escapeHtml(position.callPut || '')}" data-strike="${Number.isFinite(position.strike) ? position.strike : ''}" data-expiry="${escapeHtml(position.expiry || '')}" data-action="emergency-sell">
-                                        Emergency Sell
-                                    </button>
-                                    <button class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition" data-symbol="${escapeHtml(position.symbol)}" data-action="manage-option">Manage</button>
-                                    <button class="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition" data-symbol="${escapeHtml(position.symbol)}" data-action="note-option">Add Note</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                optionsBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                            <div class="flex flex-col items-center">
-                                <i data-lucide="zap" class="w-8 h-8 text-purple-400 mb-2"></i>
-                                <div class="text-lg font-medium mb-2">No Options Positions</div>
-                                <div class="text-sm text-center max-w-md">
-                                    <div class="text-gray-400">No options positions found in this account.</div>
-                                    <div class="text-xs text-gray-400 mt-2">Options positions will appear here when available.</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
+                    const optionCards = optionPositions
+                        .map((position) => {
+                            const symbol = escapeHtml(position.symbol || 'N/A');
+                            const description = escapeHtml(position.symbolDescription || '');
+                            const quantity = Number.isFinite(Number(position.quantity)) ? Number(position.quantity) : null;
+                            const avgPrice = position.pricePaid || position.averagePrice;
+                            const pnl = Number(position.unrealizedGainLoss);
+                            const pnlClass = Number.isFinite(pnl) && pnl >= 0 ? 'text-emerald-600' : 'text-rose-600';
+                            const pnlLabel = Number.isFinite(pnl) ? getCurrencyString(pnl) : 'N/A';
+                            const pnlPercentLabel = renderPercent(position.unrealizedGainLossPercent);
+                            const currentPriceLabel = renderValue(position.currentPrice, { currency: true });
+                            const marketValueLabel = renderValue(position.marketValue, { currency: true });
+                            const avgPriceLabel = renderValue(avgPrice, { currency: true });
+                            const strikeDecimals = Number.isFinite(Number(position.strike)) && Number(position.strike) % 1 === 0 ? 0 : 2;
+                            const strikeLabel = renderValue(position.strike, { currency: true, decimals: strikeDecimals });
+                            const expiryLabel = position.expiry ? escapeHtml(position.expiry) : 'N/A';
+                            const callPutLabel = formatCallPut(position.callPut, position.symbol);
 
-            // If no positions at all, show account info with balance data
-            if ((!portfolio.positions || portfolio.positions.length === 0) && stocks.length === 0 && options.length === 0) {
-                const fallbackBalanceDisplay = balanceData ? escapeHtml(getCurrencyString(Number(balanceData.totalAccountValue ?? 0))) : null;
-                const fallbackCashDisplay = balanceData ? escapeHtml(getCurrencyString(Number(balanceData.moneyMktBalance ?? balanceData.cashAvailableForInvestment ?? 0))) : null;
-                stocksBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            <div class="flex flex-col items-center">
-                                <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
-                                <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
-                                <div class="text-sm text-center max-w-md">
-                                    <div class="mb-2">✅ <strong>Account:</strong> ${accountDetails?.accountDesc || 'Individual Brokerage'}</div>
-                                    ${balanceData ? `
-                                    <div class="mb-2">✅ <strong>Balance Available:</strong> ${fallbackBalanceDisplay}</div>
-                                    <div class="mb-2">✅ <strong>Cash Available:</strong> ${fallbackCashDisplay}</div>
-                                    ` : ''}
-                                    <div class="mb-3">✅ <strong>Status:</strong> ${accountDetails?.accountStatus || 'ACTIVE'}</div>
-                                    <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
-                                        <strong>Note:</strong> Portfolio details (positions) are not available through the E*TRADE API for this account type. ${balanceData ? 'Balance information is shown above.' : 'This is normal for many brokerage accounts.'}
+                            return `
+                                <article class="border border-slate-200 rounded-xl p-4 shadow-sm bg-white">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div>
+                                            <div class="text-sm font-semibold text-slate-800">${symbol}</div>
+                                            <div class="text-xs text-slate-500">${description}</div>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 uppercase tracking-wide">${escapeHtml(callPutLabel)}</span>
+                                            <span class="text-[11px] text-slate-400">Exp ${expiryLabel}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                optionsBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                            <div class="flex flex-col items-center">
-                                <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
-                                <div class="text-lg font-medium mb-2">No Options Positions</div>
-                                <div class="text-sm text-center max-w-md">
-                                    <div class="text-gray-400">No options positions found in this account.</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                                    <div class="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-500">
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-wide text-slate-400">Contracts</div>
+                                            <div class="text-sm font-semibold text-slate-700">${quantity != null ? escapeHtml(String(quantity)) : 'N/A'}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-wide text-slate-400">Avg Price</div>
+                                            <div class="text-sm font-semibold text-slate-700">${escapeHtml(avgPriceLabel)}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-wide text-slate-400">Last</div>
+                                            <div class="text-sm font-semibold text-slate-700">${escapeHtml(currentPriceLabel)}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-wide text-slate-400">Market Value</div>
+                                            <div class="text-sm font-semibold text-slate-700">${escapeHtml(marketValueLabel)}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-wide text-slate-400">Strike</div>
+                                            <div class="text-sm font-semibold text-slate-700">${escapeHtml(strikeLabel)}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[10px] uppercase tracking-wide text-slate-400">P&L</div>
+                                            <div class="text-sm font-semibold ${pnlClass}">${escapeHtml(pnlLabel)} <span class="text-[11px] text-slate-400">(${escapeHtml(pnlPercentLabel)})</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between gap-2">
+                                        <button class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" data-action="emergency-sell" data-option-symbol="${symbol}" data-symbol="${symbol}" data-quantity="${quantity != null ? quantity : 0}" data-position-id="${escapeHtml(position.positionId || '')}" data-call-put="${escapeHtml(position.callPut || '')}" data-strike="${Number.isFinite(position.strike) ? position.strike : ''}" data-expiry="${escapeHtml(position.expiry || '')}">
+                                            <i data-lucide="log-out" class="w-3 h-3"></i>
+                                            Exit
+                                        </button>
+                                        <span class="text-[11px] text-slate-400">${escapeHtml(accountDetails?.accountDesc || 'Brokerage')}</span>
+                                    </div>
+                                </article>
+                            `;
+                        })
+                        .join('');
+
+                    portfolioOptionsList.innerHTML = optionCards;
+                    if (portfolioEmptyState) {
+                        portfolioEmptyState.classList.add('hidden');
+                    }
+                } else {
+                    portfolioOptionsList.innerHTML = '';
+                    if (portfolioEmptyState) {
+                        const accountLabel = accountDetails?.accountDesc ? `${escapeHtml(accountDetails.accountDesc)}` : 'this account';
+                        portfolioEmptyState.innerHTML = `
+                            <i data-lucide="archive" class="w-6 h-6 text-slate-300 mx-auto mb-2"></i>
+                            <div>No options positions in ${accountLabel}.</div>
+                            <div class="text-xs text-slate-400">Refresh or run a new scan to check for updates.</div>
+                        `;
+                        portfolioEmptyState.classList.remove('hidden');
+                    }
+                }
             }
 
             lucide.createIcons();
@@ -1675,67 +2104,70 @@
 
         // Display basic account info when portfolio fails to load
         function displayBasicAccountInfo(accountDetails) {
-            const safe = (value, fallback = '') => escapeHtml(value != null ? value : fallback);
-            const accountIdDisplay = escapeHtml(getAccountIdString(accountDetails?.accountId || accountDetails?.accountIdKey || 'N/A'));
+            if (!accountDetails) {
+                return;
+            }
+
+            revealPortfolioRail();
             lastPortfolioPayload = null;
             lastPortfolioBalance = null;
-            accountSummary.innerHTML = `
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Account ID</div>
-                    <div class="text-lg font-bold text-blue-600">${accountIdDisplay}</div>
-                </div>
-                <div class="bg-green-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Account Type</div>
-                    <div class="text-lg font-bold text-green-600">${safe(accountDetails.accountType, 'INDIVIDUAL')}</div>
-                </div>
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Account Mode</div>
-                    <div class="text-lg font-bold text-purple-600">${safe(accountDetails.accountMode, 'CASH')}</div>
-                </div>
-                <div class="bg-orange-50 p-4 rounded-lg">
-                    <div class="text-sm text-gray-600">Status</div>
-                    <div class="text-lg font-bold text-orange-600">${safe(accountDetails.accountStatus, 'ACTIVE')}</div>
-                </div>
-            `;
 
-            stocksBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                        <div class="flex flex-col items-center">
-                            <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
-                            <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
-                            <div class="text-sm text-center max-w-md">
-                                <div class="mb-2">✅ <strong>Account:</strong> ${safe(accountDetails.accountDesc, 'Brokerage Account')}</div>
-                                <div class="mb-2">✅ <strong>Type:</strong> ${safe(accountDetails.accountType, 'INDIVIDUAL')} (${safe(accountDetails.accountMode, 'CASH')})</div>
-                                <div class="mb-2">✅ <strong>Status:</strong> ${safe(accountDetails.accountStatus, 'ACTIVE')}</div>
-                                <div class="mb-3">✅ <strong>Institution:</strong> ${safe(accountDetails.institutionType, 'E*TRADE')}</div>
-                                <div class="text-xs text-gray-400 bg-gray-100 p-2 rounded">
-                                    <strong>Note:</strong> Portfolio details (balances, positions) are not available through the E*TRADE API for this account type. This is normal for many brokerage accounts.
-                                </div>
+            const safe = (value, fallback = '') => escapeHtml(value != null ? value : fallback);
+            const accountIdDisplay = escapeHtml(getAccountIdString(accountDetails?.accountId || accountDetails?.accountIdKey || 'N/A'));
+
+            if (accountSummary) {
+                accountSummary.innerHTML = `
+                    <div class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Account ID</div>
+                        <div class="text-base font-semibold text-blue-600">${accountIdDisplay}</div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Account Type</div>
+                        <div class="text-base font-semibold text-emerald-600">${safe(accountDetails.accountType, 'INDIVIDUAL')}</div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Mode</div>
+                        <div class="text-base font-semibold text-purple-600">${safe(accountDetails.accountMode, 'CASH')}</div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Status</div>
+                        <div class="text-base font-semibold text-amber-600">${safe(accountDetails.accountStatus, 'ACTIVE')}</div>
+                    </div>
+                `;
+            }
+
+            if (portfolioOptionsList) {
+                portfolioOptionsList.innerHTML = `
+                    <div class="border border-slate-200 bg-slate-50 rounded-lg p-4 text-sm text-slate-600">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="info" class="w-4 h-4 text-blue-500 mt-0.5"></i>
+                            <div>
+                                <div class="font-semibold text-slate-700">Positions unavailable for this account.</div>
+                                <div class="text-xs text-slate-500 mt-1">Balances are still shown above when provided by the broker.</div>
                             </div>
                         </div>
-                    </td>
-                </tr>
-            `;
-            optionsBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                        <div class="flex flex-col items-center">
-                            <i data-lucide="info" class="w-8 h-8 text-blue-400 mb-2"></i>
-                            <div class="text-lg font-medium mb-2">Account Connected Successfully</div>
-                            <div class="text-sm text-center max-w-md">
-                                <div class="text-gray-400">Portfolio details loaded for this account.</div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            `;
+                    </div>
+                `;
+            }
+
+            if (portfolioOptionsMeta) {
+                portfolioOptionsMeta.textContent = '';
+            }
+
+            if (portfolioEmptyState) {
+                portfolioEmptyState.classList.add('hidden');
+            }
+
             lucide.createIcons();
         }
 
         async function loadScanConfig() {
             try {
-                setSymbolsStatus('loading', 'Loading symbol list...');
+                setSymbolsStatus('loading', 'Loading scan settings...');
+                setStrategyStatus('loading', 'Loading strategy preference...');
+                if (strategySelect) {
+                    strategySelect.disabled = true;
+                }
                 const response = await fetch('/api/scan/config');
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -1748,15 +2180,22 @@
                 if (symbolsInput) {
                     symbolsInput.value = currentSymbolList.join(', ');
                 }
+                if (strategySelect) {
+                    strategySelect.disabled = false;
+                }
             } catch (error) {
                 console.error('Failed to load scan config:', error);
                 setSymbolsStatus('error', 'Unable to load symbol list');
+                setStrategyStatus('error', 'Unable to load strategy preference');
+                if (strategySelect) {
+                    strategySelect.disabled = false;
+                }
             }
         }
 
-        async function saveSymbols() {
-            if (!symbolsInput || !saveSymbolsBtn) return;
-            const normalized = normalizeSymbolInput(symbolsInput.value);
+        async function saveScanSettings() {
+            if (!saveSymbolsBtn) return;
+            const normalized = normalizeSymbolInput(symbolsInput ? symbolsInput.value : currentSymbolList);
             if (normalized.length === 0) {
                 setSymbolsStatus('warning', 'Enter at least one valid ticker symbol.');
                 return;
@@ -1766,32 +2205,64 @@
                 return;
             }
 
+            const selectedStrategyRaw = strategySelect ? strategySelect.value : currentStrategy;
+            const selectedStrategy = typeof selectedStrategyRaw === 'string' ? selectedStrategyRaw.trim().toLowerCase() : currentStrategy;
+            const strategyValid = Object.prototype.hasOwnProperty.call(STRATEGY_METADATA, selectedStrategy);
+            if (!strategyValid) {
+                setStrategyStatus('error', 'Choose a valid strategy (day_trade or swing_trade).');
+                return;
+            }
+
+            const noSymbolChanges = arraysShallowEqual(normalized, currentSymbolList);
+            const noStrategyChange = selectedStrategy === currentStrategy;
+            if (noSymbolChanges && noStrategyChange) {
+                setSymbolsStatus('info', 'No scan setting changes detected.');
+                const label = formatStrategyLabel(currentStrategy);
+                setStrategyStatus('info', `${label} • ${formatStrategyDescription(currentStrategy)}`);
+                return;
+            }
+
             saveSymbolsBtn.disabled = true;
+            if (strategySelect) {
+                strategySelect.disabled = true;
+            }
             saveSymbolsBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving...';
             lucide.createIcons();
-            setSymbolsStatus('loading', 'Updating symbol list...');
+            setSymbolsStatus('loading', 'Saving scan settings...');
+            setStrategyStatus('loading', 'Applying strategy preference...');
 
             try {
                 const response = await fetch('/api/scan/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ symbols: normalized })
+                    body: JSON.stringify({ symbols: normalized, strategy: selectedStrategy })
                 });
                 const data = await response.json();
                 if (!response.ok || !data.success) {
-                    throw new Error(data.error || 'Failed to update symbol list.');
+                    throw new Error(data.error || 'Failed to update scan settings.');
                 }
-                symbolsInput.value = normalized.join(', ');
-                currentSymbolList = normalized;
-                setSymbolsStatus('success', `Symbol list updated (${formatSymbolSummary(normalized)})`);
+                if (symbolsInput) {
+                    symbolsInput.value = normalized.join(', ');
+                }
                 applyScanConfig(data.config, { updateInput: false, updateStatus: false });
+                currentSymbolList = Array.from(normalized);
+                currentStrategy = selectedStrategy;
+                setSymbolsStatus('success', `Scan settings updated (${formatSymbolSummary(normalized)})`);
+                const label = formatStrategyLabel(selectedStrategy);
+                const description = formatStrategyDescription(selectedStrategy);
+                setStrategyStatus('success', `${label} • ${description}`);
                 await fetchRecommendations();
             } catch (error) {
-                console.error('Symbol save failed:', error);
-                setSymbolsStatus('error', error.message || 'Failed to update symbol list.');
+                console.error('Scan settings save failed:', error);
+                const message = error?.message || 'Failed to update scan settings.';
+                setSymbolsStatus('error', message);
+                setStrategyStatus('error', message);
             } finally {
                 saveSymbolsBtn.disabled = false;
-                saveSymbolsBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Save Symbols';
+                if (strategySelect) {
+                    strategySelect.disabled = false;
+                }
+                saveSymbolsBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Save Scan Settings';
                 lucide.createIcons();
             }
         }
@@ -1804,6 +2275,7 @@
             await loadScanConfig();
             await fetchRecommendations();
             startRecommendationsPolling();
+            initializePortfolioRail();
         }
 
         loadInitialData();

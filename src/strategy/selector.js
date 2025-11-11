@@ -36,6 +36,24 @@ function pickByPremium(options, side, targetPremium = 0.2) {
   return best;
 }
 
+function pickNearestStrike(options, side, targetStrike) {
+  if (!Number.isFinite(targetStrike)) return null;
+  const type = side.toUpperCase() === 'PUT' ? 'PUT' : 'CALL';
+  let best = null;
+  let bestDiff = Infinity;
+  for (const opt of options) {
+    if (!opt || opt.type !== type) continue;
+    const strike = Number(opt.strike);
+    if (!Number.isFinite(strike)) continue;
+    const diff = Math.abs(strike - targetStrike);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = opt;
+    }
+  }
+  return best;
+}
+
 function selectOptimalOption(options, side, {
   targetDelta = side === 'call' ? 0.35 : -0.35,
   maxSpreadPct = 0.35,
@@ -78,6 +96,7 @@ module.exports = {
   midPrice,
   pickByDelta,
   pickByPremium,
+  pickNearestStrike,
   selectOptimalOption,
 };
 

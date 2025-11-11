@@ -32,6 +32,9 @@ ACCOUNT_SIZE=1000
 SCAN_SYMBOLS=SPY,QQQ,AAPL,TSLA,GOOGL,NVDA
 TRADING_STRATEGY=day_trade
 EXPIRY_TYPE=0dte
+UI_DEFAULT_STRATEGY=day_trade
+UI_AGENT_LOG_OUTPUT=true
+ETRADE_DEFAULT_ACCOUNT_KEY=optional_preferred_account
 RISK_PCT=0.005
 
 # Risk tuning
@@ -75,7 +78,7 @@ GUARDIAN_INTERVAL_MS=30000
 - Install deps: `npm install`
 
 ## Options Recommender CLI (SPY/QQQ)
-One‑off suggestion for a symbol at a given price and account size.
+One-off suggestion for a symbol at a given price and account size.
 
 Examples:
 ```
@@ -101,6 +104,20 @@ Files:
 - `src/strategy/options.js`: contract selection and pricing.
 - `src/risk.js`: position sizing utilities.
 - `src/cli/suggest.js`: CLI entry point.
+
+### Option Chain Inspector
+
+Inspect tradable contracts before placing an order:
+
+```
+# View first 15 call contracts for TSLA on a specific expiry
+node src/cli/show-chain.js --symbol TSLA --expiry 2025-11-14 --side call --limit 15
+
+# Flip to puts and prefer FMP data if E*TRADE chain is unavailable
+node src/cli/show-chain.js --symbol NVDA --expiry 2025-11-14 --side put --prefer fmp
+```
+
+The script automatically falls back between E*TRADE and FMP and highlights bid/ask spread, mid price, delta, OI, and volume to help validate liquidity.
 
 ## Continuous Suggestions (Streaming to Terminal)
 Runs a loop that fetches live prices (Yahoo Finance) and prints suggestions at a fixed interval.
@@ -247,17 +264,17 @@ Files:
 User-friendly web interface for the AI trading agent with real-time recommendations and trade execution.
 
 ### Integrations at a Glance
-- **E*TRADE API** – OAuth 1.0a connection powers account discovery, live balances, positions, and the emergency option exit workflow. Sensitive account numbers and balances now render masked by default with an in-app reveal toggle.
-- **Financial Modeling Prep (FMP)** – Supplements recommendations with fundamentals (earnings calendar, float, sector stats) that enrich the AI prompt and upcoming UI sidebars.
-- **AI Providers (OpenAI / xAI Grok)** – Generate narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card.
+- **E*TRADE API** – OAuth 1.0a connection powers account discovery, live balances, positions, and the emergency option exit workflow. Sensitive account numbers and balances render masked by default with an in-app reveal toggle, while the portfolio rail auto-syncs your default account at launch.
+- **Financial Modeling Prep (FMP)** – Supplements recommendations with fundamentals (earnings calendar, float, sector stats) that enrich the AI prompt and side-rail insights.
+- **AI Providers (OpenAI / xAI Grok)** – Generate narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card. Multiple providers can run per scan when `UI_AI_PROVIDERS` is defined.
 - **Quote Providers** – Yahoo Finance remains the default intraday feed, with optional Stooq/IEX/Alpha Vantage fallbacks configured via environment settings.
 
 ### Features
-- **Live Dashboard**: Real-time AI recommendations with confidence scores
-- **Trade Scanner**: One-click market scanning for trade opportunities
-- **Risk Monitoring**: Visual risk management with position sizing
-- **Portfolio Overview**: Account balance and P&L tracking
-- **E*TRADE Integration**: Live portfolio data and account balances
+- **Live Dashboard**: Real-time AI recommendations with strategy-specific layouts and confluence scoring
+- **Trade Scanner**: One-click market scanning with a collapsible configuration panel and strategy selector (day trade vs swing trade)
+- **Risk Monitoring**: Visual risk management with position sizing, buy/exit checklists, scaling plans, and enforced confluence/risk rules per card
+- **Portfolio Overview**: Auto-synced portfolio rail with account summary tiles, option position cards, and masked sensitive fields
+- **E*TRADE Integration**: Live portfolio data, balance polling, and one-click emergency exits
 - **Strategy Playbooks**: Momentum, mean-reversion, and breakout diagnostics baked into every scan
 - **Trade Execution**: Direct trade placement (future feature)
 
@@ -287,16 +304,13 @@ To enable portfolio tracking, configure E*TRADE API access:
 **Note**: E*TRADE production API may have limitations on portfolio data access. Some accounts may show "Portfolio Unavailable" if the API endpoints are restricted or the account has no positions. The dashboard will gracefully handle these cases and display available account information (account type, status, mode) with clear explanations.
 
 ### Dashboard Features
-- **Header**: Account balance and daily profit target display
-- **Scan Button**: Triggers AI analysis across configured symbols
-- **Portfolio Button**: Loads E*TRADE account data and positions
-- **Auto Refresh**: Manual refresh button plus automatic portfolio polling every 60 seconds
-- **Account Selector**: Choose which account to view
-- **Account Summary**: Total value, cash balance, buying power, unrealized P&L
-- **Positions Table**: Detailed view of all holdings with P&L
-- **Recommendations Grid**: Color-coded cards showing AI decisions and trade details
-- **Stats Cards**: Key metrics for monitoring performance
-- **Action Buttons**: Manage notes plus a one-tap **Emergency Sell** for options that submits a market exit through E*TRADE
+- **Header**: Account balance and daily profit target display (mask toggle supported)
+- **Scan Controls**: Collapsible scan panel with symbol editor, strategy dropdown, insights rail, and manual scan trigger
+- **Auto Portfolio Sync**: Preferred account loads automatically on first scan (configurable via `ETRADE_DEFAULT_ACCOUNT_KEY`) with manual refresh fallback
+- **Account Summary**: Tile-based overview of cash, buying power, and account metadata
+- **Option Positions**: Card-based layout with P&L, strikes, expiries, and emergency exit controls
+- **Recommendations Grid**: Structured cards with verdict badges, provider grid, buy/exit checklists, scaling plan, enforced rules, and sparkline context
+- **Stats & Insights**: Summary row plus left-rail insights to highlight provider coverage, signal mix, and risk flags
 
 ### "Scan for Trades" Flow
 1. **Button Click** – Client posts to `POST /api/scan` with the active symbol list and strategy settings.
@@ -343,6 +357,7 @@ The dashboard uses the same environment variables as the CLI agent:
 - `AI_PROVIDER` (`openai` default, `xai` for Grok) plus the corresponding key (`OPENAI_API_KEY` or `XAI_API_KEY`)
 - `UI_AI_PROVIDERS`: Comma-separated provider list (e.g., `openai,xai`) to override auto-detection and run multiple analyses per scan
 - `SCAN_SYMBOLS`: Symbols to analyze (default: SPY,QQQ,AAPL,TSLA,GOOGL,NVDA)
+- `UI_AGENT_COMMAND`: Custom command to launch the AI agent (defaults to `npm run day-trade`). Placeholders `{{symbols}}`, `{{strategy}}`, and `{{expiryType}}` are dynamically substituted when present.
 
 ### Files
 - `src/ui/server.js`: Express server with API endpoints

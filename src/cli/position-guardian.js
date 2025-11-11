@@ -8,9 +8,10 @@ const util = require('util');
 
 const { getQuotes } = require('../providers/quotes');
 const etrade = require('../providers/etrade');
+const { fetchOptionChain } = require('../providers/options-chain');
 const { fetchBarsWithFallback } = require('../providers/bars');
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals } = require('../strategy/algorithms');
-const { midPrice } = require('../strategy/selector');
+const { midPrice, pickNearestStrike } = require('../strategy/selector');
 const { getClient } = require('../ai/client');
 
 const sleep = util.promisify(setTimeout);
@@ -226,14 +227,19 @@ async function getOptionFromChain(cache, { symbol, expiry, strike, side }) {
   const key = `${symbol}:${expiry}`;
   if (!cache.has(key)) {
     try {
-      const chain = await etrade.getOptionChain({ symbol, expiry, includeGreeks: true });
-      cache.set(key, chain || []);
+      const chainResult = await fetchOptionChain({ symbol, expiry, includeGreeks: true });
+      cache.set(key, chainResult);
     } catch (err) {
       console.warn(`⚠️  Failed to fetch option chain for ${symbol} ${expiry}:`, err.message);
-      cache.set(key, []);
+      cache.set(key, { options: [] });
     }
   }
-  const list = cache.get(key) || [];
+  const cached = cache.get(key) || { options: [] };
+  const list = Array.isArray(cached.options) ? cached.options : Array.isArray(cached) ? cached : [];
+  const candidate = pickNearestStrike(list, side, strike);
+  if (candidate) return candidate;
+
+  // Fallback to manual scan if selector could not match type formatting
   const type = side?.toUpperCase() === 'PUT' ? 'PUT' : 'CALL';
   let best = null;
   let bestDiff = Infinity;

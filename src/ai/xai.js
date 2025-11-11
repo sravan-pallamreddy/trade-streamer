@@ -3,7 +3,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const PROVIDER_ID = 'xai';
-const DEFAULT_MODEL = process.env.XAI_DEFAULT_MODEL || 'grok-beta';
+const DEFAULT_MODEL = process.env.XAI_DEFAULT_MODEL || 'grok-3';
+const MODEL_FALLBACKS = Object.freeze({
+  'grok-beta': 'grok-3',
+  'grok-1': 'grok-3',
+});
 
 function ensureKeyLoaded() {
   if (process.env.XAI_API_KEY) return;
@@ -39,8 +43,7 @@ function baseUrl() {
   return process.env.XAI_BASE_URL || 'https://api.x.ai/v1';
 }
 
-async function chatJson({ model = DEFAULT_MODEL, system, user, timeout_ms = 10000 }) {
-  const key = requireKey();
+async function requestChat({ model, system, user, timeout_ms, key }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout_ms);
   try {
@@ -62,7 +65,11 @@ async function chatJson({ model = DEFAULT_MODEL, system, user, timeout_ms = 1000
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`xAI HTTP ${res.status}: ${text}`);
+      const error = new Error(`xAI HTTP ${res.status}: ${text}`);
+      error.status = res.status;
+      error.body = text;
+      error.model = model;
+      throw error;
     }
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content || '{}';
@@ -74,6 +81,33 @@ async function chatJson({ model = DEFAULT_MODEL, system, user, timeout_ms = 1000
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function chatJson({ model = DEFAULT_MODEL, system, user, timeout_ms = 10000 }) {
+  const key = requireKey();
+  const tried = new Set();
+  let currentModel = model || DEFAULT_MODEL;
+  let lastError = null;
+
+  while (currentModel && !tried.has(currentModel)) {
+    tried.add(currentModel);
+    try {
+      return await requestChat({ model: currentModel, system, user, timeout_ms, key });
+    } catch (error) {
+      lastError = error;
+      if (error.status === 404) {
+        const fallback = MODEL_FALLBACKS[currentModel];
+        if (fallback && !tried.has(fallback)) {
+          console.warn(`[xai] model ${currentModel} unavailable. Retrying with ${fallback}.`);
+          currentModel = fallback;
+          continue;
+        }
+      }
+      break;
+    }
+  }
+
+  throw lastError;
 }
 
 module.exports = {

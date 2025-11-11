@@ -6,15 +6,91 @@ const util = require('util');
 const { buildSuggestion } = require('../strategy/options');
 const { computeQty } = require('../risk');
 const { getQuotes } = require('../providers/quotes');
-const etrade = require('../providers/etrade');
+const { fetchOptionChain } = require('../providers/options-chain');
 const { getClient } = require('../ai/client');
 const { buildSystemPrompt, buildUserPrompt } = require('../ai/prompt');
 const { fetchBarsWithFallback } = require('../providers/bars');
 const { analyzeDayTradeSignals, analyzeSwingTradeSignals, recommendOptionStrategy } = require('../strategy/algorithms');
 const { evaluateStrategies } = require('../strategy/playbooks');
-const { selectOptimalOption, midPrice } = require('../strategy/selector');
+const { selectOptimalOption, pickNearestStrike, midPrice } = require('../strategy/selector');
 
 const sleep = util.promisify(setTimeout);
+
+function calculateConfluenceMetrics({ suggestion, quotePrice, analysis, strategyInsights, targetDelta }) {
+  if (!suggestion) return {};
+
+  const entry = Number.isFinite(suggestion.est_entry) ? suggestion.est_entry : null;
+  const stop = Number.isFinite(suggestion.stop) ? suggestion.stop : null;
+  const target = Number.isFinite(suggestion.take_profit) ? suggestion.take_profit : null;
+
+  let rewardToRisk = null;
+  if (entry != null && stop != null && target != null) {
+    const risk = entry - stop;
+    const reward = target - entry;
+    if (Number.isFinite(risk) && Number.isFinite(reward) && risk > 0 && reward > 0) {
+      rewardToRisk = Number((reward / risk).toFixed(2));
+    }
+  }
+
+  const spreadPct = suggestion.liquidity?.spread_pct ?? null;
+  const volume = suggestion.volume ?? suggestion.option_details?.volume ?? null;
+  const oi = suggestion.oi ?? suggestion.option_details?.oi ?? null;
+  const volumeOiRatio = Number.isFinite(volume) && Number.isFinite(oi) && oi > 0
+    ? Number((volume / oi).toFixed(2))
+    : null;
+
+  const delta = suggestion.delta ?? suggestion.option_details?.delta ?? null;
+  const deltaGap = Number.isFinite(delta) && Number.isFinite(targetDelta)
+    ? Number((delta - targetDelta).toFixed(3))
+    : null;
+
+  const signalStrength = Number.isFinite(analysis?.strength)
+    ? Number(Math.abs(analysis.strength).toFixed(3))
+    : null;
+
+  const primaryPlaybook = strategyInsights?.primary;
+  const playbookScore = Number.isFinite(primaryPlaybook?.score)
+    ? Number(Math.abs(primaryPlaybook.score).toFixed(3))
+    : (Number.isFinite(primaryPlaybook?.magnitude) ? Number(primaryPlaybook.magnitude.toFixed(3)) : null);
+
+  const now = new Date();
+  const expiryDate = suggestion.expiry ? new Date(`${suggestion.expiry}T20:00:00Z`) : null;
+  const timeToExpiryDays = expiryDate && !Number.isNaN(expiryDate.valueOf())
+    ? Number(((expiryDate - now) / (1000 * 60 * 60 * 24)).toFixed(1))
+    : null;
+
+  const strike = Number.isFinite(suggestion.strike) ? suggestion.strike : null;
+  const price = Number.isFinite(quotePrice) ? quotePrice : null;
+  let moneynessPct = null;
+  if (strike != null && price != null && price !== 0) {
+    const raw = ((strike - price) / price) * 100;
+    moneynessPct = Number(raw.toFixed(2));
+  }
+
+  const riskPerContract = entry != null && stop != null
+    ? Number((entry - stop).toFixed(2))
+    : null;
+
+  const liquidityScore = suggestion.liquidity?.score ?? suggestion.option_details?.score ?? null;
+
+  return {
+    reward_to_risk: rewardToRisk,
+    spread_pct: spreadPct != null ? Number(spreadPct) : null,
+    volume_oi_ratio: volumeOiRatio,
+    delta_gap: deltaGap,
+    signal_strength: signalStrength,
+    playbook_alignment: primaryPlaybook ? {
+      score: playbookScore,
+      bias: primaryPlaybook.bias ?? null,
+      label: primaryPlaybook.label ?? null,
+    } : null,
+    time_to_expiry_days: timeToExpiryDays,
+    moneyness_pct: moneynessPct,
+    risk_per_contract: riskPerContract,
+    total_position_risk: Number.isFinite(suggestion.risk_total) ? Number(suggestion.risk_total.toFixed(2)) : null,
+    liquidity_score: liquidityScore != null ? Number(liquidityScore.toFixed ? liquidityScore.toFixed(2) : liquidityScore) : null,
+  };
+}
 
 function buildScalingPlan({ qty, entry, takeProfit, stop }) {
   const plan = { qty, stop, iterations: [] };
@@ -210,7 +286,7 @@ async function analyzeSymbol(symbol, params) {
     let adjustedParams = { ...params };
     if (strategyType === 'day_trade') {
       adjustedParams.otmPct = 0.01; // Closer to money for day trades
-  adjustedParams.stopLossPct = 0.2; // Tighter stops
+      adjustedParams.stopLossPct = 0.2; // Tighter stops
       adjustedParams.takeProfitMult = 1.5; // Lower target
     }
 
@@ -224,8 +300,8 @@ async function analyzeSymbol(symbol, params) {
     const playbookStrength = strategyInsights?.primary?.magnitude ?? Math.min(Math.abs(strategyInsights?.primary?.score ?? 0), 1);
     const combinedStrength = Math.max(Math.min(Math.abs(analysis.strength), 1), playbookStrength);
 
-  const targetDelta = computeTargetDelta(strategyType, directionSign > 0 ? combinedStrength : -combinedStrength, side);
-  const optionTimeFrame = strategyType === 'swing_trade' ? 'swing' : 'day';
+    const targetDelta = computeTargetDelta(strategyType, directionSign > 0 ? combinedStrength : -combinedStrength, side);
+    const optionTimeFrame = strategyType === 'swing_trade' ? 'swing' : 'day';
 
     // Build initial option suggestion (model-based fallback)
     const suggestion = buildSuggestion({
@@ -234,39 +310,72 @@ async function analyzeSymbol(symbol, params) {
       underlyingPrice: quote.price,
       iv: params.iv,
       r: params.r,
-  otmPct: adjustedParams.otmPct,
+      otmPct: adjustedParams.otmPct,
       minBusinessDays: params.minBusinessDays,
-  expiryType: params.expiryType,
-  expiryOverride: params.expiryOverride,
+      expiryType: params.expiryType,
+      expiryOverride: params.expiryOverride,
       stopLossPct: adjustedParams.stopLossPct,
       takeProfitMult: adjustedParams.takeProfitMult,
     });
 
     // Enrich with live option chain when available
     let liveOption = null;
+    let chainSource = null;
     try {
-      const chain = await etrade.getOptionChain({
+      const chainResult = await fetchOptionChain({
         symbol,
         expiry: suggestion.expiry,
         includeGreeks: true,
       });
+      chainSource = chainResult.source || null;
+      const chain = Array.isArray(chainResult.options) ? chainResult.options : [];
 
-      const candidate = selectOptimalOption(chain, side, {
+      // Log chain metadata and a small sample so we can diagnose strike mismatches quickly.
+      const sample = chain.slice(0, 8).map((opt) => ({
+        side: opt.callPut ?? opt.optionType ?? null,
+        strike: Number(opt.strike ?? NaN),
+        bid: opt.bid ?? null,
+        ask: opt.ask ?? null,
+        last: opt.last ?? null,
+        delta: opt.delta ?? null,
+        oi: opt.oi ?? opt.openInterest ?? null,
+        volume: opt.vol ?? opt.volume ?? null,
+        optionSymbol: opt.optionSymbol ?? null,
+      }));
+      console.log('📡 Option chain response', {
+        symbol,
+        expiry: suggestion.expiry,
+        source: chainSource,
+        total: chain.length,
+        sample,
+      });
+
+      if (!chain.length && params.debug) {
+        console.warn(`⚠️  Option chain empty for ${symbol} ${suggestion.expiry}; using theoretical pricing`);
+      }
+
+      let candidate = selectOptimalOption(chain, side, {
         targetDelta,
         maxSpreadPct: strategyType === 'day_trade' ? 0.3 : 0.4,
         minOpenInterest: strategyType === 'day_trade' ? 150 : 75,
       });
+      if (!candidate) {
+        candidate = pickNearestStrike(chain, side, suggestion.strike);
+      }
 
       if (candidate) {
         liveOption = candidate;
         const chosenStrike = Number(candidate.strike);
-        const mid = midPrice(candidate);
-        const entryPrice = mid ?? candidate.ask ?? candidate.last ?? candidate.bid;
-        if (Number.isFinite(chosenStrike) && Number.isFinite(entryPrice)) {
-          const spread = candidate.bid != null && candidate.ask != null ? candidate.ask - candidate.bid : null;
-          const spreadPct = spread != null && mid ? (spread / mid) * 100 : null;
+        if (Number.isFinite(chosenStrike)) {
           suggestion.contract = `${symbol} ${suggestion.expiry} ${chosenStrike}${side === 'call' ? 'C' : 'P'}`;
           suggestion.strike = chosenStrike;
+        }
+
+        const mid = midPrice(candidate);
+        const entryPrice = mid ?? candidate.ask ?? candidate.last ?? candidate.bid;
+        if (Number.isFinite(entryPrice)) {
+          const spread = candidate.bid != null && candidate.ask != null ? candidate.ask - candidate.bid : null;
+          const spreadPct = spread != null && mid ? (spread / mid) * 100 : null;
           suggestion.est_entry = Number(entryPrice.toFixed(2));
           suggestion.stop = Number((entryPrice * (1 - adjustedParams.stopLossPct)).toFixed(2));
           suggestion.take_profit = Number((entryPrice * (1 + adjustedParams.takeProfitMult)).toFixed(2));
@@ -276,7 +385,8 @@ async function analyzeSymbol(symbol, params) {
           suggestion.delta = candidate.delta ?? null;
           suggestion.oi = Number.isFinite(candidate.oi) ? candidate.oi : null;
           suggestion.volume = Number.isFinite(candidate.vol) ? candidate.vol : null;
-          suggestion.entry_source = 'etrade_live';
+          suggestion.entry_source = chainSource ? `${chainSource}_chain` : 'options_chain';
+          suggestion.option_symbol = candidate.optionSymbol ?? suggestion.option_symbol ?? null;
           suggestion.liquidity = {
             spread: spread != null ? Number(spread.toFixed(2)) : null,
             spread_pct: spreadPct != null ? Number(spreadPct.toFixed(2)) : null,
@@ -284,22 +394,35 @@ async function analyzeSymbol(symbol, params) {
             volume: suggestion.volume,
             score: candidate._metrics?.totalScore ?? null,
           };
-          console.log(`🟢 Selected ${side.toUpperCase()} ${chosenStrike} @ ~$${suggestion.est_entry} (Δ ${suggestion.delta ?? 'N/A'}, OI ${suggestion.oi ?? 'N/A'})`);
+          const chainLabel = chainSource ? ` | Chain ${chainSource}` : '';
+          const symbolLabel = suggestion.option_symbol ?? candidate.optionSymbol ?? 'N/A';
+          console.log(`🟢 Selected ${side.toUpperCase()} ${suggestion.strike} @ ~$${suggestion.est_entry} (Δ ${suggestion.delta ?? 'N/A'}, OI ${suggestion.oi ?? 'N/A'})`);
           console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
-          console.log(`📄 Option contract: ${suggestion.contract} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
+          console.log(`📄 Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}${chainLabel}`);
+        } else if (Number.isFinite(suggestion.strike)) {
+          suggestion.entry_source = 'model_chain_fallback';
+          suggestion.option_symbol = candidate.optionSymbol ?? suggestion.option_symbol ?? null;
         }
       }
     } catch (chainErr) {
-      console.warn(`⚠️  Option chain unavailable for ${symbol}:`, chainErr.message);
+      console.warn(`⚠️  Option chain fetch failed for ${symbol}:`, chainErr.message);
     }
 
     if (!liveOption) {
       suggestion.entry_source = 'model';
       console.log('ℹ️  Using theoretical pricing (no live chain data)');
+      const symbolLabel = suggestion.option_symbol ?? 'N/A';
       console.log(`🧮 Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
       console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
-      console.log(`📄 Option contract: ${suggestion.contract} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
+      console.log(`📄 Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
+    } else if (suggestion.entry_source === 'model_chain_fallback') {
+      const symbolLabel = suggestion.option_symbol ?? 'N/A';
+      console.log('ℹ️  Option chain found but pricing unavailable; using theoretical premium for sizing.');
+      console.log(`🧮 Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
+      console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
+      console.log(`📄 Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
     }
+    suggestion.chain_source = chainSource;
 
     // Calculate position sizing
     const sizing = computeQty({
@@ -333,9 +456,21 @@ async function analyzeSymbol(symbol, params) {
         volume: suggestion.volume,
         spread_pct: suggestion.liquidity?.spread_pct ?? null,
         score: liveOption._metrics?.totalScore ?? null,
+        chain_source: suggestion.chain_source ?? null,
+        option_symbol: suggestion.option_symbol ?? null,
+        source: suggestion.entry_source ?? null,
       } : null,
       tradePlan,
     };
+
+    const confluence = calculateConfluenceMetrics({
+      suggestion: enrichedSuggestion,
+      quotePrice: quote.price,
+      analysis,
+      strategyInsights,
+      targetDelta,
+    });
+    enrichedSuggestion.confluence = confluence;
 
     const stopLabel = Number.isFinite(suggestion.stop) ? `$${suggestion.stop.toFixed(2)}` : 'N/A';
     const tpLabel = Number.isFinite(suggestion.take_profit) ? `$${suggestion.take_profit.toFixed(2)}` : 'N/A';
@@ -373,6 +508,8 @@ async function analyzeSymbol(symbol, params) {
         spread_pct: enrichedSuggestion.liquidity?.spread_pct ?? null,
         target_delta: targetDelta,
         source: enrichedSuggestion.option_source,
+        chain_source: enrichedSuggestion.chain_source ?? null,
+        option_symbol: enrichedSuggestion.option_symbol ?? null,
       },
       algorithmic: {
         [strategyType]: analysis,
@@ -380,6 +517,7 @@ async function analyzeSymbol(symbol, params) {
         recommendedStrategy: recommendOptionStrategy(combinedStrength, directionSign, optionTimeFrame),
         optionTimeFrame
       },
+      confluence,
       strategy_playbook: {
         primary: strategyInsights?.primary ?? null,
         ranked: strategyInsights?.ranked?.slice(0, 3) ?? [],
@@ -388,6 +526,13 @@ async function analyzeSymbol(symbol, params) {
 
     const system = buildSystemPrompt();
     const user = buildUserPrompt({ suggestion: enrichedSuggestion, context });
+
+    try {
+      console.log('🧾 AI system prompt:', system);
+      console.log('🧾 AI user prompt:', user);
+    } catch (promptLogErr) {
+      console.warn('⚠️  Failed to log AI prompt payloads:', promptLogErr.message);
+    }
   const ai = await aiClient.chatJson({ model: params.aiModel, system, user, timeout_ms: 20000 });
 
     console.log(`🧠 AI Decision: ${ai.decision || 'N/A'} (confidence: ${(ai.confidence ?? 0) * 100}%)`);
@@ -463,6 +608,10 @@ async function runScan(args, runId = 1) {
     approved.forEach(r => {
       const s = r.suggestion;
       console.log(`\n${r.symbol} ${s.side.toUpperCase()} - ${s.contract}`);
+      if (s.option_symbol) {
+        const srcLabel = s.option_source ? ` (${s.option_source})` : '';
+        console.log(`  Option symbol: ${s.option_symbol}${srcLabel}`);
+      }
       console.log(`  Entry: $${s.est_entry} | Stop: $${s.stop} | Target: $${s.take_profit}`);
       console.log(`  Qty: ${s.qty} | Risk: $${s.risk_total}`);
       if (s.strategyInsights?.primary) {

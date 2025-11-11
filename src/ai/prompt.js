@@ -2,9 +2,10 @@ function buildSystemPrompt() {
   return `You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
 
 Always follow this evaluation stack:
-1. Review the provided strategy playbooks (momentum trend, mean reversion, breakout) and pick the single best-aligned lens. Justify with two short bullet reasons.
-2. Stress-test risk: check spread quality, volume/liquidity notes, risk-per-contract, stop distance, and broader market context hints.
-3. Deliver a binary decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if data conflicts.
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
 
 Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.`;
 }
@@ -26,6 +27,13 @@ function buildUserPrompt({ suggestion, context }) {
         bias: 'bullish|bearish|neutral',
         score: '0..1 absolute conviction',
         rationale: '≤120 chars summary'
+      },
+      confluence_guidance: {
+        reward_to_risk: 'Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.',
+        spread_pct: 'Day trades need <= 35%, swing trades <= 45%.',
+        volume_oi_ratio: 'Healthy >= 0.30. Warn if < 0.15.',
+        delta_gap: 'Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.',
+        time_to_expiry_days: 'Swing plans need at least ~3 trading days unless 0DTE explicitly chosen.'
       }
     }
   };
@@ -41,7 +49,7 @@ function buildUserPrompt({ suggestion, context }) {
   "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
 }
 
-Payload:\n${JSON.stringify(payload)}`;
+Payload:\n${JSON.stringify(payload, null, 2)}`;
 }
 
 module.exports = {

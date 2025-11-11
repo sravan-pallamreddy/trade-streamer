@@ -23,6 +23,7 @@ const ALIASES = {
   grok: 'xai',
   'grok-beta': 'xai',
   'grok-1': 'xai',
+  'grok-3': 'xai',
   'x.ai': 'xai',
   x: 'xai',
 };

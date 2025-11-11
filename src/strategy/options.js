@@ -49,14 +49,17 @@ function nextMonthlyExpiry(minBusinessDays = 2) {
 }
 
 function next0DTEExpiry() {
-  // Same day expiry - use today if market is open
+  // Same day expiry - use today if market is open, otherwise next business day
   const now = new Date();
-  const hour = now.getHours();
-  // If after 4 PM ET, use next day
-  if (hour >= 20) { // 8 PM UTC = 4 PM ET
-    return addDays(now, 1);
+  let candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // If after 4 PM ET (21:00 UTC during DST adjustments we approximate with 20)
+  if (now.getUTCHours() >= 20) {
+    candidate = addDays(candidate, 1);
   }
-  return now;
+  while (isWeekend(candidate)) {
+    candidate = addDays(candidate, 1);
+  }
+  return candidate;
 }
 
 function getExpiryByType(expiryType = 'weekly', minBusinessDays = 2) {
@@ -83,21 +86,78 @@ function roundStrike(price, increment) {
 }
 
 function ceilStrike(price, increment) {
+  if (!Number.isFinite(price)) return price;
   return Math.ceil(price / increment) * increment;
 }
 
 function floorStrike(price, increment) {
+  if (!Number.isFinite(price)) return price;
   return Math.floor(price / increment) * increment;
 }
 
 const OPTION_CONFIG = {
-  SPY: { multiplier: 100, strikeIncrement: 1 },
-  QQQ: { multiplier: 100, strikeIncrement: 1 },
-  AAPL: { multiplier: 100, strikeIncrement: 1 },
-  TSLA: { multiplier: 100, strikeIncrement: 1 },
-  GOOGL: { multiplier: 100, strikeIncrement: 1 },
-  NVDA: { multiplier: 100, strikeIncrement: 1 },
+  SPY: { multiplier: 100, strikeIncrement: 1, supports0DTE: true, defaultOTMPct: 0.004 },
+  QQQ: { multiplier: 100, strikeIncrement: 1, supports0DTE: true, defaultOTMPct: 0.005 },
+  AAPL: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
+  TSLA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.012 },
+  GOOGL: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.008 },
+  NVDA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
 };
+
+function describeExpiryType(type) {
+  switch ((type || '').toLowerCase()) {
+    case '0dte':
+      return '0DTE';
+    case 'weekly':
+      return 'Weekly';
+    case 'monthly':
+      return 'Monthly';
+    case 'custom':
+      return 'Custom';
+    default:
+      return (type || 'Weekly').toString();
+  }
+}
+
+function resolveExpiryDate({ symbol, requestedType = 'weekly', minBusinessDays = 2, expiryOverride }) {
+  if (expiryOverride) {
+    const overrideDate = new Date(expiryOverride);
+    if (Number.isNaN(overrideDate.getTime())) {
+      throw new Error(`Invalid expiry override: ${expiryOverride}`);
+    }
+    return {
+      date: overrideDate,
+      effectiveType: 'custom',
+      requestedType,
+      fallbackReason: null,
+    };
+  }
+
+  const conf = OPTION_CONFIG[symbol] || {};
+  const normalizedRequested = (requestedType || 'weekly').toString().toLowerCase();
+  let effectiveType = normalizedRequested;
+  let fallbackReason = null;
+
+  if (effectiveType === '0dte' && !conf.supports0DTE) {
+    fallbackReason = '0DTE expiration not available for this symbol; falling back to weekly expiry.';
+    const fallback = conf.fallbackExpiryType ? conf.fallbackExpiryType.toString().toLowerCase() : 'weekly';
+    effectiveType = fallback;
+  }
+
+  if (!['0dte', 'weekly', 'monthly'].includes(effectiveType)) {
+    fallbackReason = `Unsupported expiry type "${effectiveType}"; defaulting to weekly expiry.`;
+    effectiveType = 'weekly';
+  }
+
+  const date = getExpiryByType(effectiveType, minBusinessDays);
+
+  return {
+    date,
+    effectiveType,
+    requestedType: normalizedRequested,
+    fallbackReason,
+  };
+}
 
 // Standard normal CDF approximation
 function normCdf(x) {
@@ -128,24 +188,40 @@ function bsOptionPrice({ S, K, T, r = 0.01, sigma = 0.2, type = 'call' }) {
   }
 }
 
-function pickContract({ symbol, side, underlyingPrice, otmPct = 0.02, minBusinessDays = 2, expiryOverride, expiryType = 'weekly' }) {
+function pickContract({ symbol, side, underlyingPrice, otmPct, minBusinessDays = 2, expiryOverride, expiryType = 'weekly' }) {
   const conf = OPTION_CONFIG[symbol];
   if (!conf) throw new Error(`Unsupported symbol for options config: ${symbol}`);
   const { strikeIncrement } = conf;
 
-  const expiryDate = expiryOverride ? new Date(expiryOverride) : getExpiryByType(expiryType, minBusinessDays);
+  const resolvedExpiry = resolveExpiryDate({ symbol, requestedType: expiryType, minBusinessDays, expiryOverride });
+  const expiryDate = resolvedExpiry.date;
   const expiry = formatExpiryISO(expiryDate);
+
+  const targetOtmPct = otmPct != null && Number.isFinite(otmPct)
+    ? otmPct
+    : (conf.defaultOTMPct != null ? conf.defaultOTMPct : 0.02);
 
   let strike;
   if (side === 'call') {
-    const target = underlyingPrice * (1 + otmPct);
+    const target = underlyingPrice * (1 + targetOtmPct);
     strike = ceilStrike(target, strikeIncrement);
   } else {
-    const target = underlyingPrice * (1 - otmPct);
+    const target = underlyingPrice * (1 - targetOtmPct);
     strike = floorStrike(target, strikeIncrement);
   }
 
-  return { symbol, side, strike, expiry, strikeIncrement, multiplier: conf.multiplier };
+  return {
+    symbol,
+    side,
+    strike,
+    expiry,
+    strikeIncrement,
+    multiplier: conf.multiplier,
+    expiryType: resolvedExpiry.effectiveType,
+    requestedExpiryType: resolvedExpiry.requestedType,
+    expiryFallbackReason: resolvedExpiry.fallbackReason,
+    otmPctUsed: targetOtmPct,
+  };
 }
 
 function toOccString({ symbol, expiry, side, strike }) {
@@ -160,7 +236,7 @@ function buildSuggestion({
   underlyingPrice,
   iv = 0.2,
   r = 0.01,
-  otmPct = 0.02,
+  otmPct,
   minBusinessDays = 2,
   expiryOverride,
   expiryType = 'weekly',
@@ -179,7 +255,14 @@ function buildSuggestion({
   const stop = Math.max(0.01, entry * (1 - stopLossPct));
   const tp = entry * (1 + takeProfitMult);
 
-  const expiryDesc = expiryType === '0dte' ? '0DTE' : expiryType === 'monthly' ? 'Monthly' : 'Weekly';
+  const effectiveExpiryType = base.expiryType || expiryType;
+  const expiryDesc = describeExpiryType(effectiveExpiryType);
+  const requestedExpiryDesc = base.requestedExpiryType && base.requestedExpiryType !== effectiveExpiryType
+    ? describeExpiryType(base.requestedExpiryType)
+    : null;
+  const expiryRationalePrefix = requestedExpiryDesc && requestedExpiryDesc !== expiryDesc
+    ? `${expiryDesc} (requested ${requestedExpiryDesc})`
+    : expiryDesc;
 
   return {
     symbol,
@@ -190,6 +273,10 @@ function buildSuggestion({
     expiry: base.expiry,
     strike: base.strike,
     multiplier: base.multiplier,
+    expiry_type: effectiveExpiryType,
+    requested_expiry_type: base.requestedExpiryType,
+    expiry_fallback_reason: base.expiryFallbackReason,
+  target_otm_pct: base.otmPctUsed,
     est_entry: Number(entry.toFixed(2)),
     stop: Number(stop.toFixed(2)),
     take_profit: Number(tp.toFixed(2)),
@@ -197,12 +284,14 @@ function buildSuggestion({
       iv,
       r,
       otm_pct: otmPct,
+  otm_pct_used: base.otmPctUsed,
       min_business_days: minBusinessDays,
       stop_loss_pct: stopLossPct,
       take_profit_mult: takeProfitMult,
-      expiry_type: expiryType,
+      expiry_type: effectiveExpiryType,
+      expiry_type_requested: base.requestedExpiryType,
     },
-    rationale: `${expiryDesc} ${side.toUpperCase()} ~${Math.round(otmPct * 100)}% OTM with TP ${takeProfitMult}x and SL ${Math.round(stopLossPct * 100)}%`,
+    rationale: `${expiryRationalePrefix} ${side.toUpperCase()} ~${Math.round((base.otmPctUsed ?? otmPct ?? 0) * 100)}% OTM with TP ${takeProfitMult}x and SL ${Math.round(stopLossPct * 100)}%`,
   };
 }
 
