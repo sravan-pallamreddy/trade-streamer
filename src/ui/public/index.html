@@ -1400,22 +1400,29 @@
                     })
                     .join(' ');
 
-                const gradientId = `spark-${(rec?.symbol || 'line').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                const firstValue = series[0];
+                const lastValue = series[series.length - 1];
+                let trend = 'flat';
+                let strokeColor = '#6B7280';
+                if (lastValue > firstValue) {
+                    trend = 'up';
+                    strokeColor = '#10B981';
+                } else if (lastValue < firstValue) {
+                    trend = 'down';
+                    strokeColor = '#EF4444';
+                }
+
                 const formattedValues = series.map((value) => Number.isFinite(value) ? Number(value.toFixed(2)) : value);
 
                 return {
                     svg: `
                         <svg viewBox="0 0 ${width} ${height}" class="w-full h-12" preserveAspectRatio="none" role="img" aria-label="Price sparkline">
-                            <defs>
-                                <linearGradient id="${gradientId}">
-                                    <stop offset="0%" stop-color="#2563eb" />
-                                    <stop offset="100%" stop-color="#10b981" />
-                                </linearGradient>
-                            </defs>
-                            <path d="${path}" fill="none" stroke="url(#${gradientId})" stroke-width="2" stroke-linecap="round" />
+                            <path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" />
                         </svg>
                     `,
                     values: formattedValues,
+                    trend,
+                    strokeColor,
                 };
             };
 
@@ -1584,6 +1591,31 @@
                 return `${value.toFixed(0)}%`;
             };
 
+            const verdictBadgeMeta = {
+                approve: { bg: '#16A34A', text: '#FFFFFF' },
+                caution: { bg: '#F59E0B', text: '#111827' },
+                reject: { bg: '#DC2626', text: '#FFFFFF' },
+                unknown: { bg: '#6B7280', text: '#FFFFFF' },
+            };
+
+            const getVerdictBadgeStyle = (verdictKey) => {
+                const key = verdictKey && verdictBadgeMeta[verdictKey] ? verdictKey : 'unknown';
+                return verdictBadgeMeta[key];
+            };
+
+            const getConfidenceToneColor = (value) => {
+                if (!Number.isFinite(value)) {
+                    return '#6B7280';
+                }
+                if (value >= 80) {
+                    return '#16A34A';
+                }
+                if (value >= 60) {
+                    return '#F59E0B';
+                }
+                return '#DC2626';
+            };
+
             const signalConditionLookup = new Map([
                 ['macd bullish', 'MACD histogram stays positive with signal line above zero'],
                 ['high volume', 'Volume ≥ 1.3× 20-period average on confirmation candle'],
@@ -1650,15 +1682,9 @@
                 items.forEach((item) => {
                     (item.signals || []).forEach((sig) => signalSet.add(formatSignalTag(sig)));
                 });
-                const signalChips = Array.from(signalSet)
+                const signalTags = Array.from(signalSet)
                     .filter(Boolean)
-                    .slice(0, 6)
-                    .map((label) => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">${escapeHtml(label)}</span>`)
-                    .join('');
-                const signalChipLabels = Array.from(signalSet)
-                    .filter(Boolean)
-                    .map((label) => label.replace(/\s+/g, ' ').trim())
-                    .join(', ');
+                    .map((label) => label.replace(/\s+/g, ' ').trim());
 
                 const providerDetails = items
                     .slice()
@@ -1744,33 +1770,6 @@
                     verdict = Number.isFinite(confluenceScore) && confluenceScore >= 70 ? 'approve' : 'caution';
                 }
 
-                const verdictBadge = verdict === 'approve'
-                    ? 'text-emerald-600 bg-emerald-50'
-                    : verdict === 'caution'
-                        ? 'text-amber-600 bg-amber-50'
-                        : 'text-rose-600 bg-rose-50';
-
-                const providerRows = providerDetails
-                    .map((detail) => `
-                        <tr class="text-sm text-slate-700">
-                            <td class="px-3 py-2 font-semibold">${escapeHtml(detail.provider)}</td>
-                            <td class="px-3 py-2 text-center">${escapeHtml(formatConfidencePercent(detail.confidence))}</td>
-                            <td class="px-3 py-2 text-right">${detail.entry != null ? escapeHtml(detail.entry.toFixed(2)) : '—'}</td>
-                            <td class="px-3 py-2 text-right">${detail.stop != null ? escapeHtml(detail.stop.toFixed(2)) : '—'}</td>
-                            <td class="px-3 py-2 text-right">${detail.target != null ? escapeHtml(detail.target.toFixed(2)) : '—'}</td>
-                        </tr>
-                    `)
-                    .join('');
-
-                const providerNotesSection = providerDetails
-                    .map((detail) => `
-                        <div class="space-y-1 text-sm text-slate-700">
-                            <div class="font-semibold text-slate-900">${escapeHtml(detail.provider)} Notes:</div>
-                            ${detail.noteLines.map((line) => `<div>- ${escapeHtml(line)}</div>`).join('')}
-                        </div>
-                    `)
-                    .join('');
-
                 const holdGuidance = calculateHoldGuidance(focusRec, expiryLabel);
                 const buyConditions = deriveBuyConditions(Array.from(signalSet));
                 const tradePlanPayload = focusRec.tradePlan
@@ -1785,84 +1784,201 @@
                 });
 
                 const sparklineData = createSparkline(focusRec);
-                const sparklineLabel = sparklineData
-                    ? `Sparkline: [${sparklineData.values.map((value) => Number(value).toFixed(2)).join(', ')}]`
-                    : 'Sparkline: [insufficient data]';
 
-                const alertChips = [];
-                if (hasDisagreement) alertChips.push('Provider disagreement');
-                if (wideSpreadRisk) alertChips.push('Wide spread risk');
-                if (rewardToRisk != null && rewardToRisk < 2.5) alertChips.push(`R/R ${rewardToRisk.toFixed(2)} (<2.5)`);
+                const providerRowsHtml = providerDetails
+                    .map((detail, index) => {
+                        const entryCell = detail.entry != null ? detail.entry.toFixed(2) : '—';
+                        const stopCell = detail.stop != null ? detail.stop.toFixed(2) : '—';
+                        const targetCell = detail.target != null ? detail.target.toFixed(2) : '—';
+                        const rowStyle = index % 2 === 1 ? ' style="background-color:#F9FAFB;"' : '';
+                        const confidenceColor = getConfidenceToneColor(detail.confidence);
+                        return `
+                            <tr${rowStyle} class="text-sm text-[#111827]">
+                                <td class="px-4 py-2 font-semibold">${escapeHtml(detail.provider)}</td>
+                                <td class="px-4 py-2 text-center font-semibold" style="color:${confidenceColor};">${escapeHtml(formatConfidencePercent(detail.confidence))}</td>
+                                <td class="px-4 py-2 text-right text-[#6B7280]">${escapeHtml(entryCell)}</td>
+                                <td class="px-4 py-2 text-right text-[#6B7280]">${escapeHtml(stopCell)}</td>
+                                <td class="px-4 py-2 text-right text-[#6B7280]">${escapeHtml(targetCell)}</td>
+                            </tr>
+                        `;
+                    })
+                    .join('');
+
+                const providerInsightsHtml = providerDetails
+                    .map((detail) => {
+                        const noteItems = detail.noteLines.length ? detail.noteLines : ['No additional commentary'];
+                        const bullets = noteItems
+                            .map((line) => `<li class="flex gap-2 leading-tight text-sm text-[#6B7280]"><span class="text-[#6B7280]">•</span><span>${escapeHtml(line)}</span></li>`)
+                            .join('');
+                        return `
+                            <div class="space-y-2">
+                                <div class="text-sm font-semibold text-[#111827]">${escapeHtml(detail.provider)}</div>
+                                <ul class="space-y-1 ml-2">${bullets}</ul>
+                            </div>
+                        `;
+                    })
+                    .join('<div class="h-px bg-[#E5E7EB]"></div>');
+
+                let decisionSummary = 'Trade marked caution until confluence or risk profile improves.';
+                if (verdict === 'approve') {
+                    decisionSummary = 'Trade approved because confluence meets thresholds and reward-to-risk is acceptable.';
+                } else if (verdict === 'reject') {
+                    decisionSummary = 'Trade rejected because reward-to-risk fails to clear minimum threshold.';
+                }
+                if (wideSpreadRisk) {
+                    decisionSummary += ' Wide spread risk requires careful fills.';
+                } else if (hasDisagreement) {
+                    decisionSummary += ' Provider confidence spread indicates mixed conviction.';
+                }
+
+                const rulesLines = [
+                    'If CONFLUENCE_SCORE < 70 → VERDICT = CAUTION',
+                    'If R/R < 2.5 → VERDICT = REJECT',
+                ];
+                if (hasDisagreement) {
+                    rulesLines.push('Provider disagreement flagged because confidence spread exceeds 25%');
+                }
+                if (wideSpreadRisk) {
+                    rulesLines.push('Wide spread risk flagged because bid/ask spread exceeds 5%');
+                }
+
+                const buyListHtml = buyConditions
+                    .map((item) => `<li class="flex gap-2 leading-tight"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .join('');
+
+                const exitListHtml = exitConditions
+                    .map((item) => `<li class="flex gap-2 leading-tight"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .join('');
+
+                const scalingPlanItems = (() => {
+                    if (Array.isArray(tradePlanPayload?.iterations) && tradePlanPayload.iterations.length) {
+                        return tradePlanPayload.iterations.map((step, index) => {
+                            const qtyLabel = step.sellQty != null ? String(step.sellQty) : `Step ${index + 1}`;
+                            const targetLabel = step.target != null ? `$${Number(step.target).toFixed(2)}` : 'Momentum strength';
+                            return `${qtyLabel} at ${targetLabel}`;
+                        });
+                    }
+                    if (Number.isFinite(targetPrice)) {
+                        return [
+                            `Trim partial near $${targetPrice.toFixed(2)}`,
+                            'Trail remainder once first target fills',
+                        ];
+                    }
+                    return ['No scaling instructions provided'];
+                })();
+
+                const scalingListHtml = scalingPlanItems
+                    .map((item) => `<li class="flex gap-2 leading-tight"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .join('');
+
+                const rulesListHtml = rulesLines
+                    .map((item) => `<li class="flex gap-2 leading-tight text-sm"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .join('');
+
+                const badgeStyle = getVerdictBadgeStyle(verdict);
+                const confluenceColor = getConfidenceToneColor(confluenceScore);
+                const sparklineTrendLabel = sparklineData
+                    ? sparklineData.trend === 'up'
+                        ? 'Uptrend'
+                        : sparklineData.trend === 'down'
+                            ? 'Downtrend'
+                            : 'Flat'
+                    : 'Unavailable';
+                const sparklineVisual = sparklineData
+                    ? `<div class="flex flex-col gap-2"><div class="w-full">${sparklineData.svg}</div><div class="text-xs text-[#6B7280]">Data points: ${sparklineData.values.map((value) => Number(value).toFixed(2)).join(', ')}</div></div>`
+                    : '<div class="text-sm text-[#6B7280]">Insufficient data for sparkline.</div>';
+
+                const tagChipsHtml = signalTags.length
+                    ? signalTags
+                        .map((tag) => `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background-color:#F3F4F6;color:#374151;">${escapeHtml(tag)}</span>`)
+                        .join('')
+                    : '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background-color:#F3F4F6;color:#374151;">No signals</span>';
 
                 recommendations.innerHTML += `
-                    <article class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 space-y-5">
-                        <header class="space-y-2 text-sm font-semibold text-slate-700">
-                            <div>TICKER: [${escapeHtml(symbol)}]</div>
-                            <div>STRIKE: [${escapeHtml(strikeDescriptor)}]</div>
-                            <div>EXPIRY: [${escapeHtml(expiryLabel)}]</div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span>VERDICT: ${escapeHtml(verdict.toUpperCase())}</span>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${verdictBadge}">${escapeHtml(verdict.toUpperCase())}</span>
+                    <article class="bg-white border border-[#E5E7EB] shadow-sm rounded-3xl p-6 space-y-6 text-[#111827]">
+                        <header class="flex flex-wrap items-start justify-between gap-4">
+                            <div class="space-y-3">
+                                <div class="text-xs uppercase tracking-[0.3em] text-[#6B7280]">Ticker</div>
+                                <div class="text-3xl font-semibold">${escapeHtml(symbol)}</div>
+                                <div class="flex flex-wrap gap-4 text-sm text-[#6B7280]">
+                                    <span><span class="uppercase tracking-wide text-xs text-[#6B7280]">Strike&nbsp;</span><strong class="text-[#111827]">${escapeHtml(strikeDescriptor)}</strong></span>
+                                    <span><span class="uppercase tracking-wide text-xs text-[#6B7280]">Expiry&nbsp;</span><strong class="text-[#111827]">${escapeHtml(expiryLabel)}</strong></span>
+                                </div>
                             </div>
-                            <div>CONFLUENCE_SCORE: [${escapeHtml(confluenceScoreLabel)}]</div>
+                            <div class="flex flex-col items-end gap-3">
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm" style="background-color:${badgeStyle.bg};color:${badgeStyle.text};">${escapeHtml(verdict.toUpperCase())}</span>
+                                <div class="text-xs font-medium text-[#6B7280]">Confluence Score:&nbsp;<span style="color:${confluenceColor};">${escapeHtml(confluenceScoreLabel)}</span></div>
+                            </div>
                         </header>
-                        <div class="text-sm text-slate-600">TAG_CHIPS (comma separated): ${signalChipLabels ? escapeHtml(signalChipLabels) : 'None'}</div>
-                        ${signalChips ? `<div class="flex flex-wrap gap-2 text-xs">${signalChips}</div>` : ''}
-                        ${alertChips.length ? `<div class="flex flex-wrap gap-2 text-[11px] text-rose-600">${alertChips.map((chip) => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-50 font-semibold">${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
-                        <section class="border border-slate-200 rounded-xl overflow-hidden">
-                            <table class="w-full text-left">
-                                <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                    <tr>
-                                        <th class="px-3 py-2">Provider</th>
-                                        <th class="px-3 py-2 text-center">Confidence</th>
-                                        <th class="px-3 py-2 text-right">Entry</th>
-                                        <th class="px-3 py-2 text-right">Stop</th>
-                                        <th class="px-3 py-2 text-right">Target</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${providerRows}
-                                </tbody>
-                            </table>
-                        </section>
+
+                        <div class="flex flex-wrap gap-2">${tagChipsHtml}</div>
+
+                        <div class="h-px bg-[#E5E7EB]"></div>
+
                         <section class="space-y-3">
-                            <div class="text-sm font-semibold text-slate-900">PROVIDER_NOTES (LONG FORM GOES HERE, NOT IN THE GRID):</div>
-                            ${providerNotesSection}
-                        </section>
-                        <section class="space-y-2 text-sm text-slate-700">
-                            <div class="text-sm font-semibold text-slate-900">BUY CONDITIONS:</div>
-                            <div class="space-y-1">
-                                ${buyConditions.map((item) => `<div>- ${escapeHtml(item)}</div>`).join('')}
+                            <h3 class="text-sm font-semibold uppercase tracking-wide text-[#111827]">Comparison Grid</h3>
+                            <div class="overflow-hidden border border-[#E5E7EB] rounded-2xl">
+                                <table class="w-full text-sm text-[#111827]">
+                                    <thead class="bg-white text-xs uppercase tracking-wide" style="color:#64748B;">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Provider</th>
+                                            <th class="px-4 py-2 text-center">Confidence</th>
+                                            <th class="px-4 py-2 text-right">Entry</th>
+                                            <th class="px-4 py-2 text-right">Stop</th>
+                                            <th class="px-4 py-2 text-right">Target</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${providerRowsHtml}</tbody>
+                                </table>
                             </div>
                         </section>
-                        <section class="space-y-2 text-sm text-slate-700">
-                            <div class="text-sm font-semibold text-slate-900">EXIT CONDITIONS:</div>
-                            <div class="space-y-1">
-                                ${exitConditions.map((item) => `<div>- ${escapeHtml(item)}</div>`).join('')}
+
+                        <div class="h-px bg-[#E5E7EB]"></div>
+
+                        <section class="space-y-3">
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">🧠</span>AI Insights</h3>
+                            <div class="space-y-4">${providerInsightsHtml}</div>
+                        </section>
+
+                        <div class="h-px bg-[#E5E7EB]"></div>
+
+                        <section class="space-y-2">
+                            <h3 class="text-sm font-semibold text-[#111827]">Decision Summary</h3>
+                            <p class="text-sm text-[#6B7280] leading-relaxed">${escapeHtml(decisionSummary)}</p>
+                        </section>
+
+                        <div class="h-px bg-[#E5E7EB]"></div>
+
+                        <section class="space-y-3">
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">✅</span>Buy Conditions</h3>
+                            <ul class="space-y-1 text-sm text-[#111827]">${buyListHtml}</ul>
+                        </section>
+
+                        <section class="space-y-3">
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">🛑</span>Exit Conditions</h3>
+                            <ul class="space-y-1 text-sm text-[#111827]">${exitListHtml}</ul>
+                        </section>
+
+                        <section class="space-y-3">
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">📈</span>Scaling Plan</h3>
+                            <ul class="space-y-1 text-sm text-[#111827]">${scalingListHtml}</ul>
+                        </section>
+
+                        <section class="space-y-3">
+                            <h3 class="text-sm font-semibold text-[#111827]">Rules Enforced</h3>
+                            <ul class="space-y-1 text-sm text-[#111827]">${rulesListHtml}</ul>
+                        </section>
+
+                        <div class="h-px bg-[#E5E7EB]"></div>
+
+                        <section class="space-y-2">
+                            <div class="flex items-center justify-between text-sm font-semibold text-[#111827]">
+                                <span>Sparkline Trend</span>
+                                <span class="text-xs uppercase tracking-wide" style="color:${sparklineData ? sparklineData.strokeColor : '#6B7280'};">${sparklineTrendLabel}</span>
                             </div>
-                        </section>
-                        <section class="space-y-2 text-sm text-slate-700">
-                            <div class="text-sm font-semibold text-slate-900">SCALING PLAN:</div>
-                            <div class="space-y-1">
-                                ${(Array.isArray(tradePlanPayload?.iterations) && tradePlanPayload.iterations.length)
-                                    ? tradePlanPayload.iterations.map((step, index) => {
-                                        const targetLabel = step.target != null ? `$${Number(step.target).toFixed(2)}` : 'market strength';
-                                        return `<div>- Trim ${escapeHtml(String(step.sellQty ?? index + 1))} at ${escapeHtml(targetLabel)}</div>`;
-                                    }).join('')
-                                    : Number.isFinite(targetPrice)
-                                        ? `<div>- Trim position at $${escapeHtml(targetPrice.toFixed(2))}</div>`
-                                        : '<div>- No scaling instructions provided</div>'}
+                            <div class="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                                ${sparklineVisual}
                             </div>
-                        </section>
-                        <section class="space-y-2 text-sm text-slate-700">
-                            <div class="text-sm font-semibold text-slate-900">RULES ENFORCED:</div>
-                            <div>- If CONFLUENCE_SCORE &lt; 70 → VERDICT = CAUTION</div>
-                            <div>- If R/R &lt; 2.5 → VERDICT = REJECT</div>
-                        </section>
-                        <section class="space-y-2 text-sm text-slate-700">
-                            <div class="text-sm font-semibold text-slate-900">SPARKLINE DATA:</div>
-                            <div class="text-xs text-slate-500">${escapeHtml(sparklineLabel)}</div>
-                            ${sparklineData ? `<div class="pt-1 border-t border-slate-100">${sparklineData.svg}</div>` : ''}
                         </section>
                     </article>
                 `;
