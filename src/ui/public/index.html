@@ -12,6 +12,14 @@
             font-family: "Inter", "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-feature-settings: "ss01" on, "ss02" on;
         }
+        .tag-chip {
+            background-color: #F3F4F6;
+            color: #4B5563;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .tag-chip:hover {
+            background-color: #E5E7EB;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -1599,21 +1607,35 @@
             };
 
             const getVerdictBadgeStyle = (verdictKey) => {
-                const key = verdictKey && verdictBadgeMeta[verdictKey] ? verdictKey : 'unknown';
-                return verdictBadgeMeta[key];
+                const key = String(verdictKey || '').toLowerCase();
+                return verdictBadgeMeta[key] || verdictBadgeMeta.unknown;
             };
 
             const getConfidenceToneColor = (value) => {
                 if (!Number.isFinite(value)) {
                     return '#6B7280';
                 }
-                if (value >= 80) {
+                if (value >= 75) {
                     return '#16A34A';
                 }
-                if (value >= 60) {
+                if (value >= 50) {
                     return '#F59E0B';
                 }
                 return '#DC2626';
+            };
+
+            const getConfidencePillStyle = (value) => {
+                const base = { bg: '#E5E7EB', text: '#374151' };
+                if (!Number.isFinite(value)) {
+                    return base;
+                }
+                if (value >= 75) {
+                    return { bg: '#16A34A', text: '#FFFFFF' };
+                }
+                if (value >= 50) {
+                    return { bg: '#F59E0B', text: '#111827' };
+                }
+                return { bg: '#DC2626', text: '#FFFFFF' };
             };
 
             const signalConditionLookup = new Map([
@@ -1791,14 +1813,17 @@
                         const stopCell = detail.stop != null ? detail.stop.toFixed(2) : '—';
                         const targetCell = detail.target != null ? detail.target.toFixed(2) : '—';
                         const rowStyle = index % 2 === 1 ? ' style="background-color:#F9FAFB;"' : '';
-                        const confidenceColor = getConfidenceToneColor(detail.confidence);
+                        const pillStyle = getConfidencePillStyle(detail.confidence);
+                        const confidenceLabel = escapeHtml(formatConfidencePercent(detail.confidence));
                         return `
                             <tr${rowStyle} class="text-sm text-[#111827]">
                                 <td class="px-4 py-2 font-semibold">${escapeHtml(detail.provider)}</td>
-                                <td class="px-4 py-2 text-center font-semibold" style="color:${confidenceColor};">${escapeHtml(formatConfidencePercent(detail.confidence))}</td>
-                                <td class="px-4 py-2 text-right text-[#6B7280]">${escapeHtml(entryCell)}</td>
-                                <td class="px-4 py-2 text-right text-[#6B7280]">${escapeHtml(stopCell)}</td>
-                                <td class="px-4 py-2 text-right text-[#6B7280]">${escapeHtml(targetCell)}</td>
+                                <td class="px-4 py-2 text-center">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background-color:${pillStyle.bg};color:${pillStyle.text};min-width:3.75rem;justify-content:center;">${confidenceLabel}</span>
+                                </td>
+                                <td class="px-4 py-2 text-right text-[#6B7280]" style="font-variant-numeric: tabular-nums;font-feature-settings:'tnum';">${escapeHtml(entryCell)}</td>
+                                <td class="px-4 py-2 text-right text-[#6B7280]" style="font-variant-numeric: tabular-nums;font-feature-settings:'tnum';">${escapeHtml(stopCell)}</td>
+                                <td class="px-4 py-2 text-right text-[#6B7280]" style="font-variant-numeric: tabular-nums;font-feature-settings:'tnum';">${escapeHtml(targetCell)}</td>
                             </tr>
                         `;
                     })
@@ -1808,12 +1833,12 @@
                     .map((detail) => {
                         const noteItems = detail.noteLines.length ? detail.noteLines : ['No additional commentary'];
                         const bullets = noteItems
-                            .map((line) => `<li class="flex gap-2 leading-tight text-sm text-[#6B7280]"><span class="text-[#6B7280]">•</span><span>${escapeHtml(line)}</span></li>`)
+                            .map((line) => `<li class="flex gap-2 text-sm text-[#6B7280]" style="line-height:1.2;"><span class="text-[#6B7280]">•</span><span>${escapeHtml(line)}</span></li>`)
                             .join('');
                         return `
                             <div class="space-y-2">
                                 <div class="text-sm font-semibold text-[#111827]">${escapeHtml(detail.provider)}</div>
-                                <ul class="space-y-1 ml-2">${bullets}</ul>
+                                <ul class="space-y-0.5 ml-2">${bullets}</ul>
                             </div>
                         `;
                     })
@@ -1831,6 +1856,22 @@
                     decisionSummary += ' Provider confidence spread indicates mixed conviction.';
                 }
 
+                const decisionTldr = (() => {
+                    const rawTldr = focusRec.ai?.tldr;
+                    if (typeof rawTldr === 'string' && rawTldr.trim()) {
+                        return rawTldr.trim();
+                    }
+                    const aiSummary = focusRec.ai?.summary;
+                    if (typeof aiSummary === 'string' && aiSummary.trim()) {
+                        const sentence = aiSummary.trim().split(/(?<=[.!?])\s+/)[0];
+                        if (sentence) return sentence;
+                    }
+                    if (buyConditions.length) {
+                        return buyConditions[0];
+                    }
+                    return decisionSummary;
+                })();
+
                 const rulesLines = [
                     'If CONFLUENCE_SCORE < 70 → VERDICT = CAUTION',
                     'If R/R < 2.5 → VERDICT = REJECT',
@@ -1843,11 +1884,11 @@
                 }
 
                 const buyListHtml = buyConditions
-                    .map((item) => `<li class="flex gap-2 leading-tight"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .map((item) => `<li class="flex gap-2" style="line-height:1.2;"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
                     .join('');
 
                 const exitListHtml = exitConditions
-                    .map((item) => `<li class="flex gap-2 leading-tight"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .map((item) => `<li class="flex gap-2" style="line-height:1.2;"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
                     .join('');
 
                 const scalingPlanItems = (() => {
@@ -1868,11 +1909,11 @@
                 })();
 
                 const scalingListHtml = scalingPlanItems
-                    .map((item) => `<li class="flex gap-2 leading-tight"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .map((item) => `<li class="flex gap-2" style="line-height:1.2;"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
                     .join('');
 
                 const rulesListHtml = rulesLines
-                    .map((item) => `<li class="flex gap-2 leading-tight text-sm"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
+                    .map((item) => `<li class="flex gap-2 text-sm" style="line-height:1.2;"><span class="text-[#6B7280]">•</span><span>${escapeHtml(item)}</span></li>`)
                     .join('');
 
                 const badgeStyle = getVerdictBadgeStyle(verdict);
@@ -1890,9 +1931,9 @@
 
                 const tagChipsHtml = signalTags.length
                     ? signalTags
-                        .map((tag) => `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background-color:#F3F4F6;color:#374151;">${escapeHtml(tag)}</span>`)
+                        .map((tag) => `<span class="tag-chip inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">${escapeHtml(tag)}</span>`)
                         .join('')
-                    : '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style="background-color:#F3F4F6;color:#374151;">No signals</span>';
+                    : '<span class="tag-chip inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">No signals</span>';
 
                 recommendations.innerHTML += `
                     <article class="bg-white border border-[#E5E7EB] shadow-sm rounded-3xl p-6 space-y-6 text-[#111827]">
@@ -1905,9 +1946,10 @@
                                     <span><span class="uppercase tracking-wide text-xs text-[#6B7280]">Expiry&nbsp;</span><strong class="text-[#111827]">${escapeHtml(expiryLabel)}</strong></span>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-end gap-3">
+                            <div class="flex flex-col items-end gap-2">
                                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm" style="background-color:${badgeStyle.bg};color:${badgeStyle.text};">${escapeHtml(verdict.toUpperCase())}</span>
                                 <div class="text-xs font-medium text-[#6B7280]">Confluence Score:&nbsp;<span style="color:${confluenceColor};">${escapeHtml(confluenceScoreLabel)}</span></div>
+                                <p class="text-xs text-[#6B7280] max-w-[220px] text-right" style="line-height:1.3;">${escapeHtml(decisionTldr)}</p>
                             </div>
                         </header>
 
@@ -1918,7 +1960,7 @@
                         <section class="space-y-3">
                             <h3 class="text-sm font-semibold uppercase tracking-wide text-[#111827]">Comparison Grid</h3>
                             <div class="overflow-hidden border border-[#E5E7EB] rounded-2xl">
-                                <table class="w-full text-sm text-[#111827]">
+                                <table class="w-full text-sm text-[#111827] font-tabular-nums">
                                     <thead class="bg-white text-xs uppercase tracking-wide" style="color:#64748B;">
                                         <tr>
                                             <th class="px-4 py-2 text-left">Provider</th>
@@ -1936,37 +1978,37 @@
                         <div class="h-px bg-[#E5E7EB]"></div>
 
                         <section class="space-y-3">
-                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">🧠</span>AI Insights</h3>
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827] pb-2 border-b border-[#E5E7EB]"><span class="text-base">🧠</span>AI Insights</h3>
                             <div class="space-y-4">${providerInsightsHtml}</div>
                         </section>
 
                         <div class="h-px bg-[#E5E7EB]"></div>
 
                         <section class="space-y-2">
-                            <h3 class="text-sm font-semibold text-[#111827]">Decision Summary</h3>
+                            <h3 class="text-sm font-semibold text-[#111827] pb-2 border-b border-[#E5E7EB]">Decision Summary</h3>
                             <p class="text-sm text-[#6B7280] leading-relaxed">${escapeHtml(decisionSummary)}</p>
                         </section>
 
                         <div class="h-px bg-[#E5E7EB]"></div>
 
                         <section class="space-y-3">
-                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">✅</span>Buy Conditions</h3>
-                            <ul class="space-y-1 text-sm text-[#111827]">${buyListHtml}</ul>
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827] pb-2 border-b border-[#E5E7EB]"><span class="text-base">✅</span>Buy Conditions</h3>
+                            <ul class="space-y-0.5 text-sm text-[#111827]">${buyListHtml}</ul>
                         </section>
 
                         <section class="space-y-3">
-                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">🛑</span>Exit Conditions</h3>
-                            <ul class="space-y-1 text-sm text-[#111827]">${exitListHtml}</ul>
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827] pb-2 border-b border-[#E5E7EB]"><span class="text-base">❌</span>Exit Conditions</h3>
+                            <ul class="space-y-0.5 text-sm text-[#111827]">${exitListHtml}</ul>
                         </section>
 
                         <section class="space-y-3">
-                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827]"><span class="text-base">📈</span>Scaling Plan</h3>
-                            <ul class="space-y-1 text-sm text-[#111827]">${scalingListHtml}</ul>
+                            <h3 class="flex items-center gap-2 text-sm font-semibold text-[#111827] pb-2 border-b border-[#E5E7EB]"><span class="text-base">📈</span>Scaling Plan</h3>
+                            <ul class="space-y-0.5 text-sm text-[#111827]">${scalingListHtml}</ul>
                         </section>
 
                         <section class="space-y-3">
-                            <h3 class="text-sm font-semibold text-[#111827]">Rules Enforced</h3>
-                            <ul class="space-y-1 text-sm text-[#111827]">${rulesListHtml}</ul>
+                            <h3 class="text-sm font-semibold text-[#111827] pb-2 border-b border-[#E5E7EB]">Rules Enforced</h3>
+                            <ul class="space-y-0.5 text-sm text-[#111827]">${rulesListHtml}</ul>
                         </section>
 
                         <div class="h-px bg-[#E5E7EB]"></div>
