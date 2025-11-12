@@ -106,6 +106,7 @@ const OPTION_CONFIG = {
   MSFT: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.008 },
   META: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
   BABA: { multiplier: 100, strikeIncrement: 0.5, supports0DTE: false, defaultOTMPct: 0.012 },
+  SPX: { multiplier: 100, strikeIncrement: 5, supports0DTE: true, defaultOTMPct: 0.005 },
   NVDA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
   CVNA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.015 },
   HOOD: { multiplier: 100, strikeIncrement: 0.5, supports0DTE: false, defaultOTMPct: 0.02, fallbackExpiryType: 'weekly' },
