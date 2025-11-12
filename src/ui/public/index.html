@@ -875,6 +875,8 @@
             const callPut = button.dataset.side ? button.dataset.side.toUpperCase() : null;
             const strike = button.dataset.strike ? Number(button.dataset.strike) : null;
             const expiry = button.dataset.expiry || null;
+            const suggestedQty = button.dataset.quantity ? Number(button.dataset.quantity) : null;
+            const hasSuggestedQty = Number.isFinite(suggestedQty) && suggestedQty > 0;
 
             if (!optionSymbol || !callPut || !strike || !expiry) {
                 alert('Contract details missing (symbol/side/strike/expiry). Refresh scan to try again.');
@@ -882,11 +884,15 @@
             }
 
             const costPerContract = entryPrice * 100;
-            const estQty = Math.floor(withdrawCash / costPerContract);
-            if (!estQty) {
+            const maxAffordableQty = Math.floor(withdrawCash / costPerContract);
+            if (!maxAffordableQty) {
                 alert('Withdrawable cash insufficient for at least one contract at this price.');
                 return;
             }
+            const canAffordSuggested = hasSuggestedQty && (suggestedQty * costPerContract) <= withdrawCash;
+            const estimatedQty = hasSuggestedQty
+                ? (canAffordSuggested ? suggestedQty : maxAffordableQty)
+                : maxAffordableQty;
 
             const confirmLines = [
                 `Account: ${accountIdKey}`,
@@ -894,10 +900,13 @@
                 `Side: ${callPut || 'CALL/PUT'} | Strike: ${strike || 'N/A'} | Exp: ${expiry || 'N/A'}`,
                 `Entry (est): $${entryPrice.toFixed(2)} | Cost/contract: $${costPerContract.toFixed(2)}`,
                 `Cash to withdraw: $${withdrawCash.toFixed(2)}`,
-                `Estimated quantity: ${estQty} contract${estQty === 1 ? '' : 's'}`,
-                '',
-                'Submit a market BUY order using withdrawable cash?',
             ];
+            if (hasSuggestedQty) {
+                confirmLines.push(`AI suggested quantity: ${suggestedQty} contract${suggestedQty === 1 ? '' : 's'}${canAffordSuggested ? '' : ' (insufficient cash, will size down)'}`);
+            }
+            confirmLines.push(`Estimated quantity: ${estimatedQty} contract${estimatedQty === 1 ? '' : 's'}`);
+            confirmLines.push('');
+            confirmLines.push('Submit a market BUY order using withdrawable cash?');
 
             if (!window.confirm(confirmLines.join('\n'))) {
                 return;
@@ -910,6 +919,7 @@
                 callPut,
                 strike,
                 expiry,
+                quantity: hasSuggestedQty ? suggestedQty : undefined,
             };
 
             const originalLabel = button.innerHTML;
@@ -2345,6 +2355,22 @@
                 const sideLabel = formatSideLabel(focusRec.side, focusRec.contract);
                 const strikeDescriptor = sideLabel ? `${strikeLabel} ${sideLabel}` : strikeLabel;
                 const expiryLabel = expiry || '—';
+                const resolveUnderlyingPrice = () => {
+                    const candidates = [
+                        focusRec?.price,
+                        focusRec?.underlyingPrice,
+                        focusRec?.lastPrice,
+                        focusRec?.underlying?.last,
+                    ];
+                    for (const value of candidates) {
+                        if (Number.isFinite(value)) {
+                            return Number(value);
+                        }
+                    }
+                    return null;
+                };
+                const underlyingPrice = resolveUnderlyingPrice();
+                const underlyingPriceLabel = underlyingPrice != null ? `$${underlyingPrice.toFixed(2)}` : 'N/A';
 
                 const signalSet = new Set();
                 items.forEach((item) => {
@@ -2600,6 +2626,7 @@
                                 <div class="flex flex-wrap gap-4 text-sm text-[#6B7280]">
                                     <span><span class="uppercase tracking-wide text-xs text-[#6B7280]">Strike&nbsp;</span><strong class="text-[#111827]">${escapeHtml(strikeDescriptor)}</strong></span>
                                     <span><span class="uppercase tracking-wide text-xs text-[#6B7280]">Expiry&nbsp;</span><strong class="text-[#111827]">${escapeHtml(expiryLabel)}</strong></span>
+                                    <span><span class="uppercase tracking-wide text-xs text-[#6B7280]">Current&nbsp;Price&nbsp;</span><strong class="text-[#111827]">${escapeHtml(underlyingPriceLabel)}</strong></span>
                                 </div>
                             </div>
                             <div class="flex flex-col items-end gap-2">
@@ -2638,6 +2665,7 @@
                                     data-strike="${strike != null ? strike : ''}"
                                     data-expiry="${escapeHtml(expiry || '')}"
                                     data-price="${entryPrice != null ? entryPrice : ''}"
+                                    data-quantity="${focusRec.qty != null ? focusRec.qty : ''}"
                                 >
                                     Buy w/ Cash
                                 </button>` : `

@@ -273,12 +273,13 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 - **Live Dashboard**: Real-time AI recommendations with strategy-specific layouts and confluence scoring
 - **Trade Scanner**: One-click market scanning with a collapsible configuration panel and strategy selector (day trade vs swing trade)
 - **Risk Monitoring**: Visual risk management with position sizing, buy/exit checklists, scaling plans, and enforced confluence/risk rules per card
+- **Live Quote Overlay**: Each recommendation card surfaces the underlying’s latest price next to strike/expiry so you can instantly judge how far OTM the contract sits
 - **Portfolio Overview**: Auto-synced portfolio rail with account summary tiles, option position cards, and masked sensitive fields
 - **E*TRADE Integration**: Live portfolio data, balance polling, and one-click emergency exits
 - **Strategy Playbooks**: Momentum, mean-reversion, and breakout diagnostics baked into every scan
 - **Idea Tracker**: Pin any option suggestion as a floating tile so buy/wait/ignore cues stay visible even when the scan panel is hidden
 - **Auto Exit (optional)**: When armed, the dashboard scales out of winners or fires emergency sells through the E*TRADE API based on live P&L thresholds
-- **Cash Entry**: One-click market buys that size option contracts off your available cash balance
+- **Cash Entry**: One-click market buys that prefer the AI-suggested contract count, but automatically size down to the max affordable quantity using withdrawable cash
 - **Trade Execution**: Direct trade placement (future feature)
 
 #### Tracking Option Ideas
@@ -293,7 +294,7 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 - `UI_AUTO_EXIT_COOLDOWN_MS` (default **300000 ms**) prevents repeated orders; failures drop to a 60s retry. Automation currently skips short positions.
 
 #### Cash-Based Market Orders
-- Every recommendation card includes a **Buy w/ Cash** button. It uses your withdrawable cash (`cashAvailableForWithdrawal` with fallbacks to other cash balances) and calculates `floor(withdrawCash / (entryPrice * 100))` contracts before preview/place.
+- Every recommendation card includes a **Buy w/ Cash** button. It sends the AI’s preferred contract count to the server, which first attempts that exact size; if buying power is insufficient, it automatically falls back to `floor(withdrawCash / (entryPrice * 100))` and calls out the adjustment in the UI.
 - If withdrawable cash cannot fund at least one contract, the UI blocks the submission and prompts you to refresh balances.
 - Orders run through the same E*TRADE preview/place endpoints and refresh the portfolio rail after execution.
 

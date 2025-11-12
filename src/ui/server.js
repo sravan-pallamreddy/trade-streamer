@@ -417,6 +417,7 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
       strike,
       expiry,
       allocationPct,
+      quantity,
     } = req.body || {};
 
     const tradeSymbol = optionSymbol || symbol;
@@ -459,9 +460,24 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
     const pct = Number.isFinite(Number(allocationPct)) ? Math.min(Math.max(Number(allocationPct), 0.05), 1) : 1;
     const budget = withdrawCash * pct;
     const costPerContract = contractPrice * 100;
-    const quantity = Math.floor(budget / costPerContract);
+    const suggestedQty = Number(quantity);
+    const normalizedSuggestedQty = Number.isFinite(suggestedQty) && suggestedQty > 0 ? Math.trunc(suggestedQty) : null;
+    let finalQty = null;
+    let sizingMode = 'budget';
+    if (normalizedSuggestedQty) {
+      const needed = normalizedSuggestedQty * costPerContract;
+      if (needed <= budget) {
+        finalQty = normalizedSuggestedQty;
+        sizingMode = 'suggested';
+      } else {
+        sizingMode = 'fallback';
+      }
+    }
+    if (!finalQty) {
+      finalQty = Math.floor(budget / costPerContract);
+    }
 
-    if (!Number.isFinite(quantity) || quantity < 1) {
+    if (!Number.isFinite(finalQty) || finalQty < 1) {
       return res.status(400).json({ success: false, error: 'Withdrawable cash is insufficient for at least one contract at the provided price.' });
     }
 
@@ -470,7 +486,9 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
       allocationPct: pct,
       budget,
       costPerContract,
-      quantity,
+      quantity: finalQty,
+      suggestedQuantity: normalizedSuggestedQty,
+      sizingMode,
       contractPrice,
       symbol: tradeSymbol,
       callPut: normalizedCallPut,
@@ -482,7 +500,7 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
       accountIdKey,
       optionSymbol: tradeSymbol,
       underlyingSymbol: symbol,
-      quantity,
+      quantity: finalQty,
       orderAction: 'BUY_OPEN',
       callPut: normalizedCallPut,
       strike: numericStrike,
@@ -498,7 +516,9 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
         budget,
         contractPrice,
         costPerContract,
-        quantity,
+        quantity: finalQty,
+        suggestedQuantity: normalizedSuggestedQty,
+        sizingMode,
       },
     });
   } catch (error) {
