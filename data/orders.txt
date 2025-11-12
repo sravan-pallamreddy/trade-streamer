@@ -1,0 +1,5105 @@
+
+
+
+
+
+    Order API
+   Overview
+    These APIs retrieve order-related information.
+
+
+    List Orders link
+
+    Description
+    The List Orders API provides the order details for a
+    selected brokerage account based on the search criteria
+    provided.
+
+
+    HTTP Method: GET
+
+    Live URL
+                                                                 content_copy
+                           https://api.etrade.com/v1/accounts/{acc
+     ountIdKey}/orders
+
+
+
+
+    Sandbox URL
+                                                                 content_copy
+                           https://apisb.etrade.com/v1/accounts/{a
+     ccountIdKey}/orders
+
+
+
+
+    Request
+
+
+         Property             Type    Required? Description
+
+         accountIdKey         path    yes         The unique
+
+         marker               query no            Specifies th
+     Property          Type    Required? Description
+
+     count             query no            Number of t
+
+     status            query no            The status
+
+     fromDate          query no            The earliest
+
+     toDate            query no            The latest da
+
+     symbol            query no            The market
+
+     securityType      query no            The security
+
+     transactionType query no              Type of tran
+
+     marketSession     query no            Session in w
+
+
+
+
+Response / Error Codes / Mutual Fund
+Error Codes
+                                                     
+
+
+
+
+     Status Code Reason
+
+     200            Successful operation
+
+     400            Account key does not belong to us
+
+     400            Please enter valid account key.
+                                                     
+
+
+
+
+Cancel Order link
+
+Description
+The cancel order API is used to cancel an existing order.
+
+
+HTTP Method: PUT
+Live URL
+                                                           content_copy
+                     https://api.etrade.com/v1/accounts/{acc
+ ountIdKey}/orders/cancel
+
+
+
+
+Sandbox URL
+                                                           content_copy
+                     https://apisb.etrade.com/v1/accounts/{a
+ ccountIdKey}/orders/cancel
+
+
+
+
+Request
+
+
+     Property                Type Required? Descrip
+
+     accountIdKey            path   yes          The uni
+
+     CancelOrderRequest body yes                 The bod
+                                                      
+
+
+
+
+Response / Error Codes / Mutual Fund
+Error Codes
+
+
+     Status Code Reason
+
+     200            Successful operation
+
+     400            Account key does not belong to us
+
+     400            Please enter valid account key.
+                                                      
+
+
+
+
+Place Order link
+
+Description
+The Place Order API is used to submit an order after it has
+been successfully previewed.
+HTTP Method: POST
+
+Live URL
+                                                           content_copy
+                     https://api.etrade.com/v1/accounts/{acc
+ ountIdKey}/orders/place
+
+
+
+
+Sandbox URL
+                                                           content_copy
+                     https://apisb.etrade.com/v1/accounts/{a
+ ccountIdKey}/orders/place
+
+
+
+
+Request
+
+
+     Property              Type Required? Descripti
+
+     accountIdKey          path    yes         The uniqu
+
+     PlaceOrderRequest body yes                The body
+                                                      
+
+
+
+
+Response / Error Codes / Mutual Fund
+Error Codes
+
+
+     Status Code Reason
+
+     200            Successful operation
+
+     400            Account key does not belong to us
+
+     400            Please enter valid account key.
+                                                      
+
+
+
+
+Preview Order link
+Description
+The Preview Order API is used to submit an order request
+for preview before placing it.
+
+
+HTTP Method: POST
+
+Live URL
+                                                           content_copy
+                     https://api.etrade.com/v1/accounts/{acc
+ ountIdKey}/orders/preview
+
+
+
+
+Sandbox URL
+                                                           content_copy
+                     https://apisb.etrade.com/v1/accounts/{a
+ ccountIdKey}/orders/preview
+
+
+
+
+Request
+
+
+     Property                 Type Required? Descrip
+
+     accountIdKey             path   yes          The un
+
+     PreviewOrderRequest body yes                 The bo
+                                                      
+
+
+
+
+Response / Error Codes / Mutual Fund
+Error Codes
+
+
+     Status Code Reason
+
+     200            Successful operation
+
+     400            Account key does not belong to us
+
+     400            Please enter valid account key.
+                                                      
+Place Changed Order link
+
+Description
+The Place Changed Order API is used to place a modified
+order.
+
+
+HTTP Method: PUT
+
+Live URL
+                                                           content_copy
+                     https://api.etrade.com/v1/accounts/{acc
+ ountIdKey}/orders/{orderId}/change/place
+
+
+
+
+Sandbox URL
+                                                           content_copy
+                     https://apisb.etrade.com/v1/accounts/{a
+ ccountIdKey}/orders/{orderId}/change/place
+
+
+
+
+Request
+
+
+     Property              Type Required? Descripti
+
+     accountIdKey          path    yes         The uniqu
+
+     orderId               path    yes         The nume
+
+     PlaceOrderRequest body yes                The body
+                                                      
+
+
+
+
+Response / Error Codes / Mutual Fund
+Error Codes
+
+
+     Status Code Reason
+
+     200            Successful operation
+
+     400            Account key does not belong to us
+     Status Code Reason
+
+     400            Please enter valid account key.
+                                                      
+
+
+
+
+Change Previewed Order link
+                                                      
+
+
+
+Description
+The Preview Changed order API is used to preview a
+modified order.
+
+
+HTTP Method: PUT
+
+Live URL
+                                                            content_copy
+                     https://api.etrade.com/v1/accounts/{acc
+ ountIdKey}/orders/{orderId}/change/preview
+
+
+
+
+Sandbox URL
+                                                            content_copy
+                     https://apisb.etrade.com/v1/accounts/{a
+ ccountIdKey}/orders/{orderId}/change/preview
+
+
+
+
+Request
+
+
+     Property                 Type Required? Descrip
+
+     accountIdKey             path   yes          The un
+
+     orderId                  path   yes          The ord
+
+     PreviewOrderRequest body yes                 The bo
+                                                      
+Response / Error Codes / Mutual Fund
+Error Codes
+
+
+   Status Code Reason
+
+   200            Successful operation
+
+   400            Account key does not belong to us
+
+   400            Please enter valid account key.
+                                                   
+
+
+
+
+CancelOrderRequest link
+
+
+   Property Type               Description
+
+   orderId     integer (int64) Order confirmation Id f
+                                                   
+
+
+
+
+CancelOrderResponse link
+
+
+   Property      Type            Description
+
+   accountId     string          The numeric accoun
+
+   orderId       integer (int64) The order ID
+
+   cancelTime integer (int64) The time, in Epoch t
+
+   messages      Messages        The messages relati
+                                                   
+
+
+
+
+CashBuyingPowerDetails link
+
+
+   Property             Type                   Descrip
+
+   settled              OrderBuyPowerEffect Settled
+    Property           Type                Descrip
+
+    settledUnsettled OrderBuyPowerEffect Unsettle
+
+
+
+
+Disclosure
+   
+           link
+                                                   
+
+
+
+
+    Property                  Type     Description
+
+    ehDisclosureFlag          boolean The disclos
+
+    ahDisclosureFlag          boolean The AH disc
+
+    conditionalDisclosureFlag boolean The conditio
+
+    aoDisclosureFlag          boolean The advanc
+
+    mfFLConsent               boolean The mutual
+
+    mfEOConsent               boolean The mutual
+                                                  
+
+
+
+
+DtBuyingPowerDetails link
+
+
+    Property       Type                   Descripti
+
+    nonMarginable OrderBuyPowerEffect The total
+
+    marginable     OrderBuyPowerEffect The total
+                                                  
+
+
+
+
+Event link
+
+
+    Property      Type               Description
+
+    name          string             The name of th
+
+    dateTime      integer (int64)    The date and t
+    Property         Type              Description
+
+    orderNumber integer                The numeric ID
+
+    instrument       array[Instrument] The object for
+
+
+
+
+Events link
+
+                                                    
+
+    Property Type            Description
+
+    event       array[Event] The type of order event
+                                                    
+
+
+
+
+Instrument link
+
+
+    Property                 Type              Descr
+
+    product                  Product           The p
+
+    symbolDescription        string            The te
+
+    orderAction              string            The ac
+
+    quantityType             string            The ty
+
+    quantity                 number            The n
+
+    cancelQuantity           number            The n
+
+    orderedQuantity          number            The n
+
+    filledQuantity           number            The n
+
+    averageExecutionPrice number               The av
+
+    estimatedCommission number                 The co
+
+    estimatedFees            number            The co
+
+    bid                      number (double) The b
+
+    ask                      number (double) The as
+
+    lastprice                number (double) The la
+     Property                  Type                 Descr
+
+     currency                  string               The c
+
+     lots                      Lots                 The o
+
+     mfQuantity                MFQuantity           The o
+
+     osiKey                    string               The O
+
+     mfTransaction             string               The tr
+
+     reserveOrder              boolean              If TRU
+
+     reserveQuantity           number               The n
+
+
+
+
+Lot link
+
+
+     Property Type              Description
+
+     id         integer (int64) The lot ID of the lot sele
+
+     size       number          The number of shares t
+                                                      
+
+
+
+
+Lots link
+
+
+     Property Type          Description
+
+     lot        array[Lot] The position lot details
+                                                      
+
+
+
+
+                                                      
+
+
+MFQuantity link
+
+
+     Property Type                    Description
+
+     cash       number (double) The value of the cas
+    Property Type                 Description
+
+    margin     number (double) The value of the mar
+
+    cusip      string             The CUSIP value of t
+
+
+
+
+MarginBuyingPowerDetails link
+                                                    
+
+
+
+
+    Property            Type                   Descripti
+
+    nonMarginable OrderBuyPowerEffect The total
+
+    marginable          OrderBuyPowerEffect The total
+                                                    
+
+
+
+
+Message link
+
+
+    Property     Type             Description
+
+    description string            The text of the resul
+
+    code         integer (int32) The standard numer
+
+    type         string           The type used to ide
+                                                    
+
+
+
+
+Messages link
+
+
+    Property Type                Description
+
+    message array[Message] The object for the me
+                                                    
+
+
+
+
+Order link
+    Property          Type                    Descriptio
+
+    orderId           integer (int64)         ID number
+
+    details           string                  The order
+
+    orderType         string                  The type o
+
+    totalOrderValue   number                  The total o
+
+    totalCommission number                    The total c
+
+    orderDetail       array[OrderDetail] The order
+
+    events            Events                  The events
+                                                        
+
+
+
+
+OrderBuyPowerEffect link
+
+
+    Property             Type           Description
+
+    currentBp            number Current Buying Po
+
+    currentOor           number Open Order Rese
+
+    currentNetBp         number Current Buying Po
+
+    currentOrderImpact number The current order
+
+    netBp                number Buying Power afte
+                                                        
+
+
+
+
+OrderDetail link
+
+
+    Property                   Type                   Desc
+
+    orderNumber                integer                The n
+
+    accountId                  string                 The n
+
+    previewTime                integer (int64)        The t
+
+    placedTime                 integer (int64)        The t
+Property               Type              Desc
+
+executedTime           integer (int64)   The t
+
+orderValue             number            Total
+
+status                 string            The s
+
+orderType              string            The ty
+
+orderTerm              string            The t
+
+priceType              string            The ty
+
+priceValue             string            The v
+
+limitPrice             number            The h
+
+stopPrice              number            The d
+
+stopLimitPrice         number            The d
+
+offsetType             string            Indica
+
+offsetValue            number            The s
+
+marketSession          string            The s
+
+routingDestination     string            The e
+
+bracketedLimitPrice    number            The b
+
+initialStopPrice       number            The in
+
+trailPrice             number            The c
+
+triggerPrice           number            The p
+
+conditionPrice         number            For a
+
+conditionSymbol        string            For a
+
+conditionType          string            The ty
+
+conditionFollowPrice   string            In a c
+
+conditionSecurityType string             The c
+
+replacedByOrderId      integer           In the
+
+replacesOrderId        integer           In the
+
+allOrNone              boolean           If TRU
+
+previewId              integer (int64)   This p
+    Property                Type                 Desc
+
+    instrument              array[Instrument] The o
+
+    messages                Messages             The o
+
+    investmentAmount        number (double)      The a
+
+    positionQuantity        string               The p
+
+    aipFlag                 boolean              Indica
+
+    egQual                  string               Indica
+
+    reInvestOption          string               Indica
+
+    estimatedCommission number                   The c
+
+    estimatedFees           number               The e
+
+    estimatedTotalAmount number                  The c
+
+    netPrice                number               The n
+
+    netBid                  number               The n
+
+    netAsk                  number               The n
+
+    gcd                     integer (int32)      The G
+
+    ratio                   string               The r
+
+    mfpriceType             string               The m
+
+
+
+
+OrderId link
+
+
+    Property      Type             Description
+
+    orderId       integer (int64) ID number assigned
+
+    cashMargin string              The cash margin de
+                                                   
+
+
+
+
+OrdersResponse link
+   Property     Type              Description
+
+   marker       string            Specifies the desired st
+
+   next         string            The next order
+
+   order        array[Order] The order response
+
+   messages Messages              The messages associat
+                                                        
+
+
+
+
+PlaceOrderRequest link
+
+
+   Property        Type                    Description
+
+   orderType       string                  The type of or
+
+   clientOrderId string                    A reference ID
+
+   order           array[OrderDetail] The details of
+
+   previewIds      array[PreviewId]        This paramete
+                                                        
+
+
+
+
+PlaceOrderResponse link
+
+
+   Property              Type                   Descriptio
+
+   orderType             string                 The type o
+
+   messageList           Messages               The object
+
+   totalOrderValue       number                 The total o
+
+   totalCommission number                       The total c
+
+   orderId               integer (int64)        ID number
+
+   order                 array[OrderDetail] The details
+
+   dstFlag               boolean                Indicator f
+
+   optionLevelCd         integer (int32)        The code t
+
+   marginLevelCd         string                 The code t
+    Property               Type                 Descriptio
+
+    isEmployee             boolean              Indicator f
+
+    commissionMsg          string               The comm
+
+    orderIds               array[OrderId]       The confir
+
+    placedTime             integer (int64)      The time th
+
+    accountId              string               The numer
+
+    portfolioMargin        PortfolioMargin      The portfo
+
+    disclosure             Disclosure           The disclo
+
+    clientOrderId          string               A referenc
+
+
+
+
+PortfolioMargin link
+
+
+    Property                         Type                D
+
+    houseExcessEquityNew             number (double) Th
+
+    pmEligible                       boolean             Th
+
+    houseExcessEquityCurr            number (double) Th
+
+    houseExcessEquityChange number (double) Th
+                                                        
+
+
+                                                        
+
+
+
+
+PreviewId link
+
+
+    Property        Type                Description
+
+    previewId       integer (int64) The preview ID num
+
+    cashMargin string                   The margin level de
+                                                        
+PreviewOrderRequest link
+
+
+   Property        Type                  Description
+
+   orderType       string                The type of or
+
+   order           array[OrderDetail] The order deta
+
+   clientOrderId string                  A reference nu
+                                                      
+
+
+
+
+PreviewOrderResponse link
+
+
+   Property                 Type
+
+   orderType                string
+
+   messageList              Messages
+
+   totalOrderValue          number
+
+   totalCommission          number
+
+   order                    array[OrderDetail]
+
+   previewIds               array[PreviewId]
+
+   previewTime              integer (int64)
+
+   dstFlag                  boolean
+
+   accountId                string
+
+   optionLevelCd            integer (int32)
+
+   marginLevelCd            string
+
+   portfolioMargin          PortfolioMargin
+
+   isEmployee               boolean
+
+   commissionMessage string
+
+   disclosure               Disclosure
+
+   clientOrderId            string
+
+   marginBpDetails          MarginBuyingPowerDetails
+    Property                 Type
+
+    cashBpDetails            CashBuyingPowerDetails
+
+    dtBpDetails              DtBuyingPowerDetails
+
+
+
+
+Product link
+
+
+    Property        Type            Description
+
+    symbol          string          The market symbo
+
+    securityType string             The type code to id
+
+    callPut         string          The option type
+
+    expiryYear      integer (int32) The four-digit year
+
+    expiryMonth integer (int32) The month (1-12) th
+
+    expiryDay       integer (int32) The day (1-31) the o
+
+    strikePrice     number          The strike price for
+
+    expiryType      string          The expiration type
+
+    productId       ProductId       ProductId
+                                                     
+
+
+
+
+ProductId link
+
+                                                     
+    Property      Type   Description
+
+    symbol        string The market symbol for the sec
+
+    typeCode string Product Type Code
+                                                     
+Notes
+For complex options, only the first leg of the option shows
+the actual order status. Subsequent legs show the status
+as OPEN.
+
+For equity and option orders, types STOP and STOP LIMIT
+represent the "Stop On Quote" and "Stop Limit on Quote"
+price types offered by E*TRADE, respectively.
+
+For equity orders, use limit price for type LIMIT, stop price
+for type STOP, and both prices for type STOP_LIMIT. For
+option orders, use limit price for type LIMIT, stop price for
+type STOP, and stop-limit price for type STOP_LIMIT.
+
+To page through a large number of items, use the count
+property to specify how many items to return in a group
+(the default is 25), and the marker property to specify the
+starting point (the default is the newest). For instance, a
+request with no count and no marker retrieves the newest
+25 items for the account. Each response includes a marker
+that points to the beginning of the next group. To page
+through all the items, repeat the request with the marker
+from each previous response until you receive a response
+with an empty marker, indicating that there are no more
+items.
+
+The API does not explicitly provide for bidirectional
+paging. Your application can support paging backward
+and forward either by saving and reusing markers within
+the series (that is, to reissue the requests for earlier pages
+in the series), or saving and redisplaying the items that
+come in.
+
+
+Examples
+List Orders Request URL
+
+                                                            content_copy
+ https://api.etrade.com/v1/accounts/ZrnXF-hPu853sBzwHfWGBQ/o
+                            rders
+
+
+
+Response
+                                                           content_copy
+
+ <?xml version="1.0" encoding="UTF-8"?>
+ <OrdersResponse>
+    <Order>
+       <orderId>96</orderId>
+       <details>https://api.etrade.com/v1/accounts/ZrnXF-hPu
+ 853sBzwHfWGBQ/orders/96</details>
+       <orderType>EQ</orderType>
+       <OrderDetail>…</OrderDetail>
+    </Order>
+    <Order>
+       <orderId>95</orderId>
+       <details>https://api.etrade.com/v1/accounts/ZrnXF-hPu
+ 853sBzwHfWGBQ/orders/95</details>
+       <orderType>EQ</orderType>
+       <OrderDetail>…</OrderDetail>
+    </Order>
+    <Order>
+       <orderId>94</orderId>
+       <details>https://api.etrade.com/v1/accounts/ZrnXF-hPu
+ 853sBzwHfWGBQ/orders/94</details>
+       <orderType>EQ</orderType>
+       <OrderDetail>…</OrderDetail>
+    </Order>
+    <Order>
+       <orderId>93</orderId>
+       <details>https://api.etrade.com/v1/accounts/ZrnXF-hPu
+ 853sBzwHfWGBQ/orders/93</details>
+       <orderType>EQ</orderType>
+       <OrderDetail>…</OrderDetail>
+    </Order>
+ </OrdersResponse>
+
+
+
+
+Preview Order Request URL
+
+                                                           content_copy
+                    https://api.etrade.com/v1/accounts/vVSn
+             htF6d5pXBy0HyaAC4vQ/orders/preview
+
+
+
+Preview Order Request
+                                                 content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PreviewOrderRequest>
+   <orderType>EQ</orderType>
+   <clientOrderId>sdfer333</clientOrderId>
+   <Order>
+      <allOrNone>false</allOrNone>
+      <priceType>LIMIT</priceType>
+      <orderTerm>GOOD_FOR_DAY</orderTerm>
+      <marketSession>REGULAR</marketSession>
+      <stopPrice />
+      <limitPrice>188.51</limitPrice>
+      <Instrument>
+         <Product>
+            <securityType>EQ</securityType>
+            <symbol>FB</symbol>
+         </Product>
+         <orderAction>BUY</orderAction>
+         <quantityType>QUANTITY</quantityType>
+         <quantity>10</quantity>
+      </Instrument>
+   </Order>
+</PreviewOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PreviewOrderResponse>
+   <orderType>EQ</orderType>
+   <totalOrderValue>1892.05</totalOrderValue>
+   <Order>
+      <orderTerm>GOOD_FOR_DAY</orderTerm>
+      <priceType>LIMIT</priceType>
+      <limitPrice>188.51</limitPrice>
+      <stopPrice>0</stopPrice>
+      <marketSession>REGULAR</marketSession>
+      <allOrNone>false</allOrNone>
+      <Instrument>
+         <Product>
+            <symbol>FB</symbol>
+            <securityType>EQ</securityType>
+         </Product>
+         <symbolDescription>FACEBOOK INC CL A</symbolDescri
+ption>
+         <orderAction>BUY</orderAction>
+         <quantityType>QUANTITY</quantityType>
+         <quantity>10</quantity>
+         <cancelQuantity>0.0</cancelQuantity>
+         <reserveOrder>true</reserveOrder>
+         <reserveQuantity>0.0</reserveQuantity>
+      </Instrument>
+      <messages>
+         <Message>
+            <code>1042</code>
+            <description>200|You have an existing open orde
+r for this security on the same side of the market. If you
+did not intend to place a second order for this security, p
+lease modify your order now.</description>
+            <type>WARNING</type>
+         </Message>
+         <Message>
+            <code>3093</code>
+            <description>Position Concentrated.</descriptio
+n>
+            <type>WARNING</type>
+         </Message>
+      </messages>
+      <egQual>EG_QUAL_NOT_A_MARKET_ORDER</egQual>
+      <estimatedCommission>6.95</estimatedCommission>
+      <estimatedTotalAmount>1892.05</estimatedTotalAmount>
+      <netPrice>0</netPrice>
+      <netBid>0</netBid>
+      <netAsk>0</netAsk>
+      <gcd>0</gcd>
+      <ratio />
+   </Order>
+   <PreviewIds>
+      <previewId>1020563279</previewId>
+   </PreviewIds>
+   <previewTime>1529018458516</previewTime>
+   <dstFlag>true</dstFlag>
+   <accountId>842468410</accountId>
+    <optionLevelCd>4</optionLevelCd>
+    <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+    <Disclosure>
+       <ahDisclosureFlag>false</ahDisclosureFlag>
+       <aoDisclosureFlag>false</aoDisclosureFlag>
+       <conditionalDisclosureFlag>true</conditionalDisclosur
+ eFlag>
+       <ehDisclosureFlag>false</ehDisclosureFlag>
+    </Disclosure>
+    <cashBpDetails>
+      <settled>
+        <currentBp>5000.00</currentBp>
+        <currentNetBp>5000.00</currentNetBp>
+        <currentOor>0.00</currentOor>
+        <currentOrderImpact>64.95</currentOrderImpact>
+        <netBp>4935.05</netBp>
+     </settled>
+     <settledUnsettled>
+       <currentBp>5000.00</currentBp>
+       <currentNetBp>5000.00</currentNetBp>
+       <currentOor>0.00</currentOor>
+       <currentOrderImpact>64.95</currentOrderImpact>
+       <netBp>4935.05</netBp>
+       </settledUnsettled>
+    </cashBpDetails>
+ </PreviewOrderResponse>
+
+
+
+
+Preview Order Request(SPREAD Order)
+                                                 content_copy
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PreviewOrderRequest>
+  <Order>
+    <Instrument>
+      <Product>
+         <callPut>CALL</callPut>
+         <expiryDay>15</expiryDay>
+         <expiryMonth>02</expiryMonth>
+         <expiryYear>2019</expiryYear>
+         <securityType>OPTN</securityType>
+         <strikePrice>130</strikePrice>
+         <symbol>IBM</symbol>
+      </Product>
+      <orderAction>BUY_OPEN</orderAction>
+      <orderedQuantity>1</orderedQuantity>
+      <quantity>1</quantity>
+      </Instrument>
+      <Instrument>
+          <Product>
+             <callPut>CALL</callPut>
+             <expiryDay>15</expiryDay>
+             <expiryMonth>02</expiryMonth>
+             <expiryYear>2019</expiryYear>
+             <securityType>OPTN</securityType>
+             <strikePrice>131</strikePrice>
+             <symbol>IBM</symbol>
+          </Product>
+          <orderAction>SELL_OPEN</orderAction>
+          <orderedQuantity>1</orderedQuantity>
+          <quantity>1</quantity>
+    </Instrument>
+    <allOrNone>false</allOrNone>
+    <limitPrice>5</limitPrice>
+    <marketSession>REGULAR</marketSession>
+    <orderTerm>GOOD_FOR_DAY</orderTerm>
+    <priceType>NET_DEBIT</priceType>
+    <stopPrice>0</stopPrice>
+  </Order>
+  <clientOrderId>3453f1</clientOrderId>
+  <orderType>SPREADS</orderType>
+</PreviewOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PreviewOrderResponse>
+    <Disclosure>
+        <aoDisclosureFlag>false</aoDisclosureFlag>
+        <conditionalDisclosureFlag>true</conditionalDisclos
+ureFlag>
+    </Disclosure>
+    <marginBpDetails>
+        <marginable>
+            <currentBp>1799975314.00</currentBp>
+            <currentNetBp>1799935814.04</currentNetBp>
+            <currentOor>39499.96</currentOor>
+            <currentOrderImpact>33.95</currentOrderImpact>
+            <netBp>1799935780.09</netBp>
+        </marginable>
+        <nonMarginable>
+            <currentBp>899984994.53</currentBp>
+            <currentNetBp>899965244.55</currentNetBp>
+            <currentOor>19749.98</currentOor>
+            <currentOrderImpact>18.00</currentOrderImpact>
+            <netBp>899965226.55</netBp>
+        </nonMarginable>
+    </marginBpDetails>
+    <Order>
+        <Instrument>
+            <Product>
+                <callPut>CALL</callPut>
+                <expiryDay>15</expiryDay>
+                <expiryMonth>2</expiryMonth>
+                <expiryYear>2019</expiryYear>
+                <securityType>OPTN</securityType>
+                <strikePrice>130</strikePrice>
+                <symbol>IBM</symbol>
+            </Product>
+            <cancelQuantity>0</cancelQuantity>
+            <orderAction>BUY_OPEN</orderAction>
+            <osiKey>IBM---190215C00130000</osiKey>
+            <quantity>1</quantity>
+            <quantityType>QUANTITY</quantityType>
+            <reserveOrder>true</reserveOrder>
+            <reserveQuantity>0</reserveQuantity>
+            <symbolDescription>IBM Feb 15 '19 $130 Call</sy
+mbolDescription>
+        </Instrument>
+        <Instrument>
+            <Product>
+                <callPut>CALL</callPut>
+                <expiryDay>15</expiryDay>
+                <expiryMonth>2</expiryMonth>
+                <expiryYear>2019</expiryYear>
+                <securityType>OPTN</securityType>
+                <strikePrice>131</strikePrice>
+                <symbol>IBM</symbol>
+            </Product>
+            <cancelQuantity>0</cancelQuantity>
+            <orderAction>SELL_OPEN</orderAction>
+             <osiKey>IBM---190215C00131000</osiKey>
+             <quantity>1</quantity>
+             <quantityType>QUANTITY</quantityType>
+             <reserveOrder>true</reserveOrder>
+             <reserveQuantity>0</reserveQuantity>
+             <symbolDescription>IBM Feb 15 '19 $131 Call</sy
+ mbolDescription>
+         </Instrument>
+         <allOrNone>false</allOrNone>
+         <egQual>EG_QUAL_NOT_AN_ELIGIBLE_SECURITY</egQual>
+         <estimatedCommission>8.44</estimatedCommission>
+         <estimatedTotalAmount>508.4762</estimatedTotalAmoun
+ t>
+         <gcd>0</gcd>
+         <limitPrice>5</limitPrice>
+         <marketSession>REGULAR</marketSession>
+         <messages>
+             <Message>
+                 <code>3041</code>
+                 <description>DTBP is negative but RegTBP is
+ positive</description>
+                 <type>WARNING</type>
+             </Message>
+         </messages>
+         <netAsk>0</netAsk>
+         <netBid>0</netBid>
+         <netPrice>0</netPrice>
+         <orderTerm>GOOD_FOR_DAY</orderTerm>
+         <priceType>NET_DEBIT</priceType>
+         <ratio />
+         <stopPrice>0</stopPrice>
+     </Order>
+     <PreviewIds>
+         <previewId>3429218279</previewId>
+     </PreviewIds>
+     <accountId>838796270</accountId>
+     <dstFlag>false</dstFlag>
+     <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+     <optionLevelCd>4</optionLevelCd>
+     <orderType>SPREADS</orderType>
+     <previewTime>1549316444960</previewTime>
+     <totalOrderValue>508.4762</totalOrderValue>
+ </PreviewOrderResponse>
+
+
+
+
+Preview Order Request(OPTIONS Order)
+                                                    content_copy
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PreviewOrderRequest>
+    <Order>
+        <Instrument>
+            <Product>
+                <callPut>CALL</callPut>
+                <expiryDay>21</expiryDay>
+                <expiryMonth>12</expiryMonth>
+                <expiryYear>2018</expiryYear>
+                <securityType>OPTN</securityType>
+                <strikePrice>140</strikePrice>
+                <symbol>FB</symbol>
+            </Product>
+            <orderAction>BUY_OPEN</orderAction>
+            <orderedQuantity>1</orderedQuantity>
+            <quantity>1</quantity>
+        </Instrument>
+        <allOrNone>false</allOrNone>
+        <limitPrice>5</limitPrice>
+        <marketSession>REGULAR</marketSession>
+        <orderTerm>GOOD_FOR_DAY</orderTerm>
+        <priceType>MARKET</priceType>
+        <stopPrice>0</stopPrice>
+    </Order>
+    <clientOrderId>8e4153f1</clientOrderId>
+    <orderType>OPTN</orderType>
+</PreviewOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PreviewOrderResponse>
+    <Disclosure>
+        <aoDisclosureFlag>true</aoDisclosureFlag>
+        <conditionalDisclosureFlag>true</conditionalDisclos
+ureFlag>
+    </Disclosure>
+    <Order>
+        <Instrument>
+            <Product>
+               <callPut>CALL</callPut>
+               <expiryDay>21</expiryDay>
+               <expiryMonth>12</expiryMonth>
+               <expiryYear>2018</expiryYear>
+               <securityType>OPTN</securityType>
+               <strikePrice>140.00</strikePrice>
+               <symbol>FB</symbol>
+               <ProductId>
+                   <Symbol>FB----210409P00297500</Symbol>
+                   <TypeCode>OPTION</TypeCode>
+               </ProductId>
+            </Product>
+            <cancelQuantity>0.0</cancelQuantity>
+            <orderAction>BUY_OPEN</orderAction>
+            <osiKey>FB----181221C00140000</osiKey>
+            <quantity>1</quantity>
+            <quantityType>QUANTITY</quantityType>
+            <reserveOrder>true</reserveOrder>
+            <reserveQuantity>0.0</reserveQuantity>
+            <symbolDescription>FB Dec 21 '18 $140 Call</sym
+bolDescription>
+        </Instrument>
+        <allOrNone>false</allOrNone>
+        <egQual>EG_QUAL_NOT_AN_ELIGIBLE_SECURITY</egQual>
+        <estimatedCommission>5.45</estimatedCommission>
+        <estimatedTotalAmount>330.4644</estimatedTotalAmoun
+t>
+        <gcd>0</gcd>
+        <limitPrice>0</limitPrice>
+        <marketSession>REGULAR</marketSession>
+        <netAsk>0</netAsk>
+        <netBid>0</netBid>
+        <netPrice>0</netPrice>
+        <orderTerm>GOOD_FOR_DAY</orderTerm>
+        <priceType>MARKET</priceType>
+        <ratio />
+        <stopPrice>0</stopPrice>
+    </Order>
+    <PreviewIds>
+        <previewId>2785277279</previewId>
+    </PreviewIds>
+    <accountId>314497960</accountId>
+    <dstFlag>false</dstFlag>
+    <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+    <optionLevelCd>4</optionLevelCd>
+    <orderType>OPTN</orderType>
+     <previewTime>1544038038415</previewTime>
+     <totalOrderValue>330.4644</totalOrderValue>
+ </PreviewOrderResponse>
+
+
+
+
+Preview Order Request JSON URL
+
+                                                          content_copy
+                     https://api.etrade.com/v1/accounts/vVSn
+           htF6d5pXBy0HyaAC4vQ/orders/preview.json
+
+
+
+Preview Order Request(SPREAD Order)
+                                                content_copy
+
+{
+    "PreviewOrderRequest":{
+       "orderType":"SPREADS",
+       "clientOrderId":"3453f1",
+       "Order":[
+          {
+             "allOrNone":"false",
+             "priceType":"NET_DEBIT",
+             "limitPrice":"5",
+             "stopPrice":"0",
+             "orderTerm":"GOOD_FOR_DAY",
+             "marketSession":"REGULAR",
+             "Instrument":[
+                {
+                   "Product":{
+                      "symbol":"IBM",
+                      "securityType":"OPTN",
+                      "callPut":"CALL",
+                      "expiryYear":"2019",
+                      "expiryMonth":"02",
+                      "expiryDay":"15",
+                      "strikePrice":"130"
+                   },
+                   "orderAction":"BUY_OPEN",
+                   "orderedQuantity":"1",
+                   "quantity":"1"
+                },
+                {
+                   "Product":{
+                      "symbol":"IBM",
+                      "securityType":"OPTN",
+                      "callPut":"CALL",
+                      "expiryYear":"2019",
+                      "expiryMonth":"02",
+                      "expiryDay":"15",
+                      "strikePrice":"131"
+                   },
+                   "orderAction":"SELL_OPEN",
+                   "orderedQuantity":"1",
+                   "quantity":"1"
+                }
+             ]
+          }
+       ]
+    }
+}
+
+
+
+
+Response
+                                                          content_copy
+
+   {
+    "PreviewOrderResponse":{
+      "orderType":"SPREADS",
+      "totalOrderValue":508.4762,
+      "previewTime":1549316444960,
+      "dstFlag":false,
+      "accountId":"838796270",
+      "optionLevelCd":4,
+      "marginLevelCd":"MARGIN_TRADING_ALLOWED",
+      "Order":[
+         {
+            "orderTerm":"GOOD_FOR_DAY",
+            "priceType":"NET_DEBIT",
+            "limitPrice":5,
+            "stopPrice":0,
+            "marketSession":"REGULAR",
+            "allOrNone":false,
+            "messages":{
+               "Message":[
+                  {
+                     "description":"DTBP is negative but Re
+gTBP is positive",
+                     "code":3041,
+                     "type":"WARNING"
+                  }
+               ]
+            },
+            "egQual":"EG_QUAL_NOT_AN_ELIGIBLE_SECURITY",
+            "estimatedCommission":8.44,
+            "estimatedTotalAmount":508.4762,
+            "netPrice":0,
+            "netBid":0,
+            "netAsk":0,
+            "gcd":0,
+            "ratio":"",
+            "Instrument":[ {
+                  "symbolDescription":"IBM Feb 15 '19 $130
+Call",
+                  "orderAction":"BUY_OPEN",
+                  "quantityType":"QUANTITY",
+                  "quantity":1,
+                  "cancelQuantity":0,
+                  "osiKey":"IBM---190215C00130000",
+                  "reserveOrder":true,
+                  "reserveQuantity":0,
+                  "Product":{
+                     "symbol":"IBM",
+                     "securityType":"OPTN",
+                     "callPut":"CALL",
+                     "expiryYear":2019,
+                     "expiryMonth":2,
+                     "expiryDay":15,
+                     "strikePrice":130
+                  }
+               },
+               {
+                       "symbolDescription":"IBM Feb 15 '19 $131
+ Call",
+                       "orderAction":"SELL_OPEN",
+                       "quantityType":"QUANTITY",
+                       "quantity":1,
+                       "cancelQuantity":0,
+                       "osiKey":"IBM---190215C00131000",
+                       "reserveOrder":true,
+                       "reserveQuantity":0,
+                       "Product":{
+                          "symbol":"IBM",
+                          "securityType":"OPTN",
+                          "callPut":"CALL",
+                          "expiryYear":2019,
+                          "expiryMonth":2,
+                          "expiryDay":15,
+                          "strikePrice":131
+                       }
+                   }
+               ]
+             }
+          ],
+          "PreviewIds":[
+             {
+                "previewId":3429218279
+             }
+          ],
+          "Disclosure":{
+             "conditionalDisclosureFlag":true,
+             "aoDisclosureFlag":false
+          },
+          "marginable": {
+             "currentBp": "400000.00",
+             "currentNetBp": "400000.00",
+             "currentOor": "0.00",
+             "currentOrderImpact": "296.95",
+             "netBp": "399703.05"
+          },
+         "nonMarginable": {
+             "currentBp": "200000.00",
+             "currentNetBp": "200000.00",
+             "currentOor": "0.00",
+             "currentOrderImpact": "296.95",
+             "netBp": "199703.05"
+         }
+     }
+ }
+
+
+
+
+Preview Order Request(EQUITY Order)
+                                                content_copy
+
+{
+    "PreviewOrderRequest":{
+       "orderType":"EQ",
+       "clientOrderId":"1fds311",
+       "Order":[
+          {
+             "allOrNone":"false",
+             "priceType":"LIMIT",
+             "orderTerm":"GOOD_FOR_DAY",
+             "marketSession":"REGULAR",
+             "stopPrice":"",
+             "limitPrice":"169",
+             "Instrument":[
+                {
+                   "Product":{
+                      "securityType":"EQ",
+                      "symbol":"FB"
+                   },
+                   "orderAction":"BUY",
+                   "quantityType":"QUANTITY",
+                   "quantity":"1"
+                }
+             ]
+          }
+       ]
+    }
+}
+
+
+
+
+Response
+                                                          content_copy
+
+{
+   "PreviewOrderResponse":{
+      "orderType":"EQ",
+      "totalOrderValue":175.95,
+      "previewTime":1549318085462,
+      "dstFlag":false,
+      "accountId":"838796270",
+      "optionLevelCd":4,
+      "marginLevelCd":"MARGIN_TRADING_ALLOWED",
+      "Order":[
+         {
+            "orderTerm":"GOOD_FOR_DAY",
+            "priceType":"LIMIT",
+            "limitPrice":169,
+            "stopPrice":0,
+            "marketSession":"REGULAR",
+            "allOrNone":false,
+            "messages":{
+               "Message":[
+                  {
+                     "description":"DTBP is negative but Re
+gTBP is positive",
+                     "code":3041,
+                     "type":"WARNING"
+                  },
+                  {
+                     "description":"200|This stock particip
+ates in the Tick Size Pilot Program. For additional detail
+s, please see our brief overview on etrade.com.",
+                     "code":1085,
+                     "type":"WARNING"
+                  }
+               ]
+            },
+            "egQual":"EG_QUAL_NOT_A_MARKET_ORDER",
+            "estimatedCommission":6.95,
+            "estimatedTotalAmount":175.95,
+            "netPrice":0,
+            "netBid":0,
+            "netAsk":0,
+            "gcd":0,
+            "ratio":"",
+            "Instrument":[
+               {
+                  "symbolDescription":"FACEBOOK INC CL A",
+                  "orderAction":"BUY",
+                  "quantityType":"QUANTITY",
+                  "quantity":1,
+                  "cancelQuantity":0,
+                  "reserveOrder":true,
+                  "reserveQuantity":0,
+                  "Product":{
+                     "symbol":"FB",
+                     "securityType":"EQ"
+                  }
+               }
+               ]
+           }
+         ],
+         "PreviewIds":[
+            {
+               "previewId":3429395279
+            }
+         ],
+         "Disclosure":{
+            "ehDisclosureFlag":true,
+            "ahDisclosureFlag":true,
+            "conditionalDisclosureFlag":true,
+            "aoDisclosureFlag":false
+         },
+         "settled": {
+            "currentBp": "200501006.95",
+            "currentNetBp": "200501006.95",
+            "currentOor": "0.00",
+            "currentOrderImpact": "1135.95",
+            "netBp": "200499871.00"
+         },
+         "settledUnsettled": {
+            "currentBp": "200501006.95",
+            "currentNetBp": "200501006.95",
+            "currentOor": "0.00",
+            "currentOrderImpact": "1135.95",
+            "netBp": "200499871.00"
+         }
+     }
+ }
+
+
+
+
+Preview Order Request(OPTIONS Order)
+                                               content_copy
+
+
+{
+    "PreviewOrderRequest":{
+       "orderType":"OPTN",
+       "clientOrderId":"8e4153f1",
+       "Order":[
+          {
+             "allOrNone":"false",
+             "priceType":"MARKET",
+             "limitPrice":"5",
+             "stopPrice":"0",
+             "orderTerm":"GOOD_FOR_DAY",
+             "marketSession":"REGULAR",
+             "Instrument":[
+                {
+                   "Product":{
+                      "symbol":"FB",
+                      "securityType":"OPTN",
+                      "callPut":"CALL",
+                      "expiryYear":"2018",
+                      "expiryMonth":"12",
+                      "expiryDay":"21",
+                      "strikePrice":"140"
+                   },
+                   "orderAction":"BUY_OPEN",
+                   "orderedQuantity":"1",
+                   "quantity":"1"
+                }
+             ]
+          }
+       ]
+    }
+}
+
+
+
+
+Response
+                                                          content_copy
+
+
+     {
+"PreviewOrderResponse":{
+   "orderType":"OPTN",
+   "totalOrderValue":"330.4644",
+   "Order":{
+      "orderTerm":"GOOD_FOR_DAY",
+      "priceType":"MARKET",
+      "limitPrice":"0",
+      "stopPrice":"0",
+      "marketSession":"REGULAR",
+      "allOrNone":"false",
+      "Instrument":{
+         "Product":{
+            "symbol":"FB",
+            "securityType":"OPTN",
+            "callPut":"CALL",
+            "expiryYear":"2018",
+            "expiryMonth":"12",
+            "expiryDay":"21",
+            "strikePrice":"140.00"
+               "productId": {
+                   "symbol": "FB----210409P00297500",
+                   "typeCode": "OPTION"
+               }
+         },
+         "symbolDescription":"FB Dec 21 '18 $140 Call",
+         "orderAction":"BUY_OPEN",
+         "quantityType":"QUANTITY",
+         "quantity":"1",
+         "cancelQuantity":"0.0",
+         "osiKey":"FB----181221C00140000",
+         "reserveOrder":"true",
+         "reserveQuantity":"0.0"
+      },
+      "egQual":"EG_QUAL_NOT_AN_ELIGIBLE_SECURITY",
+      "estimatedCommission":"5.45",
+      "estimatedTotalAmount":"330.4644",
+      "netPrice":"0",
+      "netBid":"0",
+      "netAsk":"0",
+      "gcd":"0",
+      "ratio":[
+
+     ]
+  },
+  "PreviewIds":{
+     "previewId":"2785277279"
+  },
+  "previewTime":"1544038038415",
+  "dstFlag":"false",
+  "accountId":"314497960",
+  "optionLevelCd":"4",
+  "marginLevelCd":"MARGIN_TRADING_ALLOWED",
+  "Disclosure":{
+     "aoDisclosureFlag":"true",
+            "conditionalDisclosureFlag":"true"
+         },
+         "marginable": {
+            "currentBp": "400000.00",
+            "currentNetBp": "400000.00",
+            "currentOor": "0.00",
+            "currentOrderImpact": "296.95",
+            "netBp": "399703.05"
+         },
+         "nonMarginable": {
+            "currentBp": "200000.00",
+            "currentNetBp": "200000.00",
+            "currentOor": "0.00",
+            "currentOrderImpact": "296.95",
+            "netBp": "199703.05"
+         }
+     }
+ }
+
+
+
+
+Place Order Request URL
+
+                                                          content_copy
+ https://api.etrade.com/v1/accounts/vVSnhtF6d5pXBy0HyaAC4vQ/
+                        orders/place
+
+
+
+Place Order Request
+                                                 content_copy
+
+
+<PlaceOrderRequest>
+   <orderType>EQ</orderType>
+   <clientOrderId>sd464333</clientOrderId>
+   <PreviewIds>
+      <previewId>730206520</previewId>
+   </PreviewIds>
+   <Order>
+      <allOrNone>false</allOrNone>
+      <priceType>LIMIT</priceType>
+      <orderTerm>GOOD_FOR_DAY</orderTerm>
+      <marketSession>REGULAR</marketSession>
+      <stopPrice />
+      <limitPrice>188.51</limitPrice>
+      <Instrument>
+         <Product>
+            <securityType>EQ</securityType>
+            <symbol>FB</symbol>
+         </Product>
+         <orderAction>BUY</orderAction>
+         <quantityType>QUANTITY</quantityType>
+         <quantity>150</quantity>
+      </Instrument>
+   </Order>
+</PlaceOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+
+<PlaceOrderResponse>
+   <orderType>EQ</orderType>
+   <Order>
+      <orderTerm>GOOD_FOR_DAY</orderTerm>
+      <priceType>LIMIT</priceType>
+      <limitPrice>188.51</limitPrice>
+      <stopPrice>0</stopPrice>
+      <marketSession>REGULAR</marketSession>
+      <allOrNone>false</allOrNone>
+      <Instrument>
+         <Product>
+            <symbol>FB</symbol>
+            <securityType>EQ</securityType>
+         </Product>
+         <symbolDescription>FACEBOOK INC CL A</symbolDescri
+ption>
+         <orderAction>BUY</orderAction>
+         <quantityType>QUANTITY</quantityType>
+         <quantity>150</quantity>
+         <cancelQuantity>0.0</cancelQuantity>
+         <reserveOrder>true</reserveOrder>
+         <reserveQuantity>0.0</reserveQuantity>
+      </Instrument>
+      <messages>
+         <Message>
+            <code>1027</code>
+            <description>200|The market was closed when we
+received your order. It has been entered into our system an
+d will be reviewed prior to market open on the next regular
+trading day. After market open, please check to make sure y
+our order was accepted.</description>
+            <type>WARNING</type>
+         </Message>
+      </messages>
+      <egQual>EG_QUAL_NOT_A_MARKET_ORDER</egQual>
+      <estimatedCommission>6.95</estimatedCommission>
+      <estimatedTotalAmount>28283.45</estimatedTotalAmount>
+      <netPrice>0</netPrice>
+      <netBid>0</netBid>
+      <netAsk>0</netAsk>
+      <gcd>0</gcd>
+      <ratio />
+   </Order>
+   <dstFlag>true</dstFlag>
+   <optionLevelCd>4</optionLevelCd>
+   <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+   <OrderIds>
+      <orderId>5</orderId>
+   </OrderIds>
+   <placedTime>1528764717641</placedTime>
+   <accountId>843127670</accountId>
+</PlaceOrderResponse>
+Place Order Request(SPREAD Order)
+
+                                                     content_copy
+
+ <?xml version="1.0" encoding="UTF-8"?>
+ <PlaceOrderRequest>
+     <Order>
+         <Instrument>
+             <Product>
+                 <callPut>CALL</callPut>
+                 <expiryDay>15</expiryDay>
+                 <expiryMonth>02</expiryMonth>
+                 <expiryYear>2019</expiryYear>
+                 <securityType>OPTN</securityType>
+                 <strikePrice>130</strikePrice>
+                 <symbol>IBM</symbol>
+             </Product>
+             <orderAction>BUY_OPEN</orderAction>
+             <orderedQuantity>1</orderedQuantity>
+             <quantity>1</quantity>
+         </Instrument>
+         <Instrument>
+             <Product>
+                 <callPut>CALL</callPut>
+                 <expiryDay>15</expiryDay>
+                 <expiryMonth>02</expiryMonth>
+                 <expiryYear>2019</expiryYear>
+                 <securityType>OPTN</securityType>
+                 <strikePrice>131</strikePrice>
+                 <symbol>IBM</symbol>
+             </Product>
+             <orderAction>SELL_OPEN</orderAction>
+             <orderedQuantity>1</orderedQuantity>
+             <quantity>1</quantity>
+         </Instrument>
+         <allOrNone>false</allOrNone>
+         <limitPrice>5</limitPrice>
+         <marketSession>REGULAR</marketSession>
+         <orderTerm>GOOD_FOR_DAY</orderTerm>
+         <priceType>NET_DEBIT</priceType>
+         <stopPrice>0</stopPrice>
+     </Order>
+     <PreviewIds>
+         <previewId>3429218279</previewId>
+     </PreviewIds>
+     <clientOrderId>3453f1</clientOrderId>
+     <orderType>SPREADS</orderType>
+ </PlaceOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PlaceOrderResponse>
+    <Order>
+        <Instrument>
+            <Product>
+                <callPut>CALL</callPut>
+                <expiryDay>15</expiryDay>
+                <expiryMonth>2</expiryMonth>
+                <expiryYear>2019</expiryYear>
+                <securityType>OPTN</securityType>
+                <strikePrice>130</strikePrice>
+                <symbol>IBM</symbol>
+            </Product>
+            <cancelQuantity>0</cancelQuantity>
+            <orderAction>BUY_OPEN</orderAction>
+            <osiKey>IBM---190215C00130000</osiKey>
+            <quantity>1</quantity>
+            <quantityType>QUANTITY</quantityType>
+            <reserveOrder>true</reserveOrder>
+            <reserveQuantity>0</reserveQuantity>
+            <symbolDescription>IBM Feb 15 '19 $130 Call</sy
+mbolDescription>
+        </Instrument>
+        <Instrument>
+            <Product>
+                <callPut>CALL</callPut>
+                <expiryDay>15</expiryDay>
+                <expiryMonth>2</expiryMonth>
+                <expiryYear>2019</expiryYear>
+                <securityType>OPTN</securityType>
+                <strikePrice>131</strikePrice>
+                <symbol>IBM</symbol>
+            </Product>
+            <cancelQuantity>0</cancelQuantity>
+            <orderAction>SELL_OPEN</orderAction>
+            <osiKey>IBM---190215C00131000</osiKey>
+            <quantity>1</quantity>
+            <quantityType>QUANTITY</quantityType>
+            <reserveOrder>true</reserveOrder>
+            <reserveQuantity>0</reserveQuantity>
+            <symbolDescription>IBM Feb 15 '19 $131 Call</sy
+mbolDescription>
+        </Instrument>
+        <allOrNone>false</allOrNone>
+        <egQual>EG_QUAL_NOT_AN_ELIGIBLE_SECURITY</egQual>
+        <estimatedCommission>8.44</estimatedCommission>
+        <estimatedTotalAmount>508.4762</estimatedTotalAmoun
+t>
+        <gcd>0</gcd>
+        <limitPrice>5</limitPrice>
+        <marketSession>REGULAR</marketSession>
+        <messages>
+            <Message>
+                <code>1027</code>
+                <description>200|The market was closed when
+we received your order. It has been entered into our system
+ and will be reviewed prior to market open on the next regul
+ ar trading day. After market open, please check to make sur
+ e your order was accepted.</description>
+                 <type>WARNING</type>
+             </Message>
+         </messages>
+         <netAsk>0</netAsk>
+         <netBid>0</netBid>
+         <netPrice>0</netPrice>
+         <orderTerm>GOOD_FOR_DAY</orderTerm>
+         <priceType>NET_DEBIT</priceType>
+         <ratio />
+         <stopPrice>0</stopPrice>
+     </Order>
+     <OrderIds>
+         <orderId>484</orderId>
+     </OrderIds>
+     <accountId>838796270</accountId>
+     <dstFlag>false</dstFlag>
+     <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+     <optionLevelCd>4</optionLevelCd>
+     <orderType>SPREADS</orderType>
+     <placedTime>1549316465349</placedTime>
+ </PlaceOrderResponse>
+
+
+
+
+Place Order Request(OPTIONS Order)
+                                                 content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PlaceOrderRequest>
+    <Order>
+        <Instrument>
+        <Product>
+            <callPut>CALL</callPut>
+            <expiryDay>21</expiryDay>
+            <expiryMonth>12</expiryMonth>
+            <expiryYear>2018</expiryYear>
+            <securityType>OPTN</securityType>
+            <strikePrice>140</strikePrice>
+            <symbol>FB</symbol>
+        </Product>
+        <orderAction>BUY_OPEN</orderAction>
+        <orderedQuantity>1</orderedQuantity>
+        <quantity>1</quantity>
+        </Instrument>
+        <allOrNone>false</allOrNone>
+        <limitPrice>5</limitPrice>
+        <marketSession>REGULAR</marketSession>
+        <orderTerm>GOOD_FOR_DAY</orderTerm>
+        <priceType>MARKET</priceType>
+        <stopPrice>0</stopPrice>
+    </Order>
+    <PreviewIds>
+        <previewId>2785277279</previewId>
+    </PreviewIds>
+    <clientOrderId>8e4153f1</clientOrderId>
+    <orderType>OPTN</orderType>
+</PlaceOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<PlaceOrderResponse>
+    <Order>
+    <Instrument>
+        <Product>
+           <callPut>CALL</callPut>
+           <expiryDay>21</expiryDay>
+           <expiryMonth>12</expiryMonth>
+           <expiryYear>2018</expiryYear>
+           <securityType>OPTN</securityType>
+           <strikePrice>140.00</strikePrice>
+           <symbol>FB</symbol>
+           <ProductId>
+               <Symbol>FB----210409P00297500</Symbol>
+               <TypeCode>OPTION</TypeCode>
+           </ProductId>
+        </Product>
+        <cancelQuantity>0.0</cancelQuantity>
+        <orderAction>BUY_OPEN</orderAction>
+        <osiKey>FB----181221C00140000</osiKey>
+        <quantity>1</quantity>
+        <quantityType>QUANTITY</quantityType>
+        <reserveOrder>true</reserveOrder>
+        <reserveQuantity>0.0</reserveQuantity>
+        <symbolDescription>FB Dec 21 '18 $140 Call</symbolD
+escription>
+    </Instrument>
+    <allOrNone>false</allOrNone>
+    <egQual>EG_QUAL_NOT_AN_ELIGIBLE_SECURITY</egQual>
+    <estimatedCommission>5.45</estimatedCommission>
+    <estimatedTotalAmount>330.4644</estimatedTotalAmount>
+    <gcd>0</gcd>
+    <limitPrice>0</limitPrice>
+    <marketSession>REGULAR</marketSession>
+    <messages>
+        <Message>
+           <code>1026</code>
+           <description>200|Your order was successfully ent
+ered during market hours.</description>
+           <type>WARNING</type>
+        </Message>
+    </messages>
+    <netAsk>0</netAsk>
+    <netBid>0</netBid>
+    <netPrice>0</netPrice>
+    <orderTerm>GOOD_FOR_DAY</orderTerm>
+    <priceType>MARKET</priceType>
+    <ratio />
+    <stopPrice>0</stopPrice>
+    </Order>
+    <OrderIds>
+        <orderId>169</orderId>
+    </OrderIds>
+    <accountId>314497960</accountId>
+    <dstFlag>false</dstFlag>
+    <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+     <optionLevelCd>4</optionLevelCd>
+     <orderType>OPTN</orderType>
+     <placedTime>1544038195663</placedTime>
+ </PlaceOrderResponse>
+
+
+
+
+Place Order Request JSON URL
+
+                                                          content_copy
+                     https://api.etrade.com/v1/accounts/vVSn
+            htF6d5pXBy0HyaAC4vQ/orders/place.json
+
+
+
+Place Order Request(SPREAD Order)
+                                                content_copy
+
+{
+    "PlaceOrderRequest":{
+       "orderType":"SPREADS",
+       "clientOrderId":"3453f1",
+       "PreviewIds":[
+          {
+             "previewId":"3429218279"
+          }
+       ],
+       "Order":[
+          {
+             "allOrNone":"false",
+             "priceType":"NET_DEBIT",
+             "limitPrice":"5",
+             "stopPrice":"0",
+             "orderTerm":"GOOD_FOR_DAY",
+             "marketSession":"REGULAR",
+             "Instrument":[
+                {
+                   "Product":{
+                      "symbol":"IBM",
+                      "securityType":"OPTN",
+                      "callPut":"CALL",
+                      "expiryYear":"2019",
+                      "expiryMonth":"02",
+                      "expiryDay":"15",
+                      "strikePrice":"130"
+                   },
+                   "orderAction":"BUY_OPEN",
+                   "orderedQuantity":"1",
+                   "quantity":"1"
+                },
+                {
+                   "Product":{
+                      "symbol":"IBM",
+                      "securityType":"OPTN",
+                      "callPut":"CALL",
+                      "expiryYear":"2019",
+                      "expiryMonth":"02",
+                      "expiryDay":"15",
+                      "strikePrice":"131"
+                   },
+                   "orderAction":"SELL_OPEN",
+                   "orderedQuantity":"1",
+                   "quantity":"1"
+                }
+             ]
+          }
+       ]
+    }
+}
+
+
+
+
+Response
+                                                          content_copy
+
+{
+   "PlaceOrderResponse":{
+      "orderType":"SPREADS",
+      "dstFlag":false,
+      "optionLevelCd":4,
+      "marginLevelCd":"MARGIN_TRADING_ALLOWED",
+      "placedTime":1549316465349,
+      "accountId":"838796270",
+      "Order":[
+         {
+            "orderTerm":"GOOD_FOR_DAY",
+            "priceType":"NET_DEBIT",
+            "limitPrice":5,
+            "stopPrice":0,
+            "marketSession":"REGULAR",
+            "allOrNone":false,
+            "messages":{
+               "Message":[
+                  {
+                     "description":"200|The market was clos
+ed when we received your order. It has been entered into ou
+r system and will be reviewed prior to market open on the n
+ext regular trading day. After market open, please check to
+make sure your order was accepted.",
+                     "code":1027,
+                     "type":"WARNING"
+                  }
+               ]
+            },
+            "egQual":"EG_QUAL_NOT_AN_ELIGIBLE_SECURITY",
+            "estimatedCommission":8.44,
+            "estimatedTotalAmount":508.4762,
+            "netPrice":0,
+            "netBid":0,
+            "netAsk":0,
+            "gcd":0,
+            "ratio":"",
+            "Instrument":[
+               {
+                  "symbolDescription":"IBM Feb 15 '19 $130
+Call",
+                  "orderAction":"BUY_OPEN",
+                  "quantityType":"QUANTITY",
+                  "quantity":1,
+                  "cancelQuantity":0,
+                  "osiKey":"IBM---190215C00130000",
+                  "reserveOrder":true,
+                  "reserveQuantity":0,
+                  "Product":{
+                     "symbol":"IBM",
+                     "securityType":"OPTN",
+                     "callPut":"CALL",
+                     "expiryYear":2019,
+                     "expiryMonth":2,
+                     "expiryDay":15,
+                     "strikePrice":130
+                       }
+                  },
+                  {
+                       "symbolDescription":"IBM Feb 15 '19 $131
+ Call",
+                       "orderAction":"SELL_OPEN",
+                       "quantityType":"QUANTITY",
+                       "quantity":1,
+                       "cancelQuantity":0,
+                       "osiKey":"IBM---190215C00131000",
+                       "reserveOrder":true,
+                       "reserveQuantity":0,
+                       "Product":{
+                          "symbol":"IBM",
+                          "securityType":"OPTN",
+                          "callPut":"CALL",
+                          "expiryYear":2019,
+                          "expiryMonth":2,
+                          "expiryDay":15,
+                          "strikePrice":131
+                       }
+                  }
+              ]
+            }
+         ],
+         "OrderIds":[
+            {
+               "orderId":484
+            }
+         ]
+     }
+ }
+
+
+
+
+Place Order Request(EQUITY Order)
+                                                content_copy
+
+{
+    "PlaceOrderRequest":{
+       "orderType":"EQ",
+       "clientOrderId":"1fds311",
+       "PreviewIds":[
+          {
+             "previewId":3429395279
+          }
+       ],
+       "Order":[
+          {
+             "allOrNone":"false",
+             "priceType":"LIMIT",
+             "orderTerm":"GOOD_FOR_DAY",
+             "marketSession":"REGULAR",
+             "stopPrice":"",
+             "limitPrice":"169",
+             "Instrument":[
+                {
+                   "Product":{
+                      "securityType":"EQ",
+                      "symbol":"FB"
+                   },
+                   "orderAction":"BUY",
+                   "quantityType":"QUANTITY",
+                   "quantity":"1"
+                }
+             ]
+          }
+       ]
+    }
+}
+
+
+
+
+Response
+                                                          content_copy
+
+{
+   "PlaceOrderResponse":{
+      "orderType":"EQ",
+      "dstFlag":false,
+      "optionLevelCd":4,
+      "marginLevelCd":"MARGIN_TRADING_ALLOWED",
+      "placedTime":1549318099447,
+      "accountId":"838796270",
+      "Order":[
+         {
+            "orderTerm":"GOOD_FOR_DAY",
+            "priceType":"LIMIT",
+            "limitPrice":169,
+            "stopPrice":0,
+            "marketSession":"REGULAR",
+            "allOrNone":false,
+            "messages":{
+               "Message":[
+                  {
+                     "description":"200|The market was clos
+ed when we received your order. It has been entered into ou
+r system and will be reviewed prior to market open on the n
+ext regular trading day. After market open, please check to
+make sure your order was accepted.",
+                     "code":1027,
+                     "type":"WARNING"
+                  }
+               ]
+            },
+            "egQual":"EG_QUAL_NOT_A_MARKET_ORDER",
+            "estimatedCommission":6.95,
+            "estimatedTotalAmount":175.95,
+            "netPrice":0,
+            "netBid":0,
+            "netAsk":0,
+            "gcd":0,
+            "ratio":"",
+            "Instrument":[
+               {
+                  "symbolDescription":"FACEBOOK INC CL A",
+                  "orderAction":"BUY",
+                  "quantityType":"QUANTITY",
+                  "quantity":1,
+                  "cancelQuantity":0,
+                  "reserveOrder":true,
+                  "reserveQuantity":0,
+                  "Product":{
+                     "symbol":"FB",
+                     "securityType":"EQ"
+                  }
+               }
+            ]
+         }
+      ],
+      "OrderIds":[
+         {
+                 "orderId":485
+             }
+         ]
+     }
+ }
+
+
+
+
+Place Order Request(OPTIONS Order)
+
+                                                content_copy
+
+ {
+     "PlaceOrderRequest":{
+        "orderType":"OPTN",
+        "clientOrderId":"8e4153f1",
+        "PreviewIds":[
+           {
+              "previewId":"2785277279"
+           }
+        ],
+        "Order":[
+           {
+              "allOrNone":"false",
+              "priceType":"MARKET",
+              "limitPrice":"5",
+              "stopPrice":"0",
+              "orderTerm":"GOOD_FOR_DAY",
+              "marketSession":"REGULAR",
+              "Instrument":[
+                 {
+                    "Product":{
+                       "symbol":"FB",
+                       "securityType":"OPTN",
+                       "callPut":"CALL",
+                       "expiryYear":"2018",
+                       "expiryMonth":"12",
+                       "expiryDay":"21",
+                       "strikePrice":"140"
+                    },
+                    "orderAction":"BUY_OPEN",
+                    "orderedQuantity":"1",
+                    "quantity":"1"
+                 }
+              ]
+           }
+        ]
+     }
+ }
+
+
+
+
+Response
+                                                          content_copy
+
+        {
+        "PlaceOrderResponse": {
+           "orderType": "OPTN",
+           "Order": {
+                  "orderTerm": "GOOD_FOR_DAY",
+                  "priceType": "MARKET",
+                  "limitPrice": "0",
+                  "stopPrice": "0",
+                  "marketSession": "REGULAR",
+                  "allOrNone": "false",
+                  "Instrument": {
+                         "Product": {
+                                "symbol": "FB",
+                                "securityType": "OPTN",
+                                "callPut": "CALL",
+                                "expiryYear": "2018",
+                                "expiryMonth": "12",
+                                "expiryDay": "21",
+                                "strikePrice": "140.00"
+                                    "productId": {
+                        "symbol": "FB----210409P00297500",
+                        "typeCode": "OPTION"
+                    }
+                         },
+                         "symbolDescription": "FB Dec 21 '1
+8 $140 Call",
+                         "orderAction": "BUY_OPEN",
+                         "quantityType": "QUANTITY",
+                         "quantity": "1",
+                         "cancelQuantity": "0.0",
+                         "osiKey": "FB----181221C00140000",
+                         "reserveOrder": "true",
+                         "reserveQuantity": "0.0"
+                  },
+                  "messages": {
+                         "Message": {
+                                "code": "1026",
+                                "description": "200|Your or
+der was successfully entered during market hours.",
+                                "type": "WARNING"
+                         }
+                  },
+                  "egQual": "EG_QUAL_NOT_AN_ELIGIBLE_SECURI
+TY",
+                  "estimatedCommission": "5.45",
+                  "estimatedTotalAmount": "330.4644",
+                  "netPrice": "0",
+                  "netBid": "0",
+                  "netAsk": "0",
+                  "gcd": "0",
+                  "ratio": []
+           },
+           "dstFlag": "false",
+           "optionLevelCd": "4",
+           "marginLevelCd": "MARGIN_TRADING_ALLOWED",
+           "OrderIds": {
+                   "orderId": "169"
+            },
+            "placedTime": "1544038195663",
+            "accountId": "314497960"
+        }
+ }
+
+
+
+
+Cancel Order Request URL
+
+                                                           content_copy
+ https://api.etrade.com/v1/accounts/vVSnhtF6d5pXBy0HyaAC4vQ/
+                        orders/cancel
+
+
+
+Cancel Order Request
+
+                                                           content_copy
+
+
+ <CancelOrderRequest>
+    <orderId>11</orderId>
+ </CancelOrderRequest>
+
+
+
+
+Response
+
+                                                           content_copy
+
+
+ <CancelOrderResponse>
+    <accountId>634386170</accountId>
+    <orderId>11</orderId>
+    <cancelTime>1529563499081</cancelTime>
+    <Messages>
+       <Message>
+          <code>5011</code>
+          <description>200|Your request to cancel your order
+ is being processed.</description>
+          <type>WARNING</type>
+       </Message>
+    </Messages>
+ </CancelOrderResponse>
+
+
+
+
+Change Previewed Order Request URL
+
+                                                           content_copy
+ https://api.etrade.com/v1/accounts/ZrnXF-hPu853sBzwHfWGBQ/o
+                  rders/825/change/preview
+
+
+
+Change Previewed Order Request
+                                                 content_copy
+
+
+<PreviewOrderRequest>
+   <orderType>EQ</orderType>
+   <clientOrderId>s453345er333</clientOrderId>
+   <Order>
+      <allOrNone>false</allOrNone>
+      <priceType>LIMIT</priceType>
+      <orderTerm>GOOD_FOR_DAY</orderTerm>
+      <marketSession>REGULAR</marketSession>
+      <stopPrice />
+      <limitPrice>65.31</limitPrice>
+      <Instrument>
+         <Product>
+            <securityType>EQ</securityType>
+            <symbol>F</symbol>
+         </Product>
+         <orderAction>BUY</orderAction>
+         <quantityType>QUANTITY</quantityType>
+         <quantity>6</quantity>
+      </Instrument>
+   </Order>
+</PreviewOrderRequest>
+
+
+
+
+Response
+                                                          content_copy
+
+
+<PreviewOrderResponse>
+   <orderType>EQ</orderType>
+   <totalOrderValue>396.81</totalOrderValue>
+   <Order>
+      <orderTerm>GOOD_FOR_DAY</orderTerm>
+      <priceType>LIMIT</priceType>
+      <limitPrice>65.31</limitPrice>
+      <stopPrice>0</stopPrice>
+      <marketSession>REGULAR</marketSession>
+      <allOrNone>false</allOrNone>
+      <Instrument>
+         <Product>
+            <symbol>F</symbol>
+            <securityType>EQ</securityType>
+         </Product>
+         <symbolDescription>FORD MTR CO DEL COM PAR $0.01</
+symbolDescription>
+         <orderAction>BUY</orderAction>
+         <quantityType>QUANTITY</quantityType>
+         <quantity>6</quantity>
+         <cancelQuantity>0.0</cancelQuantity>
+         <reserveOrder>true</reserveOrder>
+         <reserveQuantity>0.0</reserveQuantity>
+      </Instrument>
+      <messages>
+         <Message>
+            <code>9011</code>
+            <description>200|You are about to place a marke
+table limit order that is atleast 20% greater than the curr
+ent ask price for the security and could be executed if pla
+ced.</description>
+            <type>WARNING</type>
+         </Message>
+         <Message>
+            <code>3041</code>
+            <description>DTBP is negative but RegTBP is pos
+itive</description>
+            <type>WARNING</type>
+         </Message>
+      </messages>
+      <egQual>EG_QUAL_UNSPECIFIED</egQual>
+      <estimatedCommission>4.95</estimatedCommission>
+      <estimatedTotalAmount>396.81</estimatedTotalAmount>
+      <netPrice>0</netPrice>
+      <netBid>0</netBid>
+      <netAsk>0</netAsk>
+      <gcd>0</gcd>
+      <ratio />
+   </Order>
+   <PreviewIds>
+      <previewId>926244279</previewId>
+   </PreviewIds>
+   <previewTime>1528486102038</previewTime>
+   <dstFlag>true</dstFlag>
+   <accountId>835652930</accountId>
+    <optionLevelCd>4</optionLevelCd>
+    <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+ </PreviewOrderResponse>
+
+
+
+
+Place Changed Order Request URL
+
+                                                            content_copy
+ https://api.etrade.com/v1/accounts/ZrnXF-hPu853sBzwHfWGBQ/o
+                    rders/825/change/place
+
+
+
+Place Changed Order Request
+
+                                                            content_copy
+
+
+ <PlaceOrderRequest>
+    <orderType>EQ</orderType>
+    <clientOrderId>s453dddff5er333</clientOrderId>
+    <PreviewIds>
+       <previewId>926244279</previewId>
+    </PreviewIds>
+    <Order>
+       <allOrNone>false</allOrNone>
+       <priceType>LIMIT</priceType>
+       <orderTerm>GOOD_FOR_DAY</orderTerm>
+       <marketSession>REGULAR</marketSession>
+       <stopPrice />
+       <limitPrice>65.31</limitPrice>
+       <Instrument>
+          <Product>
+             <securityType>EQ</securityType>
+             <symbol>F</symbol>
+          </Product>
+          <orderAction>BUY</orderAction>
+          <quantityType>QUANTITY</quantityType>
+          <quantity>6</quantity>
+       </Instrument>
+    </Order>
+ </PlaceOrderRequest>
+
+
+
+
+Response
+                                                           content_copy
+
+
+ <PlaceOrderResponse>
+    <orderType>EQ</orderType>
+    <Order>
+       <orderTerm>GOOD_FOR_DAY</orderTerm>
+       <priceType>LIMIT</priceType>
+       <limitPrice>65.31</limitPrice>
+       <stopPrice>0</stopPrice>
+       <marketSession>REGULAR</marketSession>
+       <allOrNone>false</allOrNone>
+       <Instrument>
+          <Product>
+             <symbol>F</symbol>
+             <securityType>EQ</securityType>
+          </Product>
+          <symbolDescription>FORD MTR CO DEL COM PAR $0.01</
+ symbolDescription>
+          <orderAction>BUY</orderAction>
+          <quantityType>QUANTITY</quantityType>
+          <quantity>6</quantity>
+          <cancelQuantity>0.0</cancelQuantity>
+          <reserveOrder>true</reserveOrder>
+          <reserveQuantity>0.0</reserveQuantity>
+       </Instrument>
+       <messages>
+          <Message>
+             <code>1026</code>
+             <description>200|Your order was successfully en
+ tered during market hours.</description>
+             <type>WARNING</type>
+          </Message>
+       </messages>
+       <egQual>EG_QUAL_UNSPECIFIED</egQual>
+       <estimatedCommission>4.95</estimatedCommission>
+       <estimatedTotalAmount>396.81</estimatedTotalAmount>
+       <netPrice>0</netPrice>
+       <netBid>0</netBid>
+       <netAsk>0</netAsk>
+       <gcd>0</gcd>
+       <ratio />
+    </Order>
+    <dstFlag>true</dstFlag>
+    <optionLevelCd>4</optionLevelCd>
+    <marginLevelCd>MARGIN_TRADING_ALLOWED</marginLevelCd>
+    <OrderIds>
+       <orderId>826</orderId>
+    </OrderIds>
+    <placedTime>1528486168172</placedTime>
+    <accountId>835652930</accountId>
+ </PlaceOrderResponse>
+
+
+
+
+Error Codeslink
+Status Code Reason
+
+200        Your order was successfully entered during
+
+200        The market was closed when we received yo
+
+200        Your account has been restricted to placing
+
+200        We did not find enough available shares of t
+
+200        You have entered an order to close out a pos
+
+200        You have an existing open order for this secu
+
+200        Trading has been halted for this security. You
+
+200        NOTE: NASDAQ/BB quotes are only indicatio
+
+200        Note: Your estimated order total includes a $
+
+200        Note: Your estimated order proceeds reflect
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected the offsetting lot(s) you sp
+
+200        We have selected the offsetting lot(s) you sp
+
+200        We have selected the offsetting lot(s) you sp
+
+200        We have selected the offsetting lot(s) you sp
+
+200        We have selected the offsetting lot(s) you sp
+
+200        We have selected the offsetting lot(s) you sp
+
+200        Your Account Preferences indicate that you'd
+
+200        Your Account Preferences indicate that you’d
+
+200        Your Account Preferences indicate that you'd
+
+200        Since you purchased shares of this security
+
+200        This stock participates in the Tick Size Pilot P
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+Status Code Reason
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        We have selected offsetting lot(s) based on y
+
+200        Because these securities were purchased wi
+
+200        These securities were purchased with unsett
+
+200        We cannot accept this order because there a
+
+200        This order cannot be accepted as you are cu
+
+200        We are unable to process this order at this ti
+
+200        We cannot accept this order at this time bec
+
+200        Other open orders for leg 1 security.
+
+200        Other open orders for leg 2 security.
+
+200        Important! NYSE Rule 431 Notice: Because y
+
+200        This order to purchase securities, if accepted
+
+200        Because these securities were purchased wi
+
+200        Your account currently holds an unapproved
+
+200        PRIIPs Regulations require the issuer or man
+
+200        Please note: If executed, this order could cre
+
+200        This order cannot be placed due to restrictio
+
+200        Cutoff for Exercise Request is 4:00 PM ET. W
+
+200        Cutoff for Do Not Exercise Request is 4:15 PM
+
+200        Our records indicate this option has value. P
+Status Code Reason
+
+200        Shares of no-load, no-transaction-fee funds
+
+200        You are about to sell fund shares that will res
+
+200        Certain funds held for 90 days or less are su
+
+200        Important: {0} has a cut-off time of {1} ET. Or
+
+200        Your request to cancel your order is being p
+
+200        Your transaction fee is waived for this order.
+
+200        Your request to cancel your order is being p
+
+200        Important: The order you are entering has an
+
+200        If this trade results in a loss it may trigger a W
+
+200        If this trade results in a gain it may trigger sh
+
+200        This trade may trigger a Wash Sale.
+
+200        E*TRADE will make a best efforts attempt to
+
+200        We have selected the offsetting lot(s) you sp
+
+200        Limit orders placed while the Hong Kong ma
+
+200        Important: You are about to place an order o
+
+200        You are about to place a marketable limit ord
+
+200        You are about to place a marketable limit ord
+
+200        Market orders placed outside of regular mar
+
+200        Please note that, due to regulatory requirem
+
+200        IMPORTANT: You are about to place a marke
+
+200        IMPORTANT: You are about to place a marke
+
+200        We are unable to accept your extended hou
+
+200        We are unable to accept your extended hou
+
+200        Please obtain supervisor approval before sub
+
+200        Warning: you are about to override a saved a
+
+200        The ratio of shares to contracts for this orde
+
+200        The ratio of contracts for this order is not on
+
+200        For your protection, we have timed out your
+Status Code Reason
+
+200        This order will be reallocated with the new a
+
+200        Note: Good Till Canceled ("GT 60") buy-write
+
+204        Data not found.
+
+204        Special Notice: Data Not Found.
+
+400        Bad clearance code received.
+
+400        You did not specify an order type. Please fill
+
+400        The OrderAction you specified is invalid.
+
+400        The price type you specified for this order is
+
+400        The term you specified for this order is invali
+
+400        You did not specify a limit price. Please fill in
+
+400        You did not specify a stop price. Please fill in
+
+400        The trailing parameter you specified is invali
+
+400        The percentage must be greater than 0 and
+
+400        To complete your order, please select a Strik
+
+400        To complete your order, please select an Op
+
+400        To complete your order, please select an Op
+
+400        The dollar amount entered is invalid. Please
+
+400        You have entered an invalid number of contr
+
+400        You have entered an invalid number of share
+
+400        Please specify a price to complete your orde
+
+400        Please specify an order type: Buy Open, Sell
+
+400        Please specify an order type: Buy, Sell, Sell S
+
+400        Please enter a valid security type.
+
+400        Extended Hours Disclosure was not signed.
+
+400        Advanced Order Disclosure was not signed.
+
+400        Conditional Order Disclosure was not signed
+
+400        Your sell short is Hard to Borrow and cannot
+
+400        Only GTC and Day orders are allowed with A
+Status Code Reason
+
+400        Your order could not be processed as submi
+
+400        All Or None, Quantity should be greater than
+
+400        Only Limit and Stop Limit orders are allowed
+
+400        Select either Reserve Order and All or None.
+
+400        The Quantity for Reserve Order should be gr
+
+400        Invalid Routing Destination specified.
+
+400        Invalid AON/Order Term combination.
+
+400        For Reserve Order the Order should be a Lim
+
+400        Invalid Reserve Quantity.
+
+400        Invalid Client OrderId. It is either null or leng
+
+400        Invalid Preview Id.
+
+400        This account is not approved for trading. Ple
+
+400        To complete your order, please enter a stock
+
+400        Our system does not recognize this symbol.
+
+400        This does not appear to be a valid stock sym
+
+400        You have entered the symbol of an index, no
+
+400        This symbol is not recognized. Please make s
+
+400        Our system does not recognize this symbol.
+
+400        Number of shares for this order is either mis
+
+400        Short sales in even lots.
+
+400        The share quantity you have entered is too la
+
+400        There is currently a 500 share or 10% of volu
+
+400        This order cannot be accepted because the
+
+400        Please use numbers for price.
+
+400        Odd lots must be market price.
+
+400        Price not within 20% of market. Please check
+
+400        This stock cannot be sold short because eith
+
+400        No price available.
+Status Code Reason
+
+400        The fraction you entered in the Price field is
+
+400        The price you entered is invalid. Please ente
+
+400        This stop order cannot be processed. Either
+
+400        The trading password you have entered is in
+
+400        We cannot accept this order because there a
+
+400        Too few contracts in account.
+
+400        You cannot change this order because it is e
+
+400        Bad characters in fields.
+
+400        Please select an order type by clicking the B
+
+400        This is a duplicate order.
+
+400        Please specify which lots to sell. Tax lots mu
+
+400        Please specify the term for this order: GTC o
+
+400        Please verify the lots to be sold. Lots must be
+
+400        All-or-none orders are allowed only on order
+
+400        For your protection, we have timed out your
+
+400        Day orders for the next trading session cann
+
+400        Market orders must be placed as day orders
+
+400        Please check the number of shares you have
+
+400        You have entered a number that exceeds the
+
+400        Your sell short order cannot be processed. E
+
+400        Your sell short order cannot be processed. S
+
+400        The security for which you have placed an o
+
+400        You did not specify an order type. Please fill
+
+400        The price type you specified is not allowed f
+
+400        We are currently processing your previous re
+
+400        Price format changed.
+
+400        E*TRADE allows only limit buy orders on Bull
+
+400        Not allowed for ABWT.
+Status Code Reason
+
+400        Extended-hours orders must be entered as l
+
+400        Extended-hours orders cannot be placed as
+
+400        Extended-hours orders cannot be placed in
+
+400        Cannot place order; the market is closed.
+
+400        Symbol is invalid for ETGC.
+
+400        This order cannot be changed. If you wish to
+
+400        Invalid GTD.
+
+400        Duplicate ETGC order.
+
+400        Bad clearance code received.
+
+400        This account is approved for covered call wr
+
+400        The term you specified for this order is invali
+
+400        You did not enter the number of shares. Plea
+
+400        Please enter your trading password to comp
+
+400        Since the market is now closed, this order w
+
+400        E*TRADE employees are prohibited from pla
+
+400        The price you entered is invalid. This stock p
+
+400        Non-equity, bulletin board, pink sheet, and o
+
+400        Null value specified.
+
+400        Invalid format.
+
+400        Invalid account specified for the user.
+
+400        Invalid count specified. The count should be
+
+400        Average Cost methodology to determine yo
+
+400        Invalid Account number: Negative value pas
+
+400        Invalid User Id: Null value passed for UserId.
+
+400        Invalid User Id: Invalid format.
+
+400        Special Notice:Invalid inputs.
+Status Code Reason
+
+           We cannot accept this order because Portfo
+                One-Cancels-All
+
+400              One-Triggers-All
+
+                 One-Triggers-OCO
+
+
+400        You did not specify an order type. Please fill
+
+400        All-or-None is not a valid qualifier for this ord
+
+400        This security is not yet trading in normal sess
+
+400        Only listed, Nasdaq NMS, Nasdaq Small Cap
+
+400        The price type you specified for this order is
+
+400        Since you have selected a market order, plea
+
+400        StopLimit price is either missing or invalid. P
+
+400        You did not enter a stop-limit price. Please fi
+
+400        A price for this security is temporarily unava
+
+400        The stop price must be at least $0.01 below
+
+400        The stop price must be at least $0.01 above
+
+400        Only limit orders are accepted for stocks tra
+
+400        Extended-hours orders must be entered as g
+
+400        Our Extended Hours Trading service is availa
+
+400        We did not find this security in your account
+
+400        We cannot accept a buy-to-cover order as yo
+
+400        Your buy order must execute before we can
+
+400        We cannot accept a buy-to-cover order as yo
+
+400        The account you selected does not match th
+
+400        For the first seven business days after using
+
+400        The routing destination you requested is not
+
+400        This account is restricted from trading, so yo
+
+400        We cannot accept this change request right
+
+400        This option has been exercised so we canno
+Status Code Reason
+
+400        Orders for this security cannot be accepted
+
+400        Opening orders for this security cannot be a
+
+400        Closing orders for this security cannot be ac
+
+400        You cannot place this order type through the
+
+400        This symbol is not listed on the NYSE.
+
+400        The limit price must be equal to or greater th
+
+400        The limit price must be equal to or less than
+
+400        Orders for this security cannot be accepted
+
+400        The trigger price must be above the current
+
+400        The trigger price must be below the current
+
+400        Bracketed sell short orders must be reapprov
+
+400        Opening transactions for Caveat Emptor sec
+
+400        Due to firm policy relating to employee restr
+
+400        For regulatory reasons, orders in initial publi
+
+400        This order type is currently not available in th
+
+400        Opening orders in expiring options series on
+
+400        The security selected for this order may be i
+
+400        Opening transactions in Pink No Information
+
+400        By placing this order, you attest that you are
+
+400        Your order cannot be accepted at this time.
+
+400        Your order cannot be accepted at this time.
+
+400        Account is invalid.
+
+400        Acct xref was not found.
+
+400        Your change order cannot be accepted at th
+
+400        Open start date is invalid.
+
+400        Open end date is invalid.
+
+400        Other start date is invalid.
+
+400        Other end date is invalid.
+Status Code Reason
+
+400        Security type is invalid.
+
+400        The symbol you entered does not appear to
+
+400        Order RFA is invalid.
+
+400        Trade history RFA is invalid.
+
+400        Request type is invalid.
+
+400        Account is restricted or disabled.
+
+400        Account compliance check failed.
+
+400        The trading password you have entered is in
+
+400        Trading is halted on this security.
+
+400        Trading in this security is currently restricted
+
+400        Your market order cannot be processed at th
+
+400        The symbol you entered does not appear to
+
+400        Symbol error: Option symbol has expired.
+
+400        Order term or type is invalid.
+
+400        Order side or position effect is invalid.
+
+400        Please specify an order type: Buy Open, Sell
+
+400        RFA is invalid.
+
+400        Stop orders for this security are not currently
+
+400        Please select GTC or Day as the term for this
+
+400        This account is not approved for options trad
+
+400        You have entered an invalid number of contr
+
+400        The stop price you specified for this order is
+
+400        The number of shares per contract does not
+
+400        The ratio of contracts you entered for this or
+
+400        Order key & rfa are missing.
+
+400        Options limit orders cannot exceed 10,000 c
+
+400        Please call Customer Service at 1-800-ETRAD
+
+400        The underlying security for the option symbo
+Status Code Reason
+
+400        Invalid number of shares. Shares must be pla
+
+400        Multi-leg stop/stoplimit not allowed.
+
+400        Bulletin board does not allow stop orders.
+
+400        Limit too close to market price.
+
+400        The price you specified for this order is inval
+
+400        This order has been sent to the market cente
+
+400        Routing info invalid (origsys, routsys, destmk
+
+400        Leg count is invalid.
+
+400        Bad parameter.
+
+400        Position record not found.
+
+400        The number of shares per contract does not
+
+400        Legs have the same symbol.
+
+400        Invalid debit/credit value.
+
+400        This account is approved for Level 1 option t
+
+400        The underlying security for both option sym
+
+400        Complex option orders with stock/option co
+
+400        Please reenter your order by placing the buy
+
+400        The trailing parameter you have specified is
+
+400        Please select either points or percent for the
+
+400        You did not specify an advanced order type.
+
+400        The limit price you specified is invalid. Please
+
+400        The stop price you specified is invalid. Pleas
+
+400        Trailing stops can be adjusted only against t
+
+400        IMPORTANT: The stop price must be at least
+
+400        IMPORTANT: The stop price must be at least
+
+400        The order you entered cannot be changed.
+
+400        Advanced orders cannot be placed as all-or-
+
+400        To be eligible for conditional orders, a stock
+Status Code Reason
+
+400        A regular stock order cannot be changed to
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Orders to sell short must be placed as good
+
+400        Non-equity, bulletin board, pink sheet and ot
+
+400        The limit price must be above the current bid
+
+400        The lower trigger price must be below the c
+
+400        Limit price is either missing or invalid. Please
+
+400        Stop price is either missing or invalid. Please
+
+400        Orders entered via the website must be for w
+
+400        Trailing stop sell short orders must be reapp
+
+400        Advanced orders cannot be accepted at this
+
+400        Your order could not be processed as submi
+
+400        IMPORTANT: The stop price must be at least
+
+400        IMPORTANT: The stop price must be at least
+
+400        This security is not eligible for new advanced
+
+400        The percentage must be greater than 0 and
+
+400        Your order could not be processed as submi
+
+400        You did not specify a stop price. Please fill in
+
+400        Please specify a limit price to complete your
+
+400        Please specify a stop price to complete your
+
+400        This symbol does not appear to be a stock sy
+
+400        You have entered an invalid number of contr
+
+400        To complete your order, please specify the o
+
+400        This account is not approved for Level 2 or L
+
+400        Please note that this option contract does no
+Status Code Reason
+
+400        We did not find enough available contracts o
+
+400        You are not short the option. Please adjust th
+
+400        Naked index options are not permitted at E*T
+
+400        You are not approved for naked calls.
+
+400        This account is not approved for Level 3 opt
+
+400        This option has expired.
+
+400        We cannot accept this order because there a
+
+400        We cannot accept this order until your sell o
+
+400        We cannot accept this order because your M
+
+400        Placing spread orders requires minimum equ
+
+400        A minimum of $2,000 in equity is required to
+
+400        This account is not approved for Level 3 opt
+
+400        Trading on the underlying security has been
+
+400        Please specify a price type: Market, Net Deb
+
+400        Since you have selected a market order, plea
+
+400        Please specify a price to complete your orde
+
+400        Your market order cannot be processed at th
+
+400        You may enter the order as it is a net debit, n
+
+400        The ratio of contracts you entered for this or
+
+400        The ratio of contracts for this order is not on
+
+400        The ratio of shares to contracts for this orde
+
+400        GTC orders on stop/stop limits are not perm
+
+400        To place Level 4 trades, you must have equit
+
+400        You cannot open a long and short position o
+
+400        The spread order you entered is invalid. Plea
+
+400        Opening Market or Stop on Quote option ord
+
+400        We cannot process your request at this time
+
+400        We are unable to accept your order as enter
+Status Code Reason
+
+400        We are unable to accept your order since yo
+
+400        This product is not available due to PRIIPs Re
+
+400        Invalid option spread quantity ratio for 3 legg
+
+400        Invalid strike price for 3 legged option sprea
+
+400        Invalid option type combination for 3 legged
+
+400        Invalid expiry date for 3 legged option sprea
+
+400        Invalid option spread quantity ratio for 4 legg
+
+400        Invalid strike price for 4 legged option sprea
+
+400        Invalid option type combination for 4 legged
+
+400        Invalid expiry date for 4 legged option sprea
+
+400        Calendar European Style Index Options are n
+
+400        Calendar European Style Index Options are n
+
+400        Special Attention Required! Trading in your A
+
+400        Special Attention Required! This is an activel
+
+400        Our records indicate that this option is out o
+
+400        Our records indicate this option has time pre
+
+400        Cutoff for Exercise Request is 5:00 PM ET on
+
+400        You may enter Do Not Exercise Request only
+
+400        The Cutoff for Do Not Exercise Request is 4:3
+
+400        Do Not Exercise request can be submitted o
+
+400        The amount of the Do Not Request exceeds
+
+400        A failure not listed above.
+
+400        No open stock orders.
+
+400        No default account.
+
+400        Orders API is limited to support a maximum
+
+400        The selected order has already been sent to
+
+400        Your request to cancel the order has been re
+
+400        A failure not listed above.
+Status Code Reason
+
+400        This order has been sent to the market cente
+
+400        This order is currently being executed or reje
+
+400        After the close of market each day, unexecu
+
+400        We cannot accept your current request to ca
+
+400        This account is not approved for trading. Ple
+
+400        This order is not open (or partially open) and
+
+400        This account is not approved for trading. Ple
+
+400        Bad type.
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order was cancelled due to a stock spli
+
+400        To change this reserve order, please call Cus
+
+400        A reserve order must be for a minimum of 2
+
+400        Reserve orders must be for increment of 1 co
+
+400        Reserve options orders can be routed only to
+
+400        When you are placing a reserve order, the nu
+
+400        For a reserve order, the minimum show quan
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your account is currently disabled. For assist
+
+400        No default account.
+
+400        Your order could not be processed as submi
+
+400        Negative equity percent.
+
+400        No cash or securities held in account.
+
+400        Account has no equity.
+
+400        You must enter the stop price to set your tra
+
+400        Options market orders cannot exceed 3,000
+Status Code Reason
+
+400        The underlying security is currently Hard to
+
+400        A failure not listed above.
+
+400        Please enter valid input for OrderId.
+
+400        Invalid order date.
+
+400        Realtime BETA notification failed.
+
+400        Disbursement type invalid.
+
+400        Customer account not valid.
+
+400        Inventory account not valid.
+
+400        Security symbol is unknown.
+
+400        Service not yet implemented.
+
+400        Buy/sell code invalid.
+
+400        Customer account not found.
+
+400        Customer account not found.
+
+400        Customer account not on this cluster.
+
+400        Inventory account not on this cluster.
+
+400        Inventory account position update failed.
+
+400        Inventory account order not found.
+
+400        Inventory account order detail mismatch.
+
+400        Customer account order placement failed.
+
+400        Customer account trade history update faile
+
+400        Your order could not be processed as submi
+
+400        Since your account is coded as a DVP accou
+
+400        VMS User ID does not exist.
+
+400        VMS User account has been deactivated.
+
+400        A trailing stop sell order is not allowed on an
+
+400        The Value you have specified for this Condit
+
+400        Invalid or Missing Tier Level.
+
+400        This order is invalid because two or more pa
+Status Code Reason
+
+400        One or more parts of this order are still pend
+
+400        The order you entered is not valid at this tim
+
+400        Unexpected error.
+
+400        Requested Tier Level is below minimum tier
+
+400        Reason required for this transaction.
+
+400        VMS User ID must be specified.
+
+400        Type Code must be specified.
+
+400        Subscription request rejected; customer is a
+
+400        Invalid Allow Flag specified.
+
+400        Invalid DET 6040 Flag specified.
+
+400        Invalid Type Code specified.
+
+400        Invalid Minimum Tier Level specified.
+
+400        Invalid Professional Flag specified.
+
+400        Invalid Professional Signed Agreement Flag
+
+400        A change or cancel request cannot be made
+
+400        You may not place a Sell Short, Market on Cl
+
+400        Employee Online Trading Disclosure needed
+
+400        We accept only Good For Day orders for this
+
+400        We accept only Buy/Sell for this security in y
+
+400        Invalid gateway. Please place your trade via t
+
+400        The security for which you have placed an o
+
+400        The security for which you are adjusting you
+
+400        You may not place or modify this order at th
+
+400        Important: Orders in excess of $1,000,000,0
+
+400        Account number does not exist.
+
+400        Please check on all the disclosure check box
+
+400        This order cannot be accepted because for R
+
+400        Please enter a valid Show Quantity for Reser
+Status Code Reason
+
+400        This order cannot be accepted because a Re
+
+400        This order cannot be accepted because the
+
+400        This order cannot be accepted because a Re
+
+400        This order cannot be accepted because only
+
+400        This order cannot be accepted because a Re
+
+400        This order cannot be accepted because a Re
+
+400        Please enter valid input for symbol.
+
+400        Your order could not be placed as entered, a
+
+400        Your order could not be placed as entered, a
+
+400        Please enter a valid country code for symbo
+
+400        Limit orders placed when the Hong Kong ma
+
+400        Limit orders placed during the Hong Kong m
+
+400        Limit orders placed during the Hong Kong m
+
+400        Your order cannot be processed due to Com
+
+400        Your order could not be processed at this tim
+
+400        Buy-to-open options market orders are subje
+
+400        We cannot accept this order because of insu
+
+400        We cannot accept this order because the ne
+
+400        Orders with fractional quantities exceeding t
+
+400        This trade cannot be completed online. Our
+
+400        Your account has been restricted to placing
+
+400        We did not find enough available shares of t
+
+400        IMPORTANT: This trade may trigger the short
+
+400        Your order could not be processed as submi
+
+400        Please select a Security Type.
+
+400        The term you have specified for this order is
+
+400        Please select valid order type.
+
+400        Please select valid price type.
+Status Code Reason
+
+400        INVALID_COMBINATION_ORDER.
+
+400        Trigger When Presentable option is only elig
+
+400        Please select a valid order type.
+
+400        Please enter valid number of shares in quant
+
+400        Please enter valid number of contracts in qu
+
+400        The option symbol you entered does not app
+
+400        The symbol you entered does not appear to
+
+400        The symbol you entered does not appear to
+
+400        The price you specified for this order is inval
+
+400        Please select valid reason to waive broker as
+
+400        All-or-None is not a valid qualifier for a quant
+
+400        The term you specified for this order is invali
+
+400        All-or-None is not a valid qualifier for this ord
+
+400        The price you specified for this order is inval
+
+400        Please select valid condition.
+
+400        Please select valid price qualifier.
+
+400        The value you have specified for this Conting
+
+400        INVALID_COND_SECURITY_TYPE.
+
+400        You must enter equity symbol for the condit
+
+400        You must enter option symbol for the condit
+
+400        Selected price qualifier is not supported for
+
+400        There must be two or more orders in this gro
+
+400        One-Triggers-All orders must have a trigger o
+
+400        You must enter all orders in an One-Triggers
+
+400        This order is invalid because two or more pa
+
+400        Dates must be in the format MM/DD/YYYY.
+
+400        Future dates cannot be accepted.
+
+400        You cannot place Bracketed orders on optio
+Status Code Reason
+
+400        The term you specified for this order is invali
+
+400        The term you specified for this order is invali
+
+400        OTA_HAS_SAME_SIDE_ORDERS.
+
+400        This order is invalid because two or more pa
+
+400        This account has not accepted the Advance
+
+400        You did not specify a upper/lower trigger va
+
+400        You did not specify a upper/lower stop value
+
+400        The upper/lower trigger value you have spec
+
+400        The upper/lower stop value you have specifi
+
+400        Valid Date required if "Do not send to market
+
+400        Branch Seq. no. required if "Do not send to m
+
+400        Branch Seq. no. and order date required if "D
+
+400        Enter valid Limit Price.
+
+400        Select valid country from drop-down.
+
+400        Please enter the reason for this request.
+
+400        Security Symbol not found.
+
+400        Please enter a valid Qty Ordered.
+
+400        Please enter a valid Commission amount. Th
+
+400        Please enter a valid Fees amount. The value
+
+400        Branch/Sequence Number must be 6 charac
+
+400        Please enter a valid Qty Filled.
+
+400        Please select either 'Buy' or 'Sell' in the 'Actio
+
+400        System Error. Invalid country code selection
+
+400        System Error. Invalid currency selection. Plea
+
+400        Symbol not found for selected country or SE
+
+400        SEDOL and Symbol selected refer to differen
+
+400        Currency selection is not valid for the select
+
+400        The fill quantity cannot be greater than the u
+Status Code Reason
+
+400        Unable to send the order correction request
+
+400        Unable to send the execute order request.
+
+400        Unable to send the cancel order request.
+
+400        Unable to send the reverse order request.
+
+400        Please select a valid market session type.
+
+400        Special Notice: This is an actively managed a
+
+400        Special Notice: Trading in your Advised Inve
+
+400        Special Notice: Invalid Buy price range.
+
+400        Special Notice: Invalid Sell price range.
+
+400        Special Notice:Invalid Limit price.
+
+400        Special Notice:Invalid Stop price.
+
+400        The combination you entered is not one of t
+
+400        Special Notice:Invalid underlier.
+
+400        Special Notice:Invalid save allocation.
+
+400        All-or-None is not a valid qualifier for this ord
+
+400        This order cannot be accepted because a Re
+
+400        This order cannot be accepted because only
+
+400        This order cannot be accepted because for R
+
+400        Please enter a valid Show Quantity for Reser
+
+400        Minimum eligible Quantity for Reserve Orde
+
+400        Please check Reserve order box to place a re
+
+400        To complete your order, please select an Op
+
+400        To complete your order, please select an Op
+
+400        To complete your order, please select a Strik
+
+400        Our system is not able to find account detail
+
+400        Your session has expired. Please reenter ord
+
+400        Disclosure has not been signed.
+
+400        Extended hours disclosure has been signed.
+Status Code Reason
+
+400        This account has accepted the Advanced O
+
+400        You may not place or modify this order at th
+
+400        Please obtain supervisor approval before sub
+
+400        Invalid exercise Quantity. Please enter a valid
+
+400        We cannot accept this order because there a
+
+400        You have entered an invalid number of contr
+
+400        You cannot place this order because you hav
+
+400        The Symbol and Security Type are not consi
+
+400        No symbol has been entered. Please enter a
+
+400        No records found.
+
+400        Not able to update now, please try again late
+
+400        Account does not have sufficient buying pow
+
+400        Account does not have sufficient holdings in
+
+400        Account has no existing position in this mutu
+
+400        The total reallocated amount must equal the
+
+400        The spread order you entered is invalid. Plea
+
+400        This account is not approved for options trad
+
+400        For sandbox testing - order number is incons
+
+400        Order number is either missing or invalid. Ple
+
+400        Order number is either missing or invalid. Ple
+
+400        This order cannot be changed using this app
+
+400        You currently do not have any open orders in
+
+400        Please enter valid input for MarketSession.
+
+400        Invalid account specified for the user.
+
+400        Please enter valid input for securityType.
+
+400        Please enter valid input for status.
+
+400        Please enter valid input for transactionType.
+
+400        Invalid Leg details. First leg should be Equity
+Status Code Reason
+
+400        Quantity cannot be changed for Buy Write/S
+
+400        Invalid Leg details for MF Exchange. First leg
+
+400        Duplicate Client ID.
+
+400        Invalid strike price specified.
+
+400        Invalid expiration year specified.
+
+400        Too many requests sent at the same time.
+
+400        Invalid expiration date. Please check the inp
+
+400        Invalid All Or None specified.
+
+400        Invalid Reserve order specified.
+
+400        Order with the specified order number does
+
+400        There are no open orders and no orders wer
+
+404        Resource not found.
+
+500        The service you requested is not available at
+
+500        The service you requested is not available at
+
+500        Information not available.
+
+500        The service you requested is not available at
+
+500        The service you requested is not available at
+
+500        The service you requested is not available at
+
+500        Orders are temporarily unavailable. Please tr
+
+
+
+Mutual Fund Error Codeslink
+Status Code Reason
+
+200        This order will be priced as of close today.
+
+200        This order will be priced as of the close of ne
+
+200        This account has one or more open orders to
+
+200        Important: {0} has a cut-off time of {1} ET. Or
+
+200        Your transaction fee is waived for this order.
+
+200        You have elected to sell from both your cash
+Status Code Reason
+
+200        You have elected to exchange from both you
+
+200        You are about to place an order on a security
+
+200        Because these securities were purchased wi
+
+204        Data not found.
+
+400        Bad clearance code received.
+
+400        You did not specify an order type. Please fill
+
+400        The OrderAction you specified is invalid.
+
+400        The price type you specified for this order is
+
+400        The term you specified for this order is invali
+
+400        There are no mutual funds that matched you
+
+400        The dollar amount entered is invalid. Please
+
+400        The dollar amount entered is invalid. Please
+
+400        You have entered an invalid number of contr
+
+400        You have entered an invalid number of share
+
+400        Please specify a price to complete your orde
+
+400        Please specify an order type: Buy Open, Sell
+
+400        Please specify an order type: Buy, Sell, Sell S
+
+400        Please specify a quantity type.
+
+400        Please enter a valid security type.
+
+400        Please enter valid security type.
+
+400        Extended Hours Disclosure not signed.
+
+400        Advanced Order Disclosure not signed.
+
+400        To complete your order, please enter a stock
+
+400        Our system does not recognize this symbol.
+
+400        Our system does not recognize this symbol.
+
+400        You have entered the symbol of an index, no
+
+400        Our system does not recognize this symbol.
+
+400        Our system does not recognize this symbol.
+Status Code Reason
+
+400        You have entered an invalid number of share
+
+400        Short sales in even lots.
+
+400        Invalid number of contracts. Use your web b
+
+400        Account maxed at 500 shares/10% volume.
+
+400        Please reenter your figure without using a do
+
+400        Please use numbers for price.
+
+400        Odd lots must be market price.
+
+400        Price not within 20% of market. Please check
+
+400        This stock cannot be sold short as its curren
+
+400        No price available.
+
+400        The fraction you entered in the Price field is
+
+400        The price you entered is invalid. Please ente
+
+400        This stop order cannot be processed. Either
+
+400        Incorrect password.
+
+400        We cannot accept this order because there a
+
+400        Too few contracts in account.
+
+400        You cannot change this order because it is e
+
+400        Bad characters in fields.
+
+400        No Transaction selected. Please select Buy O
+
+400        This is a duplicate order.
+
+400        Please specify which lots are to be sold. Tax
+
+400        Terminator field invalid.
+
+400        Please verify lots to be sold. Lots must be eq
+
+400        All-or-None orders are allowed only on order
+
+400        For your protection, we have timed out your
+
+400        Day orders for the next trading session cann
+
+400        Market orders must be placed as day orders
+
+400        Your account has been restricted to placing
+Status Code Reason
+
+400        Please check the number of shares you have
+
+400        Please check the number of shares you have
+
+400        You have entered a number that exceeds the
+
+400        Your sell short order cannot be processed. E
+
+400        Your sell short order cannot be processed. S
+
+400        The security you have placed order for is on
+
+400        Please specify an order type: Buy, Sell, Sell S
+
+400        Bulletin Board securities carry additional risk
+
+400        We are currently processing your previous re
+
+400        Price format changed.
+
+400        E*TRADE allows only limit buy orders on Bull
+
+400        Not allowed for ABWT.
+
+400        Extended hours orders must be limit orders.
+
+400        Extended hours cannot be placed as All-or-N
+
+400        Extended hours orders cannot be placed in o
+
+400        Cannot place order - market closed.
+
+400        Symbol is invalid for ETGC.
+
+400        Order must be cancelled and reentered.
+
+400        Invalid GTD.
+
+400        Duplicate ETGC order.
+
+400        Bad clearance code received.
+
+400        This account is approved for covered call wr
+
+400        Please specify the term for this order: GTC o
+
+400        To complete your order, please enter the nu
+
+400        We have selected offsetting lot(s) based on y
+
+400        We have selected offsetting lot(s) based on y
+
+400        We have selected offsetting lot(s) based on y
+
+400        We have selected offsetting lot(s) based on y
+Status Code Reason
+
+400        Your Account Preferences indicate that you
+
+400        Your Account Preferences indicate that you
+
+400        Your Account Preferences indicate that you
+
+400        Average Cost methodology to determine yo
+
+400        Average Cost methodology to determine yo
+
+400        This order to purchase securities, if accepted
+
+400        Because these securities were purchased wi
+
+400        Please specify an order type: Buy, Sell, Sell S
+
+400        All-or-None orders cannot be placed at mark
+
+400        This security is not trading yet in normal sess
+
+400        Only Listed, Nasdaq NMS, Small Cap, and OT
+
+400        Please specify a price type: Market, Limit, St
+
+400        Since you have selected a market order, plea
+
+400        The stop limit price you have specified is inv
+
+400        Please specify a stop limit price to complete
+
+400        A price for this security is temporarily unava
+
+400        The stop limit price must be at least 10 cents
+
+400        The stop limit price must be at least 10 cents
+
+400        Only limit orders are accepted for stocks tra
+
+400        Extended Hours orders must be day orders.
+
+400        Extended Hours orders must be place betwe
+
+400        Please check the symbol you have entered f
+
+400        We cannot accept a Buy to Cover order as yo
+
+400        Your buy order must execute before we can
+
+400        We cannot accept a Buy to Cover order as yo
+
+400        We cannot accept this order at this time bec
+
+400        The account you selected does not match th
+
+400        For the first seven business days after using
+Status Code Reason
+
+400        This routing destination is not currently open
+
+400        This account is restricted from trading, so yo
+
+400        We cannot accept this change request right
+
+400        We cannot accept your cancel or change req
+
+400        Orders for this security cannot be accepted
+
+400        Opening orders for this security cannot be a
+
+400        Closing orders for this security cannot be ac
+
+400        Your order cannot be accepted at this time.
+
+400        Your order cannot be accepted at this time.
+
+400        Account is invalid.
+
+400        Acct xref not found.
+
+400        Your change order cannot be accepted at th
+
+400        Open start date is invalid.
+
+400        Open end date is invalid.
+
+400        Other start date is invalid.
+
+400        Other end date is invalid.
+
+400        Security type is invalid.
+
+400        This symbol is not recognized. Please make s
+
+400        Order RFA is invalid.
+
+400        Trade history RFA is invalid.
+
+400        Request type is invalid.
+
+400        Account is restricted or disabled.
+
+400        Account compliance check failed.
+
+400        Invalid password. Please reenter your trading
+
+400        Trading is halted on this security.
+
+400        Trading in this security is restricted.
+
+400        Your market order cannot be processed at th
+
+400        This does not appear to be a valid option sym
+Status Code Reason
+
+400        Symbol error: Option symbol has expired.
+
+400        Order term or type is invalid.
+
+400        Order side or position effect is invalid.
+
+400        Please specify an order type: Buy Open, Sell
+
+400        RFA is invalid.
+
+400        Stop orders for this security are not currently
+
+400        Invalid order term.
+
+400        This account is not approved for options trad
+
+400        You have entered an invalid number of contr
+
+400        This stop order cannot be processed becaus
+
+400        The number of shares per contract does not
+
+400        The ratio of contracts you entered for this or
+
+400        Order key and RFA are missing.
+
+400        We cannot accept option orders for more th
+
+400        Please call Customer Service at 1-800-786-2
+
+400        The underlying security for the option symbo
+
+400        Invalid number of shares. Shares must be pla
+
+400        Multi-leg stop/stoplimit not allowed.
+
+400        Bulletin board does not allow stop orders.
+
+400        Limit too close to market price.
+
+400        Price invalid for this symbol (probably MPV).
+
+400        Too late to change order.
+
+400        Routing info invalid (origsys, routsys, destmk
+
+400        Leg count not invalid.
+
+400        Bad parameter.
+
+400        Position record not found.
+
+400        The number of shares per contract does not
+
+400        Legs have the same symbol.
+Status Code Reason
+
+400        Invalid debit/credit value.
+
+400        This account is approved for Level 1 option t
+
+400        The underlying security for both option sym
+
+400        Complex option orders with stock/option co
+
+400        Please reenter your order by placing the buy
+
+400        The trailing parameter you have specified is
+
+400        Please select either points or percent for the
+
+400        Please select an advanced order type.
+
+400        The limit price you have specified is invalid.
+
+400        The stop price you have specified is invalid.
+
+400        Trailing stops can be adjusted only against t
+
+400        The stop price must be at least 10 cents belo
+
+400        The stop price must be at least 10 cents abo
+
+400        Advanced orders cannot be placed as all-or-
+
+400        To be eligible for advanced orders, a stock m
+
+400        A regular stock order cannot be changed to
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Orders to sell short must be placed as day o
+
+400        Non-equity, bulletin board, OTC, and specific
+
+400        The limit price must be above the current bid
+
+400        The limit price must be below the current as
+
+400        To complete your order, please specify a lim
+
+400        To complete your order, please specify a sto
+
+400        Advanced orders cannot be accepted at this
+
+400        The stop price must be at least 10 cents belo
+Status Code Reason
+
+400        The stop price must be at least 10 cents abo
+
+400        This security is not eligible for new advanced
+
+400        The percentage must be greater than 0 and
+
+400        Your order could not be processed as submi
+
+400        To complete your order, please specify a sto
+
+400        To complete your order, please specify the n
+
+400        To complete your order, please specify the o
+
+400        This account is only approved for Level 1 opt
+
+400        Please note that this option contract does no
+
+400        Please check the number of contracts you h
+
+400        You are not short the option. Please adjust th
+
+400        Your order results in a position that is not ap
+
+400        Your order results in a position that is not ap
+
+400        This order results in a position that requires L
+
+400        This option has expired.
+
+400        We cannot accept this order because there a
+
+400        We cannot accept this order until your sell o
+
+400        We cannot accept this order because your M
+
+400        Placing spread orders requires minimum equ
+
+400        A minimum of $25,000 in equity is required
+
+400        This order results in a position that requires L
+
+400        Trading on the underlying security has been
+
+400        Please specify a price type: Market, Net Deb
+
+400        Since you have selected a market order, plea
+
+400        Please reenter your figure without using any
+
+400        Your market order cannot be processed at th
+
+400        You may enter the order as it is a net debit, n
+
+400        The ratio of contracts you entered for this or
+Status Code Reason
+
+400        The ratio of contracts for this order is not on
+
+400        The ratio of shares to contracts for this orde
+
+400        GTC orders on stop/stop limits are not perm
+
+400        To place Level 4 trades, you must have equit
+
+400        We cannot process your request at this time
+
+400        Special Attention Required! Trading in your A
+
+400        Special Attention Required! This is an activel
+
+400        You cannot exercise out of money options.
+
+400        A failure not listed above.
+
+400        No open stock orders.
+
+400        No default account.
+
+400        This account is not approved for trading. Ple
+
+400        Please enter a valid mutual fund symbol in th
+
+400        The mutual fund symbol you have entered is
+
+400        The mutual fund symbol you have entered is
+
+400        The mutual fund symbol you have entered is
+
+400        The mutual fund symbol you have entered is
+
+400        Do not enter more than three decimal places
+
+400        Your order is too large for web entry. Please
+
+400        Please reenter your figure without using any
+
+400        A quote is not currently available for (type in
+
+400        Your buy order cannot be accepted due to in
+
+400        The mutual fund symbol you have entered is
+
+400        This order has already been submitted. Pleas
+
+400        For your protection, we have timed out your
+
+400        Your account is limited to sell orders only.
+
+400        There are insufficient shares in the account t
+
+400        Your sell or exchange order cannot be accep
+Status Code Reason
+
+400        This position is not currently held in your po
+
+400        Trading on this security has been halted. Ple
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        You did not enter a symbol. Please try again.
+
+400        The mutual fund symbol you have entered is
+
+400        The mutual fund symbol you have entered is
+
+400        The service you requested is not available at
+
+400        Your buy order cannot be accepted due to in
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        This order has already been cancelled. Pleas
+
+400        It is too late to cancel this order.
+
+400        The service you requested is not available at
+
+400        Please enter a valid order type to complete y
+
+400        Please enter a valid symbol to complete you
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        Please reenter your order.
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+Status Code Reason
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        You may have rounded your shares. Please c
+
+400        The service you requested is not available at
+
+400        Please enter valid dividend instructions to co
+
+400        We cannot accept this order because there a
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        There may have been an error in submitting
+
+400        You are about to sell fund shares that will res
+
+400        Certain funds held for 90 days or less are su
+
+400        Your request to cancel the order has been re
+
+400        This fund has a fund imposed redemption fe
+
+400        A failure not listed above.
+
+400        The service you requested is not available at
+
+400        This order has been sent to the market cente
+
+400        Late in execute/reject status.
+
+400        It isn't necessary to cancel this order since a
+
+400        We cannot accept your current request to ca
+
+400        This account is not approved for trading. Ple
+
+400        This order is not open (or partially open) and
+
+400        Account invalid.
+
+400        Bad type.
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+
+400        Your order could not be processed as submi
+Status Code Reason
+
+400        Your order was cancelled due to a stock spli
+
+400        There are no mutual funds that matched you
+
+400        Funds can only be exchanged within the sam
+
+400        If you do not see the mutual fund you wish t
+
+400        Select one of the Amount to Sell options.
+
+400        Enter the quantity, based on the Amount to S
+
+400        Please select the Fund to Buy.
+
+400        Please select the Fund to Sell.
+
+400        Please select the Reinvestment Option.
+
+400        Invalid order quantity. Please enter a quantit
+
+400        Invalid order amount. Please enter an amoun
+
+400        A failure not listed above.
+
+400        The service you requested is not available at
+
+400        Your account is currently disabled. For assist
+
+400        No default account.
+
+400        Your order could not be processed as submi
+
+400        Negative equity percent.
+
+400        No cash or securities held in account.
+
+400        Account has no equity.
+
+400        Information not available.
+
+400        A failure not listed above.
+
+400        The service you requested is not available at
+
+400        Invalid order date.
+
+400        Realtime BETA notification failed.
+
+400        Disbursement type invalid.
+
+400        Customer account not valid.
+
+400        Inventory account not valid.
+
+400        Security symbol is unknown.
+Status Code Reason
+
+400        Service not yet implemented.
+
+400        Buy/sell code invalid.
+
+400        Customer account not found.
+
+400        Customer account not found.
+
+400        Customer account not on this cluster.
+
+400        Inventory account not on this cluster.
+
+400        Inventory account position update failed.
+
+400        Inventory account order not found.
+
+400        Inventory account order detail mismatch.
+
+400        Customer account order placement failed.
+
+400        Customer account trade history update faile
+
+400        Your order could not be processed as submi
+
+400        Transaction not allowed for professional trad
+
+400        VMS User ID does not exist.
+
+400        VMS User account has been deactivated.
+
+400        A trailing stop sell order is not allowed on an
+
+400        The value you have specified for this Conting
+
+400        Invalid or Missing Tier Level.
+
+400        This order is invalid because two or more pa
+
+400        Active Trader not on file - UPDATE not allowe
+
+400        'Changed By' Initials required.
+
+400        Unexpected error.
+
+400        Requested Tier Level is below minimum tier
+
+400        Reason required for this transaction.
+
+400        VMS User ID must be specified.
+
+400        Type Code must be specified.
+
+400        Subscription request rejected; customer is a
+
+400        Invalid Allow Flag specified.
+Status Code Reason
+
+400        Invalid DET 6040 Flag specified.
+
+400        Invalid Type Code specified.
+
+400        Invalid Minimum Tier Level specified.
+
+400        Invalid Professional Flag specified.
+
+400        Invalid Professional Signed Agreement Flag
+
+400        The security for which you have placed an o
+
+400        Waive Fee Reason required.
+
+400        Please don't enter the Date if you do not sele
+
+400        Please enter a valid Date if you select Do not
+
+400        Only Limit orders can be routed to BRUT.
+
+400        Only Limit and Market orders can be routed
+
+400        GTC will not be available for this selected ma
+
+400        Shares of no-load, no-transaction-fee funds
+
+400        Your order could not be processed as submi
+
+400        The service you requested is not available at
+
+400        This order has questionable content and can
+
+400        You have entered an incorrect trading passw
+
+400        Your order has questionable content and ca
+
+400        We cannot verify you are allowed to trade on
+
+400        You are not allowed to trade on this account
+
+400        This order is not currently open or deferred a
+
+400        This order is not currently open or deferred a
+
+400        You cannot modify this order because a can
+
+400        You cannot modify this order because we ca
+
+400        You cannot modify this order because a mod
+
+400        You cannot modify this order because we ca
+
+400        You have entered an invalid share quantity. P
+
+400        You have entered an invalid limit price. Pleas
+Status Code Reason
+
+400        You have entered an order with a high total c
+
+400        Your buy order cannot be accepted due to in
+
+400        There are insufficient shares in the account t
+
+400        Unable to create order. Possibly because you
+
+400        E*TRADE does not offer this fund online. To v
+
+400        E*TRADE does not offer this fund online. To v
+
+400        The fund you've selected is closed to new in
+
+400        E*TRADE does not offer this fund online. To v
+
+400        This fund cannot be sold to a resident of the
+
+400        The amount you indicated doesn't satisfy the
+
+400        You must choose a fund in the same fund fa
+
+400        The fund you've selected does not permit ex
+
+400        You've entered an incorrect amount for you
+
+400        You must enter a valid mutual fund symbol.
+
+400        The fund you selected does not allow a 'Sell
+
+400        The fund you selected does not allow orders
+
+400        The fund you selected does not allow orders
+
+400        Account type not able to purchase retail mo
+
+400        Account type not able to purchase institutio
+
+400        Call Customer Service to check money mark
+
+400        Before we can complete your order, we mus
+
+400        This order to purchase securities, if accepted
+
+400        This fund has a fund imposed redemption fe
+
+400        The ClientOrderId is missing/invalid. Please
+
+400        Invalid Leg details for MF Exchange. First leg
+
+400        Duplicate Client ID.
+
+400        The service you requested is not available at
+
+400        You must complete or cancel your order bef
+Status Code Reason
+
+400        You do not own any mutual funds to sell or e
+
+400        Please return to the MutualFund Center.
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The fund you selected is not available throug
+
+400        You did not enter a symbol. Please try again.
+
+400        The fund you selected is not available throug
+
+400        The symbol you entered has too many chara
+
+400        Unable to validate symbol.
+
+400        We apologize for the inconvenience, but the
+
+400        The service you requested is not available at
+
+400        Service to retrieve selling mutualfund name
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        The service you requested is not available at
+
+400        Unable to create order. Possibly because you
+
+400        You did not enter a trading password. Please
+
+400        You did not enter a valid trading password. P
+
+400        The service you requested is not available at
+
+400        This order is being processed and can no lon
+
+400        Text for "dollars" must be deleted if not selec
+
+400        Text for "shares" must be deleted if not selec
+
+400        Text for "dollars, but no fractional shares" mu
+
+400        In order to purchase this fund, you must con
+
+400        In order to purchase this fund, please view t
+       Status Code Reason
+
+       400           You did not enter a dollar amount. Please try
+
+       400           Do not enter more than 2 decimal places or
+
+       400           Do not enter more than 3 decimal places or
+
+       400           You entered a very high dollar amount. Pleas
+
+       400           You did not enter a dollar amount. Please try
+
+       400           Do not enter more than 2 decimal places or
+
+       400           You entered a very high dollar amount. Pleas
+
+       400           You did not specify the quantity of shares. P
+
+       400           Do not enter more than 3 decimal places or
+
+       400           Do not enter any decimal places or use any i
+
+       400           You entered a very high dollar amount. Pleas
+
+       400           Invalid date entered. Please try again.
+
+       400           Future dates are not allowed. Please try agai
+
+       400           The requested mutual fund order is no longe
+
+       400           Your order could not be processed as submi
+
+       400           This fund participates in the no-load, no-tran
+
+       400           There are no mutual funds in the same fund
+
+       400           Front Load Consent not shown.
+
+       400           Exchange Only Consent not shown.
+
+       404           Resource not found.
+
+       500           The service you requested is not available at
+
+
+
+
+PLEASE READ THE IMPORTANT DISCLOSURES BELOW.
+
+
+By using E*TRADE API ('API') and accepting the terms of the Application Programming Interface License
+Agreement and the Application Programming Interface User Agreement, you agree that API may employ
+security policies, procedures and systems of Third Party providers which may or may not be less stringent and
+secure than the policies, procedures and systems of E*TRADE Securities LLC ('E*TRADE') or its affiliates.
+Material provided on API may have been produced by independent third parties not affiliated or endorsed by
+E*TRADE or its affiliates ('Third Party'). To the extent that API or Third Party providers express opinions or make
+recommendations, you understand that such opinions or recommendations are expressed by the Third Party
+provider and are not the opinions or recommendations of E*TRADE or its affiliates. E*TRADE is not responsible
+for the accuracy of market data displayed on API or made available by Third Party providers. There may be
+latency between the time an order (or other information) is submitted from API and the time the order is
+received by E*TRADE. The E*TRADE Two Second Execution Guarantee or any similar guarantee does not apply
+for orders placed through API and Third Party provider web sites. The E*TRADE CompleteTM Protection
+Guarantee does not apply. Orders created and submitted through API are not vetted until they are received by
+E*TRADE. It is possible that E*TRADE may reject an order placed through API. Please see the Application
+Programming Interface License Agreement and the Application Programming Interface User Agreement for
+more information.
+
+Banking products and services are provided by Morgan Stanley Private Bank, National Association,
+Member FDIC.
+
+Securities products offered by E*TRADE Securities LLC (ETS), Member SIPC or Morgan Stanley Smith Barney
+LLC (MSSB), Member SIPC. Investment advisory services offered by E*TRADE Capital Management, LLC
+(ETCM) or MSSB. Commodity futures and options on futures products and services offered by E*TRADE
+Futures LLC, Member NFA. Stock plan administration solutions and services offered by E*TRADE Financial
+Corporate Services, Inc. Banking products and services are provided by Morgan Stanley Private Bank, National
+Association, Member FDIC. All entities are separate but affiliated subsidiaries of Morgan Stanley.
+
+Throughout 2023, ETS and ETCM will be transitioning existing clients to MSSB. Learn more about this
+transition.
+
+System response and account access times may vary due to a variety of factors, including trading volumes,
+market conditions, system performance, and other factors.
+
+Statement of Financial Condition | About Asset Protection | Account Agreements and Disclosures |
+Quarterly 606 Report | Business Resiliency Plan | Your Privacy Choices
+
+©2025 E*TRADE from Morgan Stanley. All rights reserved. E*TRADE Copyright Policy
+

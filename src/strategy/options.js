@@ -102,6 +102,8 @@ const OPTION_CONFIG = {
   TSLA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.012 },
   GOOGL: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.008 },
   NVDA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
+  CVNA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.015 },
+  HOOD: { multiplier: 100, strikeIncrement: 0.5, supports0DTE: false, defaultOTMPct: 0.02, fallbackExpiryType: 'weekly' },
 };
 
 function describeExpiryType(type) {
@@ -300,4 +302,3 @@ module.exports = {
   pickContract,
   buildSuggestion,
 };
-

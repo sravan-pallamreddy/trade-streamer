@@ -40,6 +40,27 @@
             font-size: 0.7rem;
             letter-spacing: 0.08em;
         }
+        .tracked-floating-panel {
+            position: fixed;
+            left: 1.5rem;
+            bottom: 1.5rem;
+            width: 320px;
+            max-height: 70vh;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .tracked-floating-panel.hidden {
+            display: none;
+        }
+        .tracked-floating-toggle {
+            position: fixed;
+            left: 1.5rem;
+            bottom: 1.5rem;
+            z-index: 40;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -51,9 +72,13 @@
                     <img src="/logo.svg" alt="Trade Streamer" class="h-10 w-auto sm:h-12">
                 </div>
                 <div class="flex items-start gap-3">
-                    <div class="text-right">
-                        <div id="headerBalance" class="text-2xl font-bold text-green-600">$****</div>
-                        <div class="text-sm text-gray-500">Account Balance</div>
+                    <div class="text-right space-y-1">
+                        <div>
+                            <div id="headerBalance" class="text-2xl font-bold text-green-600">$****</div>
+                            <div class="text-sm text-gray-500">Account Balance</div>
+                        </div>
+                        <div id="headerAvailableCash" class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Available Cash: $****</div>
+                        <div id="headerCashWithdraw" class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Cash To Withdraw: $****</div>
                     </div>
                     <button id="toggleSensitiveBtn" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-2 bg-white" type="button">
                         <i id="toggleSensitiveIcon" data-lucide="eye-off" class="w-4 h-4"></i>
@@ -137,26 +162,6 @@
                         </div>
                     </div>
                 </div>
-                <div id="trackedIdeasPanel" class="bg-white rounded-xl shadow-md border border-slate-100 p-5 space-y-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="bookmark" class="w-4 h-4 text-amber-500"></i>
-                                Tracked Ideas
-                            </h2>
-                            <p class="text-xs text-slate-500">Pin options to monitor buy / wait / ignore cues.</p>
-                        </div>
-                        <button id="clearTrackedIdeasBtn" type="button" class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 transition" aria-label="Clear tracked ideas" disabled>
-                            Clear
-                        </button>
-                    </div>
-                    <div id="trackedIdeasEmpty" class="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-4 flex gap-2">
-                        <i data-lucide="bookmark-plus" class="w-4 h-4 text-slate-400"></i>
-                        <span>Tap “Track Idea” on any card to pin it here.</span>
-                    </div>
-                    <div id="trackedIdeasList" class="space-y-3"></div>
-                    <div id="trackedIdeasStatus" class="text-[11px] uppercase tracking-wide text-slate-400"></div>
-                </div>
             </aside>
 
             <main class="space-y-6">
@@ -202,6 +207,36 @@
         </div>
     </div>
 
+    <div id="trackedIdeasFloating" class="tracked-floating-panel bg-white rounded-xl border border-slate-100 p-5 space-y-4">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="bookmark" class="w-4 h-4 text-amber-500"></i>
+                    Tracked Ideas
+                </h2>
+                <p class="text-xs text-slate-500">Pin options and monitor buy / wait / ignore cues.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="collapseTrackedIdeasBtn" type="button" class="inline-flex items-center justify-center text-xs font-semibold text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-2 py-1 bg-white" aria-label="Collapse tracked ideas">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                <button id="clearTrackedIdeasBtn" type="button" class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 transition" aria-label="Clear tracked ideas" disabled>
+                    Clear
+                </button>
+            </div>
+        </div>
+        <div id="trackedIdeasEmpty" class="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-4 flex gap-2">
+            <i data-lucide="bookmark-plus" class="w-4 h-4 text-slate-400"></i>
+            <span>Tap "Track Idea" on any card to pin it here.</span>
+        </div>
+        <div id="trackedIdeasList" class="space-y-3"></div>
+        <div id="trackedIdeasStatus" class="text-[11px] uppercase tracking-wide text-slate-400"></div>
+    </div>
+
+    <button id="trackedIdeasToggleBtn" type="button" class="tracked-floating-toggle hidden bg-white text-slate-700 text-xs font-semibold uppercase tracking-wide rounded-full px-4 py-2">
+        Show Tracked Ideas
+    </button>
+
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
@@ -227,6 +262,8 @@
     const toggleScanPanelLabel = document.getElementById('toggleScanPanelLabel');
     const scanPanelBody = document.getElementById('scanPanelBody');
         const headerBalance = document.getElementById('headerBalance');
+        const headerAvailableCash = document.getElementById('headerAvailableCash');
+        const headerCashWithdraw = document.getElementById('headerCashWithdraw');
         const toggleSensitiveBtn = document.getElementById('toggleSensitiveBtn');
         const refreshPortfolioBtn = document.getElementById('refreshPortfolioBtn');
         const portfolioStatus = document.getElementById('portfolioStatus');
@@ -235,11 +272,13 @@
     const symbolsStatus = document.getElementById('symbolsStatus');
     const strategySelect = document.getElementById('strategySelect');
     const strategyStatus = document.getElementById('strategyStatus');
-    const trackedIdeasPanel = document.getElementById('trackedIdeasPanel');
+    const trackedIdeasPanel = document.getElementById('trackedIdeasFloating');
     const trackedIdeasList = document.getElementById('trackedIdeasList');
     const trackedIdeasEmpty = document.getElementById('trackedIdeasEmpty');
     const trackedIdeasStatus = document.getElementById('trackedIdeasStatus');
     const clearTrackedIdeasBtn = document.getElementById('clearTrackedIdeasBtn');
+    const collapseTrackedIdeasBtn = document.getElementById('collapseTrackedIdeasBtn');
+    const trackedIdeasToggleBtn = document.getElementById('trackedIdeasToggleBtn');
     const recommendationSummary = document.getElementById('recommendationSummary');
     const scanInsights = document.getElementById('scanInsights');
 
@@ -263,6 +302,18 @@
     const TRACKED_STORAGE_KEY = 'trade_streamer_tracked_ideas_v1';
     const TRACKED_IDEA_LIMIT = 8;
     let trackedIdeas = [];
+    let trackedPanelCollapsed = false;
+    const autoExitDefaults = {
+        enabled: false,
+        takeProfitPct: 40,
+        stopLossPct: -35,
+        scalePct: 0.5,
+        minContracts: 1,
+        cooldownMs: 300000,
+    };
+    const autoExitState = { ...autoExitDefaults };
+    const autoExitCooldowns = new Map();
+    const autoExitPending = new Set();
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -302,6 +353,25 @@
                 if (a[i] !== b[i]) return false;
             }
             return true;
+        }
+
+        function setTrackedPanelCollapsed(collapsed) {
+            trackedPanelCollapsed = !!collapsed;
+            if (!trackedIdeasPanel || !trackedIdeasToggleBtn) return;
+            if (trackedPanelCollapsed) {
+                trackedIdeasPanel.classList.add('hidden');
+                trackedIdeasToggleBtn.classList.remove('hidden');
+            } else {
+                trackedIdeasPanel.classList.remove('hidden');
+                trackedIdeasToggleBtn.classList.add('hidden');
+            }
+            if (collapseTrackedIdeasBtn) {
+                const icon = collapseTrackedIdeasBtn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', trackedPanelCollapsed ? 'chevron-up' : 'chevron-down');
+                }
+            }
+            lucide.createIcons();
         }
 
         function normalizeDecision(value) {
@@ -475,6 +545,122 @@
 
         trackedIdeas = loadTrackedIdeasFromStorage();
         renderTrackedIdeas();
+        setTrackedPanelCollapsed(false);
+
+        function getOptionSymbolFromPosition(position) {
+            if (!position) return null;
+            return position.optionSymbol || position.symbol || null;
+        }
+
+        function getAutoExitKey(position) {
+            const baseSymbol = getOptionSymbolFromPosition(position) || 'UNKNOWN';
+            const positionId = position?.positionId || '';
+            return `${baseSymbol}|${positionId}`;
+        }
+
+        async function submitAutoExitOrder({ position, quantity, mode, reason }) {
+            const accountIdKey = window.selectedAccountIdKey;
+            if (!accountIdKey) throw new Error('No account loaded');
+            const optionSymbol = getOptionSymbolFromPosition(position);
+            if (!optionSymbol) throw new Error('Option symbol unavailable');
+            const absQty = Math.abs(Math.trunc(quantity));
+            if (!absQty) throw new Error('Invalid contract size for auto-exit');
+
+            const payload = {
+                optionSymbol,
+                symbol: optionSymbol,
+                quantity: absQty,
+                callPut: position?.callPut || null,
+                strike: position?.strike ?? null,
+                expiry: position?.expiry || null,
+            };
+
+            const response = await fetch(`/api/portfolio/${accountIdKey}/options/emergency-sell`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (error) {
+                data = null;
+            }
+
+            if (!response.ok || !data?.success) {
+                const errorMessage = data?.error || `Broker rejected auto-exit (HTTP ${response.status})`;
+                throw new Error(errorMessage);
+            }
+
+            const label = mode === 'stop' ? 'Emergency exit' : 'Scaling exit';
+            setPortfolioStatus(`${label} triggered for ${optionSymbol} (${reason})`, 'warning');
+            await loadAccountDetails(accountIdKey, { showLoading: false, reason: 'auto' });
+            return data.order;
+        }
+
+        async function maybeAutoExitPosition(position) {
+            if (!autoExitState.enabled || !position) return;
+            const quantity = Number(position.quantity);
+            if (!Number.isFinite(quantity) || quantity <= 0) return;
+            const pnlPercent = Number(position.unrealizedGainLossPercent);
+            if (!Number.isFinite(pnlPercent)) return;
+            const cooldownKey = getAutoExitKey(position);
+            const now = Date.now();
+            const cooldownUntil = autoExitCooldowns.get(cooldownKey) || 0;
+            if (cooldownUntil > now || autoExitPending.has(cooldownKey)) {
+                return;
+            }
+
+            let mode = null;
+            let qtyToSell = 0;
+            let reason = '';
+            const absQty = Math.abs(quantity);
+
+            if (pnlPercent <= autoExitState.stopLossPct) {
+                mode = 'stop';
+                qtyToSell = absQty;
+                reason = `PnL ${pnlPercent.toFixed(2)}% <= ${autoExitState.stopLossPct}%`;
+            } else if (pnlPercent >= autoExitState.takeProfitPct) {
+                mode = 'scale';
+                const scaledQty = Math.max(
+                    autoExitState.minContracts,
+                    Math.floor(absQty * autoExitState.scalePct)
+                );
+                qtyToSell = Math.min(absQty, scaledQty);
+                if (qtyToSell >= absQty) {
+                    mode = 'stop';
+                }
+                reason = `PnL ${pnlPercent.toFixed(2)}% >= ${autoExitState.takeProfitPct}%`;
+            } else {
+                return;
+            }
+
+            if (!qtyToSell) return;
+
+            autoExitPending.add(cooldownKey);
+            const cooldownTarget = now + autoExitState.cooldownMs;
+            autoExitCooldowns.set(cooldownKey, cooldownTarget);
+            try {
+                await submitAutoExitOrder({ position, quantity: qtyToSell, mode, reason });
+            } catch (error) {
+                console.error('Auto-exit order failed:', error);
+                setPortfolioStatus(`Auto-exit failed for ${getOptionSymbolFromPosition(position)}: ${error.message}`, 'error');
+                autoExitCooldowns.set(cooldownKey, now + Math.min(autoExitState.cooldownMs, 60000));
+            } finally {
+                autoExitPending.delete(cooldownKey);
+            }
+        }
+
+        function evaluateAutoExitPositions(optionPositions) {
+            if (!autoExitState.enabled) return;
+            if (!Array.isArray(optionPositions) || !optionPositions.length) return;
+            optionPositions.forEach((position) => {
+                maybeAutoExitPosition(position).catch((error) => {
+                    console.error('Auto-exit evaluation error:', error);
+                });
+            });
+        }
 
         function setScanPanelCollapsed(collapsed) {
             if (!scanPanelBody || !toggleScanPanelBtn || !toggleScanPanelIcon || !toggleScanPanelLabel) return;
@@ -600,6 +786,18 @@
             return resolveStrategyMeta(strategy).description;
         }
 
+        function normalizeOptionSide(value, contract = '') {
+            const token = typeof value === 'string' ? value.trim().toUpperCase() : '';
+            if (token.includes('CALL') || token === 'C') return 'CALL';
+            if (token.includes('PUT') || token === 'P') return 'PUT';
+            const contractUpper = (contract || '').toUpperCase();
+            if (contractUpper.includes(' CALL')) return 'CALL';
+            if (contractUpper.includes(' PUT')) return 'PUT';
+            if (/C\d{8}$/.test(contractUpper)) return 'CALL';
+            if (/P\d{8}$/.test(contractUpper)) return 'PUT';
+            return null;
+        }
+
         function setStatusDisplay(target, state, message, { infoIcon = 'info' } = {}) {
             if (!target) return;
             const states = {
@@ -646,8 +844,109 @@
             });
         }
 
+        if (collapseTrackedIdeasBtn) {
+            collapseTrackedIdeasBtn.addEventListener('click', () => setTrackedPanelCollapsed(true));
+        }
+
+        if (trackedIdeasToggleBtn) {
+            trackedIdeasToggleBtn.addEventListener('click', () => setTrackedPanelCollapsed(false));
+        }
+
+        async function handleMarketBuyFromButton(button) {
+            const accountIdKey = window.selectedAccountIdKey;
+            if (!accountIdKey) {
+                alert('Load your default account before placing orders.');
+                return;
+            }
+
+            const entryPrice = Number(button.dataset.price);
+            if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+                alert('Unable to determine entry price for this contract.');
+                return;
+            }
+
+            const withdrawCash = getWithdrawableCashValue();
+            if (!Number.isFinite(withdrawCash) || withdrawCash <= 0) {
+                alert('Withdrawable cash unavailable. Refresh your portfolio to sync balances.');
+                return;
+            }
+
+            const optionSymbol = button.dataset.optionSymbol || button.dataset.symbol;
+            const callPut = button.dataset.side ? button.dataset.side.toUpperCase() : null;
+            const strike = button.dataset.strike ? Number(button.dataset.strike) : null;
+            const expiry = button.dataset.expiry || null;
+
+            if (!optionSymbol || !callPut || !strike || !expiry) {
+                alert('Contract details missing (symbol/side/strike/expiry). Refresh scan to try again.');
+                return;
+            }
+
+            const costPerContract = entryPrice * 100;
+            const estQty = Math.floor(withdrawCash / costPerContract);
+            if (!estQty) {
+                alert('Withdrawable cash insufficient for at least one contract at this price.');
+                return;
+            }
+
+            const confirmLines = [
+                `Account: ${accountIdKey}`,
+                `Contract: ${optionSymbol || 'N/A'}`,
+                `Side: ${callPut || 'CALL/PUT'} | Strike: ${strike || 'N/A'} | Exp: ${expiry || 'N/A'}`,
+                `Entry (est): $${entryPrice.toFixed(2)} | Cost/contract: $${costPerContract.toFixed(2)}`,
+                `Cash to withdraw: $${withdrawCash.toFixed(2)}`,
+                `Estimated quantity: ${estQty} contract${estQty === 1 ? '' : 's'}`,
+                '',
+                'Submit a market BUY order using withdrawable cash?',
+            ];
+
+            if (!window.confirm(confirmLines.join('\n'))) {
+                return;
+            }
+
+            const payload = {
+                optionSymbol,
+                symbol: button.dataset.symbol || optionSymbol,
+                price: entryPrice,
+                callPut,
+                strike,
+                expiry,
+            };
+
+            const originalLabel = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>';
+            lucide.createIcons();
+
+            try {
+                const response = await fetch(`/api/portfolio/${accountIdKey}/options/market-buy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json().catch(() => null);
+                if (!response.ok || !data?.success) {
+                    const errorMessage = data?.error || `Order failed (HTTP ${response.status})`;
+                    throw new Error(errorMessage);
+                }
+                alert(`Market buy submitted (${data.sizing?.quantity || '?'} contracts).`);
+                await loadAccountDetails(accountIdKey, { showLoading: false, reason: 'auto' });
+            } catch (error) {
+                alert(`Market buy failed: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalLabel;
+                lucide.createIcons();
+            }
+        }
+
         if (recommendations) {
             recommendations.addEventListener('click', (event) => {
+                const buyBtn = event.target.closest('button[data-market-buy]');
+                if (buyBtn) {
+                    event.preventDefault();
+                    handleMarketBuyFromButton(buyBtn);
+                    return;
+                }
                 const trackButton = event.target.closest('button[data-track-idea]');
                 if (!trackButton) return;
                 event.preventDefault();
@@ -895,10 +1194,42 @@
 
         function renderHeaderBalance() {
             if (!headerBalance) return;
-            const rawValue = lastBalancePayload?.totalAccountValue;
-            const numericValue = Number(rawValue);
-            const safeValue = Number.isFinite(numericValue) ? numericValue : null;
+            const rawValue = Number(lastBalancePayload?.totalAccountValue);
+            const safeValue = Number.isFinite(rawValue) ? rawValue : null;
             headerBalance.textContent = getCurrencyString(safeValue);
+            const cashValue = Number(
+                lastBalancePayload?.cashAvailableForInvestment ??
+                lastBalancePayload?.moneyMktBalance ??
+                lastBalancePayload?.cashBalance ??
+                lastBalancePayload?.cash
+            );
+            const cashLabel = getCurrencyString(Number.isFinite(cashValue) ? cashValue : null);
+            if (headerAvailableCash) {
+                headerAvailableCash.textContent = `Available Cash: ${cashLabel}`;
+            }
+            const withdrawValue = Number(
+                lastBalancePayload?.cashAvailableForWithdrawal ??
+                lastBalancePayload?.cashAvailableToWithdraw ??
+                lastBalancePayload?.fundsForWithdrawal ??
+                lastBalancePayload?.cashAvailable ?? null
+            );
+            const withdrawLabel = getCurrencyString(Number.isFinite(withdrawValue) ? withdrawValue : null);
+            if (headerCashWithdraw) {
+                headerCashWithdraw.textContent = `Cash To Withdraw: ${withdrawLabel}`;
+            }
+        }
+
+        function getWithdrawableCashValue() {
+            const cash = Number(
+                lastBalancePayload?.totalAvailableForWithdrawal
+                ?? lastBalancePayload?.cashAvailableForWithdrawal
+                ?? lastBalancePayload?.cashAvailableToWithdraw
+                ?? lastBalancePayload?.fundsForWithdrawal
+                ?? lastBalancePayload?.cashAvailable
+                ?? lastBalancePayload?.cashBalance
+                ?? lastBalancePayload?.cash
+            );
+            return Number.isFinite(cash) ? cash : null;
         }
 
         function refreshPortfolioDisplay() {
@@ -1209,7 +1540,25 @@
         }
 
         let portfolioConfigLoaded = false;
-        const portfolioConfig = { defaultAccountIdKey: null };
+        const portfolioConfig = { defaultAccountIdKey: null, autoExit: autoExitState };
+
+        function applyAutoExitConfig(config) {
+            if (!config) return;
+            autoExitState.enabled = Boolean(config.enabled);
+
+            const parseNumber = (value, fallback) => {
+                const numeric = Number(value);
+                return Number.isFinite(numeric) ? numeric : fallback;
+            };
+
+            autoExitState.takeProfitPct = parseNumber(config.takeProfitPct, autoExitDefaults.takeProfitPct);
+            autoExitState.stopLossPct = parseNumber(config.stopLossPct, autoExitDefaults.stopLossPct);
+            const scalePct = parseNumber(config.scalePct, autoExitDefaults.scalePct);
+            autoExitState.scalePct = Math.min(Math.max(scalePct, 0.05), 1);
+            const minContracts = parseNumber(config.minContracts, autoExitDefaults.minContracts);
+            autoExitState.minContracts = Math.max(1, Math.trunc(minContracts));
+            autoExitState.cooldownMs = Math.max(0, parseNumber(config.cooldownMs, autoExitDefaults.cooldownMs));
+        }
 
         async function loadPortfolioConfig() {
             if (portfolioConfigLoaded) {
@@ -1219,8 +1568,13 @@
                 const response = await fetch('/api/portfolio/config');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data?.success && data.defaultAccountIdKey) {
-                        portfolioConfig.defaultAccountIdKey = data.defaultAccountIdKey;
+                    if (data?.success) {
+                        if (data.defaultAccountIdKey) {
+                            portfolioConfig.defaultAccountIdKey = data.defaultAccountIdKey;
+                        }
+                        if (data.autoExit) {
+                            applyAutoExitConfig(data.autoExit);
+                        }
                     }
                 }
             } catch (error) {
@@ -1698,11 +2052,46 @@
                     .replace(/\b\w/g, (char) => char.toUpperCase());
             };
 
+            const parseOccSymbol = (value) => {
+                if (!value) return null;
+                const cleaned = value.toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const match = cleaned.match(/^([A-Z0-9]{1,6})(\d{6})([CP])(\d{8})$/);
+                if (!match) return null;
+                const [, underlying, yymmdd, cpFlag, strikeRaw] = match;
+                const yy = Number(yymmdd.slice(0, 2));
+                const mm = Number(yymmdd.slice(2, 4));
+                const dd = Number(yymmdd.slice(4, 6));
+                const year = yy >= 70 ? 1900 + yy : 2000 + yy;
+                const month = String(mm).padStart(2, '0');
+                const day = String(dd).padStart(2, '0');
+                const strike = Number(strikeRaw) / 1000;
+                return {
+                    underlying: underlying.trim(),
+                    expiry: `${year}-${month}-${day}`,
+                    callPut: cpFlag === 'P' ? 'PUT' : 'CALL',
+                    strike: Number.isFinite(strike) ? strike : null,
+                };
+            };
+
             const extractOptionMeta = (rec) => {
                 const result = {
                     strike: Number.isFinite(rec?.strike) ? rec.strike : null,
                     expiry: rec?.expiry || null,
                 };
+                const possSymbol = rec?.optionSymbol
+                    || rec?.option_details?.osiKey
+                    || rec?.option_details?.symbol
+                    || rec?.contract
+                    || '';
+                const occData = parseOccSymbol(possSymbol);
+                if (occData) {
+                    if (!result.expiry) {
+                        result.expiry = occData.expiry;
+                    }
+                    if (!result.strike && Number.isFinite(occData.strike)) {
+                        result.strike = occData.strike;
+                    }
+                }
                 if ((!result.expiry || !result.strike) && typeof rec?.contract === 'string') {
                     const match = rec.contract.match(/(\d{4}-\d{2}-\d{2})/);
                     if (!result.expiry && match) {
@@ -1949,7 +2338,9 @@
             grouped.forEach(({ symbol, items, bestRec }) => {
                 const focusRec = bestRec || items[0];
                 const baseDecision = normalizeDecision(focusRec?.ai?.decision);
-                const { strike, expiry } = extractOptionMeta(focusRec);
+                const optionMeta = extractOptionMeta(focusRec);
+                const strike = optionMeta.strike;
+                const expiry = optionMeta.expiry;
                 const strikeLabel = Number.isFinite(strike) ? `$${strike.toFixed(strike % 1 === 0 ? 0 : 2)}` : '—';
                 const sideLabel = formatSideLabel(focusRec.side, focusRec.contract);
                 const strikeDescriptor = sideLabel ? `${strikeLabel} ${sideLabel}` : strikeLabel;
@@ -2191,6 +2582,14 @@
                     : '<span class="tag-chip inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">No signals</span>';
                 const ideaId = buildIdeaId({ symbol, strike, expiry, side: focusRec.side });
                 const isTrackedIdea = trackedIdeas.some((idea) => idea.id === ideaId);
+                const rawOptionSymbol = focusRec.optionSymbol
+                    || focusRec.option_details?.osiKey
+                    || focusRec.option_details?.symbol
+                    || focusRec.contract
+                    || '';
+                const optionSide = normalizeOptionSide(focusRec.side, rawOptionSymbol || '');
+                const optionSymbolDataset = rawOptionSymbol;
+                const hasContractMeta = Boolean(optionSide && strike != null && expiry && entryPrice != null);
 
                 recommendations.innerHTML += `
                     <article class="bg-white border border-[#E5E7EB] shadow-sm rounded-3xl p-6 space-y-6 text-[#111827]">
@@ -2227,6 +2626,22 @@
                                 >
                                     ${isTrackedIdea ? 'Update Tile' : 'Track Idea'}
                                 </button>
+                                ${hasContractMeta ? `
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center text-xs font-semibold border border-emerald-200 text-emerald-700 rounded-lg px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 transition"
+                                    style="min-width:9rem;"
+                                    data-market-buy="true"
+                                    data-symbol="${escapeHtml(symbol)}"
+                                    data-option-symbol="${escapeHtml(optionSymbolDataset)}"
+                                    data-side="${escapeHtml(optionSide || '')}"
+                                    data-strike="${strike != null ? strike : ''}"
+                                    data-expiry="${escapeHtml(expiry || '')}"
+                                    data-price="${entryPrice != null ? entryPrice : ''}"
+                                >
+                                    Buy w/ Cash
+                                </button>` : `
+                                <span class="text-[11px] text-slate-400 text-right">Contract details missing; update scan to enable buy.</span>`}
                             </div>
                         </header>
 
@@ -2326,7 +2741,8 @@
             const summaryItems = [];
 
             if (balanceData) {
-                const availableCash = Number(balanceData.moneyMktBalance ?? balanceData.cashAvailableForInvestment ?? balanceData.cashBalance ?? 0);
+                const availableCash = Number(balanceData.cashAvailableForInvestment ?? balanceData.moneyMktBalance ?? balanceData.cashBalance ?? balanceData.cash ?? 0);
+                const withdrawCash = Number(balanceData.cashAvailableForWithdrawal ?? balanceData.cashAvailableToWithdraw ?? balanceData.fundsForWithdrawal ?? availableCash);
                 const totalValue = Number(balanceData.totalAccountValue ?? 0);
                 const buyingPower = Number(balanceData.cashBuyingPower ?? balanceData.marginBuyingPower ?? 0);
                 summaryItems.push(
@@ -2339,6 +2755,11 @@
                         label: 'Available Cash',
                         value: getCurrencyString(availableCash),
                         accent: 'text-emerald-600',
+                    },
+                    {
+                        label: 'Cash To Withdraw',
+                        value: getCurrencyString(withdrawCash),
+                        accent: 'text-teal-600',
                     },
                     {
                         label: 'Total Value',
@@ -2521,6 +2942,7 @@
                     if (portfolioEmptyState) {
                         portfolioEmptyState.classList.add('hidden');
                     }
+                    evaluateAutoExitPositions(optionPositions);
                 } else {
                     portfolioOptionsList.innerHTML = '';
                     if (portfolioEmptyState) {

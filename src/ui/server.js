@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Simple web UI for trading dashboard
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { exec } = require('child_process');
@@ -82,6 +83,19 @@ function appendArgToCommand(command, flag, value) {
     return `${command}${separator}${flag} ${trimmedValue}`;
   }
   return `${command} ${flag} ${trimmedValue}`;
+}
+
+function parseBooleanEnv(value, defaultValue = false) {
+  if (value == null) return Boolean(defaultValue);
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return Boolean(defaultValue);
+}
+
+function parseNumberEnv(value, defaultValue) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : defaultValue;
 }
 
 function buildAgentCommand(symbolsList, strategy, expiryType) {
@@ -251,9 +265,19 @@ app.post('/api/scan/config', (req, res) => {
 
 // Portfolio endpoints
 app.get('/api/portfolio/config', (req, res) => {
+  const autoExitConfig = {
+    enabled: parseBooleanEnv(process.env.UI_AUTO_EXIT_ENABLED, false),
+    takeProfitPct: parseNumberEnv(process.env.UI_AUTO_EXIT_TAKE_PROFIT_PCT, 40),
+    stopLossPct: parseNumberEnv(process.env.UI_AUTO_EXIT_STOP_LOSS_PCT, -35),
+    scalePct: parseNumberEnv(process.env.UI_AUTO_EXIT_SCALE_PCT, 0.5),
+    minContracts: Math.max(1, Math.trunc(parseNumberEnv(process.env.UI_AUTO_EXIT_MIN_CONTRACTS, 1))),
+    cooldownMs: Math.max(0, parseNumberEnv(process.env.UI_AUTO_EXIT_COOLDOWN_MS, 300000)),
+  };
+
   res.json({
     success: true,
     defaultAccountIdKey: process.env.ETRADE_DEFAULT_ACCOUNT_KEY || null,
+    autoExit: autoExitConfig,
   });
 });
 
@@ -369,6 +393,127 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
     res.status(500).json({
       success: false,
       error: brokerMessage || 'Failed to submit emergency sell order.',
+      brokerResponse: error?.payload || null,
+    });
+  }
+});
+
+app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => {
+  try {
+    const { accountIdKey } = req.params;
+    console.log('[MarketBuy] Request received', {
+      accountIdKey,
+      body: req.body,
+    });
+    if (!accountIdKey) {
+      return res.status(400).json({ success: false, error: 'Account ID is required.' });
+    }
+
+    const {
+      optionSymbol,
+      symbol,
+      price,
+      callPut,
+      strike,
+      expiry,
+      allocationPct,
+    } = req.body || {};
+
+    const tradeSymbol = optionSymbol || symbol;
+    if (!tradeSymbol) {
+      return res.status(400).json({ success: false, error: 'Option symbol is required.' });
+    }
+
+    const contractPrice = Number(price);
+    if (!Number.isFinite(contractPrice) || contractPrice <= 0) {
+      return res.status(400).json({ success: false, error: 'A valid contract price is required to size the order.' });
+    }
+
+    const normalizedCallPut = typeof callPut === 'string' ? callPut.trim().toUpperCase() : '';
+    const numericStrike = Number(strike);
+    if (!normalizedCallPut || (normalizedCallPut !== 'CALL' && normalizedCallPut !== 'PUT')) {
+      return res.status(400).json({ success: false, error: 'Contract side (call/put) is required for market buy.' });
+    }
+    if (!Number.isFinite(numericStrike) || numericStrike <= 0) {
+      return res.status(400).json({ success: false, error: 'Strike price missing for this contract.' });
+    }
+    if (!expiry) {
+      return res.status(400).json({ success: false, error: 'Expiry date missing for this contract.' });
+    }
+
+    const accountBalance = await getAccountBalance(accountIdKey);
+    const withdrawCash = Number(
+      accountBalance?.totalAvailableForWithdrawal
+      ?? accountBalance?.cashAvailableForWithdrawal
+      ?? accountBalance?.cashAvailableToWithdraw
+      ?? accountBalance?.fundsForWithdrawal
+      ?? accountBalance?.cashAvailable
+      ?? accountBalance?.cashBalance
+      ?? accountBalance?.cash
+      ?? 0
+    );
+    if (!Number.isFinite(withdrawCash) || withdrawCash <= 0) {
+      return res.status(400).json({ success: false, error: 'Withdrawable cash is not available for this account.' });
+    }
+
+    const pct = Number.isFinite(Number(allocationPct)) ? Math.min(Math.max(Number(allocationPct), 0.05), 1) : 1;
+    const budget = withdrawCash * pct;
+    const costPerContract = contractPrice * 100;
+    const quantity = Math.floor(budget / costPerContract);
+
+    if (!Number.isFinite(quantity) || quantity < 1) {
+      return res.status(400).json({ success: false, error: 'Withdrawable cash is insufficient for at least one contract at the provided price.' });
+    }
+
+    console.log('[MarketBuy] Sizing decision', {
+      withdrawCash,
+      allocationPct: pct,
+      budget,
+      costPerContract,
+      quantity,
+      contractPrice,
+      symbol: tradeSymbol,
+      callPut: normalizedCallPut,
+      strike: numericStrike,
+      expiry,
+    });
+
+    const orderResult = await placeOptionMarketOrder({
+      accountIdKey,
+      optionSymbol: tradeSymbol,
+      underlyingSymbol: symbol,
+      quantity,
+      orderAction: 'BUY_OPEN',
+      callPut: normalizedCallPut,
+      strike: numericStrike,
+      expiry,
+    });
+
+    res.json({
+      success: true,
+      order: orderResult,
+      sizing: {
+        withdrawCash,
+        allocationPct: pct,
+        budget,
+        contractPrice,
+        costPerContract,
+        quantity,
+      },
+    });
+  } catch (error) {
+    console.error('[MarketBuy] Error placing order', {
+      message: error?.message,
+      payload: error?.payload,
+      stack: error?.stack,
+    });
+    const brokerMessage = error?.payload?.Error?.message
+      || error?.payload?.message
+      || error?.body
+      || error?.message;
+    res.status(500).json({
+      success: false,
+      error: brokerMessage || 'Failed to place market buy order.',
       brokerResponse: error?.payload || null,
     });
   }

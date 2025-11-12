@@ -192,12 +192,11 @@ async function fetchFmpIndicators(symbol) {
  */
 async function fetchOptionLeg(ticker, strike, expiry, side) {
   try {
-    const [year, month, day] = expiry.split('-').map(Number);
-    const chain = await etrade.getOptionChain({
+    const chain = await withRetries(() => etrade.getOptionChain({
       symbol: ticker,
       expiry,
       includeGreeks: true
-    });
+    }));
 
     // Find exact match
     const targetType = side === 'CALL' ? 'CALL' : 'PUT';
@@ -206,7 +205,7 @@ async function fetchOptionLeg(ticker, strike, expiry, side) {
       opt.type === targetType
     );
 
-    // Expand search window ±1 strike if not found
+    // Expand search window +/- 1 strike if not found
     if (!match) {
       match = chain.find(opt =>
         Math.abs(opt.strike - strike) <= 1 &&
@@ -215,7 +214,7 @@ async function fetchOptionLeg(ticker, strike, expiry, side) {
     }
 
     if (!match) {
-      console.error(`Option leg not found: ${ticker} ${strike} ${expiry} ${side}`);
+      console.warn(`[missing_leg] Option leg not found: ${ticker} ${strike} ${expiry} ${side}`);
       return { bid: null, ask: null, mid: null, oi: null, iv: null, delta: null };
     }
 
@@ -245,7 +244,7 @@ async function fetchOptionLeg(ticker, strike, expiry, side) {
  */
 async function fetchEquityQuote(ticker) {
   try {
-    const quotes = await etrade.getEquityQuotes([ticker]);
+    const quotes = await withRetries(() => etrade.getEquityQuotes([ticker]));
     const quote = quotes[ticker];
     if (!quote || !Number.isFinite(quote.price)) {
       return null;
@@ -272,7 +271,7 @@ async function buildSnapshot(config) {
   let volume_1m = null;
   let volume_20ma = null;
   try {
-    bars = await fetchFmpBars(ticker, { interval: '1m', limit: 60 });
+    bars = await withRetries(() => fetchFmpBars(ticker, { interval: '1m', limit: 60 }));
     vwap = computeVWAP(bars);
     volume_20ma = computeVolume20MA(bars);
     if (bars.length > 0) {
@@ -283,30 +282,61 @@ async function buildSnapshot(config) {
   }
 
   // Fetch technical indicators from FMP
-  const { rsi, macd_hist, macd_signal } = await fetchFmpIndicators(ticker);
+  const indicators = await fetchFmpIndicators(ticker);
+  let snapshotRsi = indicators.rsi;
+  let snapshotMacdHist = indicators.macd_hist;
+  let snapshotMacdSignal = indicators.macd_signal;
+
+  if (bars.length) {
+    const localIndicators = calculateIndicators(bars);
+    if ((snapshotRsi == null) && Number.isFinite(localIndicators?.rsi)) {
+      snapshotRsi = localIndicators.rsi;
+    }
+    const derivedMacd = localIndicators?.macd;
+    if (derivedMacd) {
+      if (snapshotMacdSignal == null && Number.isFinite(derivedMacd.signal)) {
+        snapshotMacdSignal = derivedMacd.signal;
+      }
+      const localHist = Number.isFinite(derivedMacd.histogram)
+        ? derivedMacd.histogram
+        : (Number.isFinite(derivedMacd.macd) && Number.isFinite(derivedMacd.signal))
+          ? derivedMacd.macd - derivedMacd.signal
+          : null;
+      if (snapshotMacdHist == null && Number.isFinite(localHist)) {
+        snapshotMacdHist = localHist;
+      }
+    }
+  }
 
   // Fetch option leg data
   const optionData = await fetchOptionLeg(ticker, strike, expiry, side);
 
-  // Get current time in CT (UTC-6 or UTC-5 depending on DST)
-  const now = new Date();
-  const ctOffset = -6 * 60; // CT is UTC-6 (CST) or UTC-5 (CDT) - simplified to CST
-  const ctTime = new Date(now.getTime() + ctOffset * 60 * 1000);
-  const time_ct = ctTime.toISOString().slice(11, 19); // HH:MM:SS
+  const relVol = (Number.isFinite(volume_1m) && Number.isFinite(volume_20ma) && volume_20ma > 0)
+    ? volume_1m / Math.max(volume_20ma, 1)
+    : null;
+
+  const spreadPct = (Number.isFinite(optionData.bid) && Number.isFinite(optionData.ask))
+    ? (optionData.ask - optionData.bid) / Math.max(optionData.mid ?? (optionData.ask + optionData.bid) / 2, 0.01)
+    : null;
+
+  const clock = getCTClock();
+  const time_ct = clock.isoTime;
 
   return {
     time_ct,
     ticker,
     price: Number.isFinite(price) ? price : null,
     vwap: Number.isFinite(vwap) ? vwap : null,
-    rsi: Number.isFinite(rsi) ? rsi : null,
-    macd_hist: Number.isFinite(macd_hist) ? macd_hist : null,
-    macd_signal: Number.isFinite(macd_signal) ? macd_signal : null,
+    rsi: Number.isFinite(snapshotRsi) ? snapshotRsi : null,
+    macd_hist: Number.isFinite(snapshotMacdHist) ? snapshotMacdHist : null,
+    macd_signal: Number.isFinite(snapshotMacdSignal) ? snapshotMacdSignal : null,
     volume_1m: Number.isFinite(volume_1m) ? volume_1m : null,
     volume_20ma: Number.isFinite(volume_20ma) ? volume_20ma : null,
+    rel_vol_live: Number.isFinite(relVol) ? relVol : null,
     bid: optionData.bid,
     ask: optionData.ask,
     mid: optionData.mid,
+    spread_pct: Number.isFinite(spreadPct) ? spreadPct : null,
     oi: optionData.oi,
     iv: optionData.iv,
     delta: optionData.delta
@@ -323,27 +353,14 @@ function emitSnapshot(snapshot) {
 }
 
 /**
- * Get current time in CT
- */
-function getCurrentCT() {
-  const now = new Date();
-  const ctOffset = -6 * 60; // CST (UTC-6)
-  return new Date(now.getTime() + ctOffset * 60 * 1000);
-}
-
-/**
  * Check if current time is past target time in CT
  */
-function isTimePast(targetHour, targetMinute, targetSecond) {
-  const ct = getCurrentCT();
-  const ctHour = ct.getUTCHours();
-  const ctMinute = ct.getUTCMinutes();
-  const ctSecond = ct.getUTCSeconds();
-
-  if (ctHour > targetHour) return true;
-  if (ctHour === targetHour) {
-    if (ctMinute > targetMinute) return true;
-    if (ctMinute === targetMinute && ctSecond >= targetSecond) return true;
+function isTimePast(targetHour, targetMinute, targetSecond, clock = getCTClock()) {
+  const { hour, minute, second } = clock;
+  if (hour > targetHour) return true;
+  if (hour === targetHour) {
+    if (minute > targetMinute) return true;
+    if (minute === targetMinute && second >= targetSecond) return true;
   }
   return false;
 }
@@ -352,8 +369,13 @@ function isTimePast(targetHour, targetMinute, targetSecond) {
  * Wait until specific time in CT
  */
 async function waitUntilCT(targetHour, targetMinute, targetSecond) {
-  while (!isTimePast(targetHour, targetMinute, targetSecond)) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  // Poll faster pre-open so we can hit the cadence exactly
+  while (true) {
+    const clock = getCTClock();
+    if (isTimePast(targetHour, targetMinute, targetSecond, clock)) {
+      break;
+    }
+    await sleep(WAIT_POLL_MS);
   }
 }
 
@@ -378,20 +400,18 @@ async function main() {
     }
   }
 
+  console.log('READY_FOR_SNAPSHOTS');
   // Wait until 08:30:15 CT for first emission
   await waitUntilCT(8, 30, 15);
-  console.log('READY_FOR_SNAPSHOTS');
 
   // Emission loop
   let emissionCount = 0;
-  const startTime = getCurrentCT();
 
   while (true) {
-    const ct = getCurrentCT();
-    const elapsed = (ct - startTime) / 1000; // seconds since 08:30:15
+    const loopClock = getCTClock();
 
     // Stop at 09:30:00 CT
-    if (isTimePast(9, 30, 0)) {
+    if (isTimePast(9, 30, 0, loopClock)) {
       console.error('Reached 09:30:00 CT, stopping emissions.');
       break;
     }
@@ -405,7 +425,7 @@ async function main() {
         console.error(`Snapshot error for ${config.ticker}:`, err.message);
         // Emit with nulls on error
         emitSnapshot({
-          time_ct: ct.toISOString().slice(11, 19),
+          time_ct: loopClock.isoTime,
           ticker: config.ticker,
           price: null,
           vwap: null,
@@ -414,9 +434,11 @@ async function main() {
           macd_signal: null,
           volume_1m: null,
           volume_20ma: null,
+          rel_vol_live: null,
           bid: null,
           ask: null,
           mid: null,
+          spread_pct: null,
           oi: null,
           iv: null,
           delta: null
@@ -427,14 +449,10 @@ async function main() {
     emissionCount++;
 
     // Determine next interval
-    let intervalMs;
-    if (elapsed < 165) { // First 165 seconds (08:30:15 to 08:33:00)
-      intervalMs = 5000;
-    } else {
-      intervalMs = 15000;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    const postEmitClock = getCTClock();
+    const beforeSwitch = !isTimePast(8, 33, 0, postEmitClock);
+    const intervalMs = beforeSwitch ? 5000 : 15000;
+    await sleep(intervalMs);
   }
 
   console.error(`Completed ${emissionCount} emission cycles.`);

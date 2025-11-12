@@ -528,6 +528,33 @@ function buildClientOrderId(prefix = 'SOS') {
   return `${prefix}${stamp}${random}`.slice(0, 32);
 }
 
+function normalizeCloseAction(orderAction, rawQty = 0) {
+  if (orderAction) {
+    const normalized = orderAction.toString().trim().toUpperCase();
+    if (normalized) return normalized;
+  }
+  return rawQty >= 0 ? 'SELL_CLOSE' : 'BUY_CLOSE';
+}
+
+function buildOrderPayload({ product, orderAction, quantity }) {
+  const qty = Math.abs(Math.trunc(quantity));
+  return {
+    allOrNone: false,
+    priceType: 'MARKET',
+    orderTerm: 'GOOD_FOR_DAY',
+    marketSession: 'REGULAR',
+    Instrument: [
+      {
+        Product: product,
+        orderAction,
+        orderedQuantity: qty,
+        quantityType: 'QUANTITY',
+        quantity: qty,
+      },
+    ],
+  };
+}
+
 async function placeOptionMarketOrder({
   accountIdKey,
   optionSymbol,
@@ -552,7 +579,7 @@ async function placeOptionMarketOrder({
   if (!absQty) {
     throw new Error('Quantity must be at least one contract');
   }
-  const action = orderAction || (rawQty > 0 ? 'SELL_TO_CLOSE' : 'BUY_TO_COVER');
+  const action = normalizeCloseAction(orderAction, rawQty);
 
   const contract = normalizeOptionContract({ optionSymbol, underlyingSymbol, callPut, strike, expiry });
   if (!contract.underlying) {
@@ -583,36 +610,36 @@ async function placeOptionMarketOrder({
     });
   }
 
-  const baseRequest = {
-    PlaceOrderRequest: {
+  const buildOrderSection = () => buildOrderPayload({ product, orderAction: action, quantity: absQty });
+
+  const previewRequest = {
+    PreviewOrderRequest: {
       orderType: 'OPTN',
       clientOrderId,
-      orderTerm: 'GOOD_FOR_DAY',
-      marketSession: 'REGULAR',
-      priceType: 'MARKET',
       orderStrategyType: 'SINGLE',
-      Instrument: [
-        {
-          Product: product,
-          orderAction: action,
-          quantityType: 'QUANTITY',
-          quantity: absQty,
-        },
-      ],
+      Order: [buildOrderSection()],
     },
   };
 
   if (debugOrders) {
-    console.log('E*TRADE emergency sell preview payload:', JSON.stringify(baseRequest, null, 2));
+    console.log('E*TRADE emergency sell preview payload:', JSON.stringify(previewRequest, null, 2));
   }
 
   const previewPath = `/v1/accounts/${accountIdKey}/orders/preview.json`;
-  const previewResponse = await etFetch(previewPath, { method: 'POST', body: baseRequest });
+  const previewResponse = await etFetch(previewPath, { method: 'POST', body: previewRequest });
   const previewRoot = previewResponse?.PreviewOrderResponse || previewResponse;
-  const previewIds = previewRoot?.PreviewIds?.previewId
-    || previewRoot?.PreviewIds?.PreviewId
-    || previewRoot?.previewId;
-  const previewId = Array.isArray(previewIds) ? previewIds[0] : previewIds;
+  let previewId = null;
+  if (Array.isArray(previewRoot?.PreviewIds)) {
+    previewId = previewRoot.PreviewIds[0]?.previewId || previewRoot.PreviewIds[0]?.PreviewId || null;
+  } else if (previewRoot?.PreviewIds) {
+    const ids = previewRoot.PreviewIds;
+    if (Array.isArray(ids.previewId)) previewId = ids.previewId[0];
+    else if (Array.isArray(ids.PreviewId)) previewId = ids.PreviewId[0];
+    else previewId = ids.previewId || ids.PreviewId || null;
+  }
+  if (!previewId && (previewRoot?.previewId || previewRoot?.previewID)) {
+    previewId = previewRoot.previewId || previewRoot.previewID;
+  }
 
   if (!previewId) {
     const messages = collectOrderMessages(previewRoot);
@@ -622,18 +649,28 @@ async function placeOptionMarketOrder({
 
   const placeRequest = {
     PlaceOrderRequest: {
-      ...baseRequest.PlaceOrderRequest,
-      PreviewIds: { PreviewId: [previewId] },
+      orderType: 'OPTN',
+      clientOrderId,
+      orderStrategyType: 'SINGLE',
+      PreviewIds: [{ previewId }],
+      Order: [buildOrderSection()],
     },
   };
 
   const placePath = `/v1/accounts/${accountIdKey}/orders/place.json`;
   const placeResponse = await etFetch(placePath, { method: 'POST', body: placeRequest });
   const placeRoot = placeResponse?.PlaceOrderResponse || placeResponse;
-  const orderIds = placeRoot?.OrderIds?.orderId
-    || placeRoot?.OrderIds?.OrderId
-    || placeRoot?.orderId;
-  const orderId = Array.isArray(orderIds) ? orderIds[0] : orderIds;
+  let orderId = null;
+  if (Array.isArray(placeRoot?.OrderIds)) {
+    orderId = placeRoot.OrderIds[0]?.orderId || placeRoot.OrderIds[0]?.OrderId || null;
+  } else if (placeRoot?.OrderIds) {
+    const ids = placeRoot.OrderIds;
+    if (Array.isArray(ids.orderId)) orderId = ids.orderId[0];
+    else if (Array.isArray(ids.OrderId)) orderId = ids.OrderId[0];
+    else orderId = ids.orderId || ids.OrderId || null;
+  } else if (placeRoot?.orderId || placeRoot?.OrderId) {
+    orderId = placeRoot.orderId || placeRoot.OrderId;
+  }
 
   const messages = collectOrderMessages(placeRoot);
 

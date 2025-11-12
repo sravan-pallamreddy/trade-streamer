@@ -1,0 +1,789 @@
+
+
+
+
+
+    Market API
+   Overview
+    The Market APIs provide information about market events.
+
+
+    Look Up Product link
+
+    Description
+    This API returns a list of securities of a specified type (e.g.,
+    equity stock) based on a full or partial match of any part of
+    the company name. For instance, a search for "jones"
+    returns a list of securities associated with "Jones Soda Co",
+    "Stella Jones Inc", and many others. The list contains the
+    company name, the exchange that lists the security, the
+    security type, and the symbol, for as many matches as are
+    found. The result may include some unexpected matches,
+    because the search includes more than just the display
+    version of the company name. For instance, searching on
+    "etrade" returns securities for "E TRADE" - notice the space
+    in the name. This API is for searching on the company
+    name, not a security symbol. It's commonly used to look
+    up a symbol based on the company name, e.g., "What is
+    the symbol for Google stock?". To look up company
+    information based on a symbol, or to find detailed
+    information on a security, use the quote API.
+
+
+    HTTP Method: GET
+
+    Live URL
+                                                                   content_copy
+                          https://api.etrade.com/v1/market/looku
+     p/{search}
+Sandbox URL
+                                                             content_copy
+                    https://apisb.etrade.com/v1/market/look
+ up/{search}
+
+
+
+
+Request
+
+
+     Property Type Required? Description
+
+     search     path yes           The search request
+                                                        
+
+
+
+
+Response
+
+
+     Status Code Reason
+
+     200            Successful operation.
+
+     400            The symbol entered is invalid. Pleas
+
+     400            Missing symbol. Please enter valid s
+
+     400            Unauthorized access to this API is r
+
+     400            Error getting the product details.
+                                                        
+
+
+
+
+Get Option Chains link
+
+Description
+This API returns a list of option chains for a specific
+underlying instrument. The request must specify an
+instrument, the month the option expires, and whether
+you are interested in calls, puts, or both. Values returned
+include the option pair count and information about each
+option pair, including the type, call count, symbol,
+product, date, and strike price..
+HTTP Method: GET
+
+Live URL
+                                                           content_copy
+                    https://api.etrade.com/v1/market/option
+chains?symbol={symbol}
+
+
+
+
+Sandbox URL
+                                                           content_copy
+                    https://apisb.etrade.com/v1/market/opti
+onchains?symbol={symbol}
+
+
+
+
+Request
+
+
+    Property           Type    Required? Description
+
+    symbol             query yes           The market s
+
+    expiryYear         query no            Indicates the
+
+    expiryMonth        query no            Indicates the
+
+    expiryDay          query no            Indicates the
+
+    strikePriceNear    query no            The optionc
+
+    noOfStrikes        query no            Indicates nu
+
+    includeWeekly      query no            The include
+
+    skipAdjusted       query no            The skip adj
+
+    optionCategory query no                The option c
+
+    chainType          query no            The type of
+
+    priceType          query no            The price ty
+                                                     
+
+
+
+
+Response
+     Status Code Reason
+
+     200            Successful operation.
+
+     400            Invalid option type. Please provide
+
+     400            There are no options for the given m
+
+     400            Please provide a valid option type.
+
+     400            Invalid option type in OSI key. Pleas
+
+     400            The Symbol entered is invalid. Plea
+
+     400            There are no options available for th
+
+     400            No options are available for this sym
+
+     400            Missing symbol. Please enter valid s
+
+     400            Unauthorized access to this API is r
+
+     400            Invalid category. Please provide val
+
+     400            Error getting the product details.
+
+     400            Top five quotes are not available at
+
+     400            There are no standard options avail
+
+     400            Error getting the ExpirationDates de
+
+     400            Please provide valid expiration date
+
+     400            Mini options not available for this sy
+                                                        
+
+
+
+
+Get Option Expire Dates link
+
+Description
+Returns a list of dates suitable for structuring an option
+table display. The dates are used to group option data
+(returned by the optionchains method) for a specified
+underlier, creating a table display.
+
+
+HTTP Method: GET
+Live URL
+                                                           content_copy
+                    https://api.etrade.com/v1/market/option
+expiredate?symbol={symbol}
+
+
+
+
+Sandbox URL
+                                                           content_copy
+                    https://apisb.etrade.com/v1/market/opti
+onexpiredate?symbol={symbol}
+
+
+
+
+Request
+
+
+    Property     Type    Required? Description
+
+    expiryType query no               Expiration type o
+
+    symbol       query yes            The symbol in the
+                                                     
+
+
+
+
+Response
+
+
+    Status Code Reason
+
+    200            Successful operation.
+
+    400            Invalid option type. Please provide
+
+    400            There are no options for the given m
+
+    400            Please provide a valid option type.
+
+    400            Invalid option type in OSI key. Pleas
+
+    400            The Symbol entered is invalid. Plea
+
+    400            There are no options available for th
+
+    400            No options are available for this sym
+
+    400            Missing symbol. Please enter valid s
+
+    400            Unauthorized access to this API is r
+    Status Code Reason
+
+    400          Invalid category. Please provide val
+
+    400          Error getting the product details.
+
+    400          Top five quotes are not available at
+
+    400          There are no standard options avail
+
+    400          Error getting the ExpirationDates de
+
+    400          Please provide valid expiration date
+
+    400          Mini options not available for this sy
+
+
+
+
+Data link
+
+
+    Property    Type    Description
+
+    symbol      string The market symbol for the se
+
+    description string The text description of the se
+
+    type        string The symbol type
+                                                     
+
+
+
+
+ExpirationDate link
+                                                     
+
+
+
+
+    Property    Type            Description
+
+    year        integer (int32) The four-digit year th
+
+    month       integer (int32) The month (1-12) the
+
+    day         integer (int32) The day (1-31) the op
+
+    expiryType string           Expiration type of the
+                                                     
+
+
+
+
+LookupResponse link
+    Property Type            Description
+
+    data        array[Data] The lookup response data
+                                                        
+
+
+
+
+OptionChainPair link
+
+
+    Property     Type               Description
+
+    optioncall OptionDetails The option call in the o
+
+    optionPut OptionDetails The option put in the o
+
+    pairType     string             Determines whether t
+                                                        
+
+
+
+
+OptionChainResponse link
+
+
+    Property      Type                        Description
+
+    optionPairs array[OptionChainPair] Container f
+
+    timeStamp integer (int64)                 The option
+
+    quoteType     string                      The option
+
+    nearPrice     number                      The near pr
+
+    selected      SelectedED                  The selecte
+                                                        
+
+
+
+
+OptionDetails link
+
+
+    Property               Type                   Descriptio
+
+    optionCategory         string                 The option
+
+    optionRootSymbol string                       The root o
+   Property           Type              Descriptio
+
+   timeStamp          integer (int64)   The times
+
+   adjustedFlag       boolean           Indicator s
+
+   displaySymbol      string            The displa
+
+   optionType         string            The option
+
+   strikePrice        number (double) The agree
+
+   symbol             string            The marke
+
+   bid                number (double) The bid
+
+   ask                number (double) The ask
+
+   bidSize            integer           The bid siz
+
+   askSize            integer           The ask siz
+
+   inTheMoney         string            The "in the
+
+   volume             integer           The option
+
+   openInterest       integer           The open
+
+   netChange          number (double) The net ch
+
+   lastPrice          number (double) The last p
+
+   quoteDetail        string            The option
+
+   osiKey             string            The Optio
+
+   optionGreek        OptionGreeks      The Greek
+
+
+
+
+OptionExpireDateResponse link
+                                               
+
+
+
+
+   Property        Type                  Descript
+
+   expirationDates array[ExpirationDate] The expi
+                                               
+OptionGreeks link
+
+
+    Property         Type       Description
+
+    rho              number The rho value
+
+    vega             number The vega value
+
+    theta            number The theta value
+
+    delta            number The delta value
+
+    gamma            number The gamma value
+
+    iv               number The Implied Volatility (IV)
+
+    currentValue boolean The current value
+                                                      
+
+
+
+
+SelectedED link
+
+
+    Property Type                Description
+
+    month       integer (int32) The selected month
+
+    year        integer (int32) The selected year
+
+    day         integer (int32) The selected day
+                                                      
+
+
+
+
+Example
+Look Up Product Request URL
+
+                                                           content_copy
+           https://api.etrade.com/v1/market/lookup/a
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<LookupResponse>
+   <Data>
+      <symbol>A</symbol>
+      <description>AGILENT TECHNOLOGIES INC COM</descriptio
+n>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>AA</symbol>
+      <description>ALCOA CORP COM</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>AABA</symbol>
+      <description>ALTABA INC COM</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>AAPL</symbol>
+      <description>APPLE INC COM</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>ABBV</symbol>
+      <description>ABBVIE INC COM</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>ABEV</symbol>
+      <description>AMBEV SA SPONSORED ADR</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>ABT</symbol>
+      <description>ABBOTT LABS COM</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>ACN</symbol>
+      <description>ACCENTURE PLC IRELAND SHS CLASS A</descr
+iption>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>ADBE</symbol>
+      <description>ADOBE SYS INC COM</description>
+      <type>EQUITY</type>
+   </Data>
+   <Data>
+      <symbol>ADP</symbol>
+      <description>AUTOMATIC DATA PROCESSING INC COM</descr
+iption>
+      <type>EQUITY</type>
+   </Data>
+</LookupResponse>
+Get Option Chains Request URL
+
+                                                          content_copy
+ https://api.etrade.com/v1/market/optionchains?symbol=IBM&ex
+ piryYear=2018&expiryMonth=08&strikePriceNear=200&noOfStrike
+                             s=2
+
+
+
+Response
+                                                          content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<OptionChainResponse>
+   <OptionPair>
+      <Call>
+         <optionCategory>STANDARD</optionCategory>
+         <optionRootSymbol>IBM</optionRootSymbol>
+         <timeStamp>1529430484</timeStamp>
+         <adjustedFlag>false</adjustedFlag>
+         <displaySymbol>IBM Aug 17 '18 $200 Call</displaySy
+mbol>
+         <optionType>CALL</optionType>
+         <strikePrice>200.0</strikePrice>
+         <symbol>IBM</symbol>
+         <bid>0.0</bid>
+         <ask>0.05</ask>
+         <bidSize>0</bidSize>
+         <askSize>138</askSize>
+         <inTheMoney>n</inTheMoney>
+         <volume>0</volume>
+         <openInterest>0</openInterest>
+         <netChange>0.0</netChange>
+         <lastPrice>0.0</lastPrice>
+         <quoteDetail>https://api.etrade.com/v1/market/quot
+e/IBM:2018:8:17:CALL:200.000000</quoteDetail>
+         <osiKey>IBM---180817C00200000</osiKey>
+         <OptionGreeks>
+            <rho>0.001000</rho>
+            <vega>0.008600</vega>
+            <theta>-0.002000</theta>
+            <delta>0.004900</delta>
+            <gamma>0.000800</gamma>
+            <iv>0.314500</iv>
+            <currentValue>true</currentValue>
+         </OptionGreeks>
+      </Call>
+      <Put>
+         <optionCategory>STANDARD</optionCategory>
+         <optionRootSymbol>IBM</optionRootSymbol>
+         <timeStamp>1529431379</timeStamp>
+         <adjustedFlag>false</adjustedFlag>
+         <displaySymbol>IBM Aug 17 '18 $200 Put</displaySym
+bol>
+         <optionType>PUT</optionType>
+         <strikePrice>200.0</strikePrice>
+         <symbol>IBM</symbol>
+         <bid>0.0</bid>
+         <ask>0.0</ask>
+         <bidSize>0</bidSize>
+         <askSize>0</askSize>
+         <inTheMoney>y</inTheMoney>
+         <volume>0</volume>
+         <openInterest>0</openInterest>
+         <netChange>0.0</netChange>
+         <lastPrice>0.0</lastPrice>
+         <quoteDetail>https://api.etrade.com/v1/market/quot
+e/IBM:2018:8:17:PUT:200.000000</quoteDetail>
+         <osiKey>IBM---180817P00200000</osiKey>
+         <OptionGreeks>
+            <rho>-0.278200</rho>
+            <vega>0.015300</vega>
+            <theta>-0.000200</theta>
+            <delta>-0.991400</delta>
+            <gamma>0.001300</gamma>
+            <iv>0.348400</iv>
+            <currentValue>true</currentValue>
+         </OptionGreeks>
+      </Put>
+   </OptionPair>
+   <OptionPair>
+      <Call>
+         <optionCategory>STANDARD</optionCategory>
+         <optionRootSymbol>IBM</optionRootSymbol>
+         <timeStamp>1529431379</timeStamp>
+         <adjustedFlag>false</adjustedFlag>
+         <displaySymbol>IBM Aug 17 '18 $205 Call</displaySy
+mbol>
+         <optionType>CALL</optionType>
+         <strikePrice>205.0</strikePrice>
+         <symbol>IBM</symbol>
+         <bid>0.0</bid>
+         <ask>0.0</ask>
+         <bidSize>0</bidSize>
+         <askSize>0</askSize>
+         <inTheMoney>n</inTheMoney>
+         <volume>0</volume>
+         <openInterest>0</openInterest>
+         <netChange>0.0</netChange>
+         <lastPrice>0.0</lastPrice>
+         <quoteDetail>https://api.etrade.com/v1/market/quot
+e/IBM:2018:8:17:CALL:205.000000</quoteDetail>
+         <osiKey>IBM---180817C00205000</osiKey>
+         <OptionGreeks>
+            <rho>0.000800</rho>
+            <vega>0.007100</vega>
+            <theta>-0.001700</theta>
+            <delta>0.003900</delta>
+            <gamma>0.000600</gamma>
+            <iv>0.327500</iv>
+            <currentValue>true</currentValue>
+         </OptionGreeks>
+      </Call>
+      <Put>
+         <optionCategory>STANDARD</optionCategory>
+         <optionRootSymbol>IBM</optionRootSymbol>
+         <timeStamp>1529431379</timeStamp>
+         <adjustedFlag>false</adjustedFlag>
+         <displaySymbol>IBM Aug 17 '18 $205 Put</displaySym
+bol>
+         <optionType>PUT</optionType>
+         <strikePrice>205.0</strikePrice>
+         <symbol>IBM</symbol>
+         <bid>0.0</bid>
+         <ask>0.0</ask>
+         <bidSize>0</bidSize>
+         <askSize>0</askSize>
+          <inTheMoney>y</inTheMoney>
+          <volume>0</volume>
+          <openInterest>0</openInterest>
+          <netChange>0.0</netChange>
+          <lastPrice>0.0</lastPrice>
+          <quoteDetail>https://api.etrade.com/v1/market/quot
+ e/IBM:2018:8:17:PUT:205.000000</quoteDetail>
+          <osiKey>IBM---180817P00205000</osiKey>
+          <OptionGreeks>
+             <rho>-0.282200</rho>
+             <vega>0.034800</vega>
+             <theta>-0.008300</theta>
+             <delta>-0.974900</delta>
+             <gamma>0.002400</gamma>
+             <iv>0.442700</iv>
+             <currentValue>true</currentValue>
+          </OptionGreeks>
+       </Put>
+    </OptionPair>
+    <timeStamp>1529430420</timeStamp>
+    <quoteType>DELAYED</quoteType>
+    <nearPrice>200.0</nearPrice>
+    <SelectedED>
+       <day>17</day>
+       <month>8</month>
+       <year>2018</year>
+    </SelectedED>
+ </OptionChainResponse>
+
+
+
+
+Get Option Expire Dates Request URL
+
+                                                           content_copy
+ https://api.etrade.com/v1/market/optionexpiredate?symbol=GO
+                      OG&expiryType=ALL
+
+
+
+Response
+                                         content_copy
+
+<?xml version="1.0" encoding="UTF-8"?>
+<OptionExpireDateResponse>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>6</month>
+      <day>22</day>
+      <expiryType>WEEKLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>6</month>
+      <day>29</day>
+      <expiryType>WEEKLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>7</month>
+      <day>6</day>
+      <expiryType>WEEKLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>7</month>
+      <day>13</day>
+      <expiryType>WEEKLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>7</month>
+      <day>20</day>
+      <expiryType>MONTHLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>7</month>
+      <day>27</day>
+      <expiryType>WEEKLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>8</month>
+      <day>17</day>
+      <expiryType>MONTHLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>9</month>
+      <day>21</day>
+      <expiryType>MONTHLY</expiryType>
+   </ExpirationDate>
+   <ExpirationDate>
+      <year>2018</year>
+      <month>12</month>
+      <day>21</day>
+      <expiryType>MONTHLY</expiryType>
+   </ExpirationDate>
+            <ExpirationDate>
+               <year>2019</year>
+               <month>1</month>
+               <day>18</day>
+               <expiryType>MONTHLY</expiryType>
+            </ExpirationDate>
+            <ExpirationDate>
+               <year>2019</year>
+               <month>6</month>
+               <day>21</day>
+               <expiryType>MONTHLY</expiryType>
+            </ExpirationDate>
+            <ExpirationDate>
+               <year>2020</year>
+               <month>1</month>
+               <day>17</day>
+               <expiryType>MONTHLY</expiryType>
+            </ExpirationDate>
+         </OptionExpireDateResponse>
+
+
+
+
+PLEASE READ THE IMPORTANT DISCLOSURES BELOW.
+
+
+By using E*TRADE API ('API') and accepting the terms of the Application Programming Interface License
+Agreement and the Application Programming Interface User Agreement, you agree that API may employ
+security policies, procedures and systems of Third Party providers which may or may not be less stringent and
+secure than the policies, procedures and systems of E*TRADE Securities LLC ('E*TRADE') or its affiliates.
+Material provided on API may have been produced by independent third parties not affiliated or endorsed by
+E*TRADE or its affiliates ('Third Party'). To the extent that API or Third Party providers express opinions or make
+recommendations, you understand that such opinions or recommendations are expressed by the Third Party
+provider and are not the opinions or recommendations of E*TRADE or its affiliates. E*TRADE is not responsible
+for the accuracy of market data displayed on API or made available by Third Party providers. There may be
+latency between the time an order (or other information) is submitted from API and the time the order is
+received by E*TRADE. The E*TRADE Two Second Execution Guarantee or any similar guarantee does not apply
+for orders placed through API and Third Party provider web sites. The E*TRADE CompleteTM Protection
+Guarantee does not apply. Orders created and submitted through API are not vetted until they are received by
+E*TRADE. It is possible that E*TRADE may reject an order placed through API. Please see the Application
+Programming Interface License Agreement and the Application Programming Interface User Agreement for
+more information.
+
+Banking products and services are provided by Morgan Stanley Private Bank, National Association,
+Member FDIC.
+Securities products offered by E*TRADE Securities LLC (ETS), Member SIPC or Morgan Stanley Smith Barney
+LLC (MSSB), Member SIPC. Investment advisory services offered by E*TRADE Capital Management, LLC
+(ETCM) or MSSB. Commodity futures and options on futures products and services offered by E*TRADE
+Futures LLC, Member NFA. Stock plan administration solutions and services offered by E*TRADE Financial
+Corporate Services, Inc. Banking products and services are provided by Morgan Stanley Private Bank, National
+Association, Member FDIC. All entities are separate but affiliated subsidiaries of Morgan Stanley.
+
+Throughout 2023, ETS and ETCM will be transitioning existing clients to MSSB. Learn more about this
+transition.
+
+System response and account access times may vary due to a variety of factors, including trading volumes,
+market conditions, system performance, and other factors.
+
+Statement of Financial Condition | About Asset Protection | Account Agreements and Disclosures |
+Quarterly 606 Report | Business Resiliency Plan | Your Privacy Choices
+
+©2025 E*TRADE from Morgan Stanley. All rights reserved. E*TRADE Copyright Policy
+

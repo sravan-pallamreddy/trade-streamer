@@ -276,13 +276,26 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 - **Portfolio Overview**: Auto-synced portfolio rail with account summary tiles, option position cards, and masked sensitive fields
 - **E*TRADE Integration**: Live portfolio data, balance polling, and one-click emergency exits
 - **Strategy Playbooks**: Momentum, mean-reversion, and breakout diagnostics baked into every scan
-- **Idea Tracker**: Pin any option suggestion as a colored tile in the scan sidebar to monitor buy/wait/ignore states with live updates
+- **Idea Tracker**: Pin any option suggestion as a floating tile so buy/wait/ignore cues stay visible even when the scan panel is hidden
+- **Auto Exit (optional)**: When armed, the dashboard scales out of winners or fires emergency sells through the E*TRADE API based on live P&L thresholds
+- **Cash Entry**: One-click market buys that size option contracts off your available cash balance
 - **Trade Execution**: Direct trade placement (future feature)
 
 #### Tracking Option Ideas
-- Click the **Track Idea** button in any recommendation card to pin it to the left-hand “Tracked Ideas” rail. The tile stores symbol, strike, expiry, entry/stop/target, and AI summary text.
+- Click the **Track Idea** button in any recommendation card to pin it to the floating "Tracked Ideas" widget. The tile stores symbol, strike, expiry, entry/stop/target, and AI summary text.
 - Tile colors mirror the verdict state: green = buy, amber = wait, red = ignore. Selecting the button again refreshes the tile with the most recent prices.
 - The rail supports up to eight active ideas, persists locally via `localStorage`, and includes one-click removal or a `Clear` action to reset the list between sessions.
+
+#### Automated Auto-Exit (Optional)
+- Set `UI_AUTO_EXIT_ENABLED=true` to arm the watcher. With the dashboard open, the options rail monitors every refreshed E*TRADE position.
+- When unrealized P&L meets `UI_AUTO_EXIT_TAKE_PROFIT_PCT` (default **+40%**), the watcher sells `UI_AUTO_EXIT_SCALE_PCT` of the remaining contracts (default **50%**) but never fewer than `UI_AUTO_EXIT_MIN_CONTRACTS`.
+- If P&L falls below `UI_AUTO_EXIT_STOP_LOSS_PCT` (default **-35%**), an emergency sell liquidates the entire position via `/api/portfolio/.../emergency-sell`.
+- `UI_AUTO_EXIT_COOLDOWN_MS` (default **300000 ms**) prevents repeated orders; failures drop to a 60s retry. Automation currently skips short positions.
+
+#### Cash-Based Market Orders
+- Every recommendation card includes a **Buy w/ Cash** button. It uses your withdrawable cash (`cashAvailableForWithdrawal` with fallbacks to other cash balances) and calculates `floor(withdrawCash / (entryPrice * 100))` contracts before preview/place.
+- If withdrawable cash cannot fund at least one contract, the UI blocks the submission and prompts you to refresh balances.
+- Orders run through the same E*TRADE preview/place endpoints and refresh the portfolio rail after execution.
 
 ### E*TRADE Setup
 To enable portfolio tracking, configure E*TRADE API access:
@@ -364,6 +377,13 @@ The dashboard uses the same environment variables as the CLI agent:
 - `UI_AI_PROVIDERS`: Comma-separated provider list (e.g., `openai,xai`) to override auto-detection and run multiple analyses per scan
 - `SCAN_SYMBOLS`: Symbols to analyze (default: SPY,QQQ,AAPL,TSLA,GOOGL,NVDA)
 - `UI_AGENT_COMMAND`: Custom command to launch the AI agent (defaults to `npm run day-trade`). Placeholders `{{symbols}}`, `{{strategy}}`, and `{{expiryType}}` are dynamically substituted when present.
+- Auto-exit tuning (optional):
+  - `UI_AUTO_EXIT_ENABLED=true`
+  - `UI_AUTO_EXIT_TAKE_PROFIT_PCT=40`
+  - `UI_AUTO_EXIT_STOP_LOSS_PCT=-35`
+  - `UI_AUTO_EXIT_SCALE_PCT=0.5`
+  - `UI_AUTO_EXIT_MIN_CONTRACTS=1`
+  - `UI_AUTO_EXIT_COOLDOWN_MS=300000`
 
 ### Files
 - `src/ui/server.js`: Express server with API endpoints
