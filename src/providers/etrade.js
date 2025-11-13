@@ -48,6 +48,7 @@ async function etFetch(path, { method = 'GET', query = {}, body } = {}) {
     console.log('etrade headerParams:', JSON.stringify(parts.headerParams, null, 2));
   }
   const fullUrl = Object.keys(query).length ? `${url}?${new URLSearchParams(query).toString()}` : url;
+  
   const res = await fetch(fullUrl, {
     method,
     headers: {
@@ -561,40 +562,33 @@ function normalizeCloseAction(orderAction, rawQty = 0) {
 }
 
 function buildOrderPayload({ product, orderAction, quantity, contract, price }) {
-  const qty = Math.abs(Math.trunc(quantity));
-  const numericPrice = Number(price);
-  const hasLimitPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+  const qty = Math.abs(Math.trunc(Number(quantity)));
+  // Remove ProductId from Product
+  const cleanProduct = { ...product };
+  if (cleanProduct.ProductId) delete cleanProduct.ProductId;
+  // Ensure numeric fields
+  if (typeof cleanProduct.strikePrice === 'string') cleanProduct.strikePrice = Number(cleanProduct.strikePrice);
+  if (typeof cleanProduct.expiryYear === 'string') cleanProduct.expiryYear = Number(cleanProduct.expiryYear);
+  if (typeof cleanProduct.expiryMonth === 'string') cleanProduct.expiryMonth = Number(cleanProduct.expiryMonth);
+  if (typeof cleanProduct.expiryDay === 'string') cleanProduct.expiryDay = Number(cleanProduct.expiryDay);
+  // Add underlyingSymbol for options
+  if (contract?.underlying && !cleanProduct.underlyingSymbol) {
+    cleanProduct.underlyingSymbol = contract.underlying;
+  }
+
   const instrument = {
-    Product: product,
+    Product: cleanProduct,
     orderAction,
-    orderedQuantity: qty,
     quantityType: 'QUANTITY',
     quantity: qty,
   };
 
-  const osiKey = formatOsiKey(contract?.occSymbol);
-  if (osiKey) {
-    instrument.osiKey = osiKey;
-    if (!instrument.Product.ProductId) {
-      instrument.Product.ProductId = {
-        symbol: osiKey,
-        typeCode: 'OPTION',
-      };
-    }
-  }
-
   const orderPayload = {
-    allOrNone: false,
-    priceType: hasLimitPrice ? 'LIMIT' : 'MARKET',
-    stopPrice: 0,
+    priceType: 'MARKET',
     orderTerm: 'GOOD_FOR_DAY',
     marketSession: 'REGULAR',
     Instrument: [instrument],
   };
-
-  if (hasLimitPrice) {
-    orderPayload.limitPrice = numericPrice;
-  }
 
   return orderPayload;
 }
@@ -765,7 +759,100 @@ async function getOrders(accountIdKey, params = {}) {
   if (!accountIdKey) throw new Error('Account ID (accountIdKey) is required');
   const query = buildOrdersQuery(params);
   const data = await etFetch(`/v1/accounts/${accountIdKey}/orders.json`, { query });
-  return data;
+  return { orders: sorted };
+}
+
+async function previewOptionOrder({
+  accountIdKey,
+  optionSymbol,
+  underlyingSymbol,
+  quantity,
+  orderAction,
+  callPut,
+  strike,
+  expiry,
+  price,
+}) {
+  if (!accountIdKey) throw new Error('Account ID (accountIdKey) is required');
+  if (!optionSymbol && !underlyingSymbol) {
+    throw new Error('Option symbol or underlying symbol is required');
+  }
+
+  const rawQty = Number(quantity);
+  if (!Number.isFinite(rawQty) || rawQty === 0) {
+    throw new Error('Quantity must be a non-zero number');
+  }
+
+  const absQty = Math.abs(Math.trunc(rawQty));
+  if (!absQty) {
+    throw new Error('Quantity must be at least one contract');
+  }
+
+  const action = normalizeCloseAction(orderAction, rawQty);
+  const contract = normalizeOptionContract({ optionSymbol, underlyingSymbol, callPut, strike, expiry });
+  
+  if (!contract.underlying) {
+    throw new Error('Unable to infer underlying symbol for option contract');
+  }
+  if (!contract.callPut) {
+    throw new Error('Option call/put side is required');
+  }
+  if (!Number.isFinite(contract.strike)) {
+    throw new Error('Option strike price is required');
+  }
+  if (!contract.expiry) {
+    throw new Error('Option expiry is required');
+  }
+
+  const product = buildOptionProduct(contract);
+  const debugOrders = !!process.env.DEBUG_ETRADE_ORDERS;
+  
+  console.log('E*TRADE preview order details:', {
+    contract,
+    product,
+    action,
+    absQty,
+  });
+
+  const buildOrderSection = () => buildOrderPayload({
+    product,
+    orderAction: action,
+    quantity: absQty,
+    contract,
+    price,
+  });
+
+  const previewRequest = {
+    PreviewOrderRequest: {
+      orderType: 'OPTN',
+      orderStrategyType: 'SINGLE',
+      Order: [buildOrderSection()],
+    },
+  };
+
+  console.log('E*TRADE preview order payload:', JSON.stringify(previewRequest, null, 2));
+
+  const previewPath = `/v1/accounts/${accountIdKey}/orders/preview.json`;
+  const previewResponse = await etFetch(previewPath, { method: 'POST', body: previewRequest });
+  const previewRoot = previewResponse?.PreviewOrderResponse || previewResponse;
+
+  // Extract preview details
+  const orderDetails = previewRoot?.Order?.[0] || {};
+  const instrument = orderDetails?.Instrument?.[0] || {};
+  const estimatedCommission = orderDetails?.estimatedCommission || orderDetails?.commission || 0;
+  const estimatedTotalAmount = orderDetails?.estimatedTotalAmount || orderDetails?.totalOrderValue || 0;
+  const limitPrice = orderDetails?.limitPrice || 0;
+  const messages = collectOrderMessages(previewRoot);
+
+  return {
+    previewId: null, // Not extracting previewId since we're not placing the order
+    orderType: orderDetails?.priceType || 'MARKET',
+    estimatedPrice: limitPrice || instrument?.averageExecutionPrice || 0,
+    estimatedCost: Math.abs(estimatedTotalAmount),
+    commission: estimatedCommission,
+    warnings: messages,
+    rawPreview: previewRoot,
+  };
 }
 
 module.exports = {
@@ -776,5 +863,6 @@ module.exports = {
   getPortfolio,
   getAccountBalance,
   placeOptionMarketOrder,
+  previewOptionOrder,
   getOrders,
 };
