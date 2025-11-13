@@ -98,6 +98,293 @@ function parseNumberEnv(value, defaultValue) {
   return Number.isFinite(numeric) ? numeric : defaultValue;
 }
 
+function ensureArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function formatDateMMDDYYYY(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+}
+
+function formatDateBareMMDDYYYY(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = String(date.getFullYear());
+  return `${month}${day}${year}`;
+}
+
+function formatDateYYYYMMDD(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateMMDDYY(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${month}/${day}/${year}`;
+}
+
+function canonicalOptionKey(instrument = {}, product = {}) {
+  const direct =
+    instrument.osiKey
+    || instrument.optionSymbol
+    || product.osiKey
+    || product.symbol
+    || instrument.symbol;
+  if (direct) {
+    return String(direct).toUpperCase();
+  }
+  const parts = [
+    product.symbol || instrument.symbol || 'UNKNOWN',
+    product.callPut || instrument.callPut || '',
+    product.strikePrice ?? instrument.strikePrice ?? '',
+    product.expiryYear ?? instrument.expiryYear ?? '',
+    product.expiryMonth ?? instrument.expiryMonth ?? '',
+    product.expiryDay ?? instrument.expiryDay ?? '',
+  ];
+  return parts.join('|').toUpperCase();
+}
+
+function isOptionInstrument(instrument = {}, product = {}) {
+  const securityType = (product.securityType || instrument.securityType || '').toUpperCase();
+  if (securityType) {
+    return securityType === 'OPTN';
+  }
+  if (instrument.optionSymbol || instrument.osiKey) return true;
+  if (product.callPut || product.osiKey || product.strikePrice != null) return true;
+  return false;
+}
+
+function buildExpiryLabel(product = {}, instrument = {}) {
+  const year = product.expiryYear ?? instrument.expiryYear;
+  if (!Number.isFinite(year)) return null;
+  const month = product.expiryMonth ?? instrument.expiryMonth;
+  const day = product.expiryDay ?? instrument.expiryDay;
+  if (!Number.isFinite(month) || !Number.isFinite(day)) return null;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function toIsoTimestamp(value) {
+  if (!value && value !== 0) return null;
+  const asNumber = Number(value);
+  if (Number.isFinite(asNumber)) {
+    const digits = String(Math.trunc(asNumber)).length;
+    if (digits >= 13) return new Date(asNumber).toISOString();
+    if (digits === 10) return new Date(asNumber * 1000).toISOString();
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+function normalizeOrderRecords(rawOrders) {
+  const root = rawOrders?.OrdersResponse || rawOrders?.ordersResponse || rawOrders;
+  if (!root) return [];
+  const orderEntries = ensureArray(root.order || root.orders || root.OrderData || root.Orders);
+  const records = [];
+
+  for (const entry of orderEntries) {
+    const orderId = entry?.orderId || entry?.OrderId || entry?.id || null;
+    const details = ensureArray(entry?.orderDetail || entry?.OrderDetail || entry?.details || entry);
+    for (const detail of details) {
+      const status = String(detail?.status || detail?.orderStatus || entry?.orderStatus || '').toUpperCase();
+      if (!status || !(status.includes('EXECUTED') || status.includes('FILLED'))) continue;
+      const executedTime =
+        detail?.executedTime
+        || detail?.orderTime
+        || detail?.placedTime
+        || entry?.executedTime
+        || entry?.placedTime
+        || null;
+      const instruments = ensureArray(detail?.instrument || detail?.Instrument);
+      for (const instrument of instruments) {
+        const product = instrument?.product || instrument?.Product || {};
+        if (!isOptionInstrument(instrument, product)) continue;
+        const action = String(instrument?.orderAction || detail?.orderAction || entry?.orderAction || '').toUpperCase();
+        if (!action) continue;
+        const quantity = Number(
+          instrument?.filledQuantity
+          ?? instrument?.quantity
+          ?? detail?.filledQuantity
+          ?? detail?.quantity
+          ?? 0,
+        );
+        if (!Number.isFinite(quantity) || quantity === 0) continue;
+        const price = Number(
+          instrument?.averageExecutionPrice
+          ?? detail?.averageExecutionPrice
+          ?? instrument?.price
+          ?? detail?.price
+          ?? 0,
+        );
+        if (!Number.isFinite(price) || price <= 0) continue;
+        const multiplierRaw = Number(product?.multiplier ?? instrument?.multiplier ?? 100);
+        const multiplier = Number.isFinite(multiplierRaw) && multiplierRaw > 0 ? multiplierRaw : 100;
+        const key = canonicalOptionKey(instrument, product);
+        const description =
+          instrument?.symbolDescription
+          || product?.symbolDescription
+          || instrument?.optionSymbol
+          || product?.osiKey
+          || key
+          || instrument?.symbol
+          || 'Option';
+        records.push({
+          orderId,
+          timestamp: toIsoTimestamp(executedTime),
+          action,
+          qty: Math.abs(quantity),
+          price,
+          multiplier,
+          optionSymbol: instrument?.optionSymbol || instrument?.osiKey || product?.osiKey || key,
+          symbol: product?.symbol || instrument?.symbol || null,
+          description,
+          callPut: product?.callPut || instrument?.callPut || null,
+          strike: product?.strikePrice ?? instrument?.strikePrice ?? null,
+          expiry: buildExpiryLabel(product, instrument),
+          key,
+        });
+      }
+    }
+  }
+
+  return records;
+}
+
+function summarizeDayOptionOrders(rawOrders) {
+  const records = normalizeOrderRecords(rawOrders);
+  if (!records.length) return null;
+  records.sort((a, b) => {
+    if (a.timestamp && b.timestamp) return a.timestamp.localeCompare(b.timestamp);
+    if (a.timestamp) return -1;
+    if (b.timestamp) return 1;
+    return 0;
+  });
+
+  const inventory = new Map();
+  const trades = [];
+  const totals = { realized: 0, grossBuys: 0, grossSells: 0 };
+
+  for (const record of records) {
+    const isSell = record.action.includes('SELL');
+    const isBuy = record.action.includes('BUY');
+    if (!isSell && !isBuy) continue;
+
+    const cash = Number((record.price * record.qty * record.multiplier * (isSell ? 1 : -1)).toFixed(2));
+    if (cash >= 0) totals.grossSells += cash;
+    else totals.grossBuys += Math.abs(cash);
+
+    const entry = {
+      id: record.orderId || `order-${trades.length + 1}`,
+      symbol: record.symbol,
+      optionSymbol: record.optionSymbol,
+      description: record.description,
+      side: record.action,
+      qty: record.qty,
+      price: record.price,
+      multiplier: record.multiplier,
+      timestamp: record.timestamp,
+      netCash: cash,
+      realized: null,
+      unmatchedQty: 0,
+      callPut: record.callPut,
+      strike: record.strike,
+      expiry: record.expiry,
+    };
+
+    if (isBuy) {
+      const queue = inventory.get(record.key) || [];
+      queue.push({ qty: record.qty, price: record.price });
+      inventory.set(record.key, queue);
+    } else {
+      let remaining = record.qty;
+      let realized = 0;
+      const queue = inventory.get(record.key) || [];
+      while (remaining > 0 && queue.length) {
+        const lot = queue[0];
+        const matchedQty = Math.min(remaining, lot.qty);
+        realized += (record.price - lot.price) * matchedQty * record.multiplier;
+        lot.qty -= matchedQty;
+        if (lot.qty <= 1e-6) queue.shift();
+        remaining -= matchedQty;
+      }
+      if (realized !== 0) {
+        realized = Number(realized.toFixed(2));
+        entry.realized = realized;
+        totals.realized += realized;
+      }
+      if (remaining > 0) {
+        entry.unmatchedQty = remaining;
+      }
+    }
+
+    trades.push(entry);
+  }
+
+  totals.realized = Number(totals.realized.toFixed(2));
+  totals.grossBuys = Number(totals.grossBuys.toFixed(2));
+  totals.grossSells = Number(totals.grossSells.toFixed(2));
+
+  return {
+    updatedAt: new Date().toISOString(),
+    totals,
+    trades,
+  };
+}
+
+async function fetchDayOrders(accountIdKey) {
+  const today = new Date();
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const nextDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  const attempts = [
+    { label: 'MMDDYYYY (bare digits)', format: formatDateBareMMDDYYYY }
+  ];
+
+  let lastError = null;
+  for (const attempt of attempts) {
+    const params = {
+     
+      fromDate: attempt.format(startOfDay),
+      toDate: attempt.format(nextDay),
+      count: 100,
+      securityType: 'OPTN',
+      marketSession: 'REGULAR',
+    };
+    console.log('[DayOrders] Fetching option executions', {
+      accountIdKey,
+      format: attempt.label,
+      params,
+    });
+    try {
+      const rawOrders = await getOrders(accountIdKey, params);
+      const summary = summarizeDayOptionOrders(rawOrders);
+      if (summary?.totals) {
+        console.log('[DayOrders] Summary', {
+          formatTried: attempt.label,
+          trades: summary.trades?.length || 0,
+          totals: summary.totals,
+        });
+      } else {
+        console.log('[DayOrders] No executed option orders returned for today (format:', attempt.label, ')');
+      }
+      return summary;
+    } catch (error) {
+      lastError = error;
+      console.warn('[DayOrders] Fetch failed (format', attempt.label, '):', error.message);
+    }
+  }
+  if (lastError) {
+    throw lastError;
+  }
+  return null;
+}
+
 function buildAgentCommand(symbolsList, strategy, expiryType) {
   let command = AGENT_COMMAND;
 
@@ -158,6 +445,50 @@ const LOG_AGENT_OUTPUT = process.env.UI_AGENT_LOG_OUTPUT
   ? String(process.env.UI_AGENT_LOG_OUTPUT).toLowerCase() !== 'false'
   : true;
 
+async function resolveOptionPrice({ accountIdKey, optionSymbol, symbol, fallbackPrice }) {
+  const numericFallback = Number(fallbackPrice);
+  if (Number.isFinite(numericFallback) && numericFallback > 0) {
+    return numericFallback;
+  }
+
+  const normalizeKey = (value) => (value ? String(value).toUpperCase().trim() : '');
+  const targetOption = normalizeKey(optionSymbol);
+  const targetUnderlying = normalizeKey(symbol);
+
+  try {
+    const portfolio = await getPortfolio(accountIdKey, { view: 'OPTIONS' });
+    const positions = Array.isArray(portfolio?.positions) ? portfolio.positions : [];
+    const match = positions.find((position) => {
+      const candidateOption = normalizeKey(position?.osiKey || position?.optionSymbol || position?.symbol);
+      if (targetOption && candidateOption) {
+        return candidateOption === targetOption;
+      }
+      const candidateUnderlying = normalizeKey(position?.underlyingSymbol || position?.symbol);
+      return targetUnderlying && candidateUnderlying === targetUnderlying;
+    });
+
+    if (match) {
+      const current = Number(match.currentPrice);
+      if (Number.isFinite(current) && current > 0) {
+        return current;
+      }
+      const marketValue = Number(match.marketValue);
+      const quantity = Number(match.quantity);
+      if (Number.isFinite(marketValue) && Number.isFinite(quantity) && quantity !== 0) {
+        const perContractValue = marketValue / Math.abs(quantity);
+        const inferredPrice = perContractValue / 100; // convert notional value to option premium
+        if (Number.isFinite(inferredPrice) && inferredPrice > 0) {
+          return Number(inferredPrice.toFixed(2));
+        }
+      }
+    }
+  } catch (lookupError) {
+    console.warn('Unable to refresh option price for emergency sell:', lookupError.message);
+  }
+
+  return null;
+}
+
 function parseProviderList(value) {
   if (!value) return [];
   return String(value)
@@ -173,7 +504,7 @@ function resolveUiProviders() {
   if (fromEnv.length) return Array.from(new Set(fromEnv));
   const autoDetect = [];
   if (process.env.OPENAI_API_KEY) autoDetect.push('openai');
-  if (process.env.XAI_API_KEY) autoDetect.push('xai');
+  if (process.env.DEEP_SEEK_API_KEY) autoDetect.push('deepseek');
   if (autoDetect.length) return Array.from(new Set(autoDetect));
   return ['openai'];
 }
@@ -181,6 +512,19 @@ function resolveUiProviders() {
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Disable browser caching for API responses to force fresh brokerage data
+app.use((req, res, next) => {
+  if (req.path && req.path.startsWith('/api/')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    delete req.headers['if-none-match'];
+    delete req.headers['if-modified-since'];
+  }
+  next();
+});
 
 // Load E*TRADE module
 try {
@@ -193,6 +537,7 @@ try {
 }
 
 const { getAccounts, getPortfolio, getAccountBalance, placeOptionMarketOrder } = etradeModule;
+const { getOrders } = etradeModule;
 
 // API endpoints
 app.get('/api/recommendations', (req, res) => {
@@ -306,7 +651,13 @@ app.get('/api/portfolio/:accountIdKey', async (req, res) => {
 
     // Use the accountIdKey for portfolio calls (E*TRADE API expects this format)
     const portfolio = await getPortfolio(accountIdKey, { view });
-    res.json({ success: true, portfolio });
+    let dayOrders = null;
+    try {
+      dayOrders = await fetchDayOrders(accountIdKey);
+    } catch (orderErr) {
+      console.warn('Day orders fetch failed:', orderErr.message);
+    }
+    res.json({ success: true, portfolio, dayOrders });
   } catch (error) {
     console.error('Portfolio error:', error);
     res.status(500).json({ error: error.message });
@@ -350,6 +701,7 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
       callPut,
       strike,
       expiry,
+      price,
     } = req.body || {};
 
     const chosenSymbol = optionSymbol || symbol;
@@ -363,6 +715,16 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
       return res.status(400).json({ success: false, error: 'Position quantity must be provided.' });
     }
 
+    const resolvedPrice = await resolveOptionPrice({
+      accountIdKey,
+      optionSymbol: chosenSymbol,
+      symbol,
+      fallbackPrice: price,
+    });
+    if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
+      return res.status(400).json({ success: false, error: 'Unable to determine current option price for emergency sell. Refresh positions and try again.' });
+    }
+
     const orderResult = await placeOptionMarketOrder({
       accountIdKey,
       optionSymbol: chosenSymbol,
@@ -372,6 +734,7 @@ app.post('/api/portfolio/:accountIdKey/options/emergency-sell', async (req, res)
       callPut,
       strike,
       expiry,
+      price: resolvedPrice,
     });
 
     res.json({
@@ -505,6 +868,7 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
       callPut: normalizedCallPut,
       strike: numericStrike,
       expiry,
+      price: contractPrice,
     });
 
     res.json({
@@ -539,6 +903,8 @@ app.post('/api/portfolio/:accountIdKey/options/market-buy', async (req, res) => 
   }
 });
 
+
+
 function parseAIOutput(output, { provider, model } = {}) {
   if (!output) {
     return { recommendations: [], meta: { provider, model } };
@@ -570,7 +936,7 @@ function parseAIOutput(output, { provider, model } = {}) {
 
   const parseCurrency = (value) => {
     if (value == null) return null;
-    const numeric = Number(value.replace(/[^0-9.-]/g, ''));
+    const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
     return Number.isFinite(numeric) ? Number(numeric.toFixed(2)) : null;
   };
 
@@ -595,11 +961,16 @@ function parseAIOutput(output, { provider, model } = {}) {
     }
   };
 
+  const sanitizeLine = (value) => value.replace(/[^\x20-\x7E]+/g, '').trim();
+
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
 
-    const headerMatch = line.match(/🤖 AI:\s*([^|]+)(?:\|\s*Model:\s*(.+))?/i);
+    const asciiLine = sanitizeLine(line);
+    const matchLine = asciiLine || line;
+
+    const headerMatch = matchLine.match(/AI:\s*([^|]+)(?:\|\s*Model:\s*(.+))?/i);
     if (headerMatch) {
       activeProvider = headerMatch[1]?.trim() || activeProvider;
       const maybeModel = headerMatch[2]?.trim();
@@ -609,9 +980,9 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    const analyzingMatch = line.match(/🔍 Analyzing ([A-Z0-9]+)/i);
+    const analyzingMatch = matchLine.match(/Analyzing\s+([A-Z0-9.\-]+)/i);
     if (analyzingMatch) {
-      currentSymbol = analyzingMatch[1].toUpperCase();
+      currentSymbol = analyzingMatch[1].replace(/\.+$/, '').toUpperCase();
       summarySymbol = null;
       collectingPlanFor = null;
       inSummary = false;
@@ -619,7 +990,7 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    if (line.includes('🎉 RECOMMENDED TRADES:')) {
+    if (matchLine.includes('RECOMMENDED TRADES:')) {
       inSummary = true;
       summarySymbol = null;
       collectingPlanFor = null;
@@ -628,9 +999,9 @@ function parseAIOutput(output, { provider, model } = {}) {
     }
 
     if (inSummary) {
-      const summaryMatch = line.match(/^([A-Z0-9]+)\s+(CALL|PUT)\s+-\s+(.+)/);
+      const summaryMatch = matchLine.match(/^([A-Z0-9]+)\s+(CALL|PUT)\s+-\s+(.+)/);
       if (summaryMatch) {
-        summarySymbol = summaryMatch[1].toUpperCase();
+        summarySymbol = summaryMatch[1].replace(/\.+$/, '').toUpperCase();
         const rec = ensureRec(summarySymbol);
         if (rec) {
           rec.side = summaryMatch[2].toLowerCase();
@@ -639,7 +1010,7 @@ function parseAIOutput(output, { provider, model } = {}) {
         continue;
       }
 
-      const optionSymbolLine = line.match(/^Option symbol:\s*([^\s(]+)(?:\s*\(([^)]+)\))?/i);
+      const optionSymbolLine = matchLine.match(/^Option symbol:\s*([^\s(]+)(?:\s*\(([^)]+)\))?/i);
       if (optionSymbolLine && summarySymbol) {
         const rec = ensureRec(summarySymbol);
         if (rec) {
@@ -654,7 +1025,7 @@ function parseAIOutput(output, { provider, model } = {}) {
         continue;
       }
 
-      const entryLine = line.match(/^Entry:\s*\$?([0-9.]+|N\/A)\s*\|\s*Stop:\s*\$?([0-9.]+|N\/A)\s*\|\s*Target:\s*\$?([0-9.]+|N\/A)/i);
+      const entryLine = matchLine.match(/^Entry:\s*\$?([0-9.]+|N\/A)\s*\|\s*Stop:\s*\$?([0-9.]+|N\/A)\s*\|\s*Target:\s*\$?([0-9.]+|N\/A)/i);
       if (entryLine && summarySymbol) {
         const rec = ensureRec(summarySymbol);
         if (rec) {
@@ -665,7 +1036,7 @@ function parseAIOutput(output, { provider, model } = {}) {
         continue;
       }
 
-      const qtyLine = line.match(/^Qty:\s*(\d+)\s*\|\s*Risk:\s*\$?([0-9.]+)/i);
+      const qtyLine = matchLine.match(/^Qty:\s*(\d+)\s*\|\s*Risk:\s*\$?([0-9.]+)/i);
       if (qtyLine && summarySymbol) {
         const rec = ensureRec(summarySymbol);
         if (rec) {
@@ -675,7 +1046,7 @@ function parseAIOutput(output, { provider, model } = {}) {
         continue;
       }
 
-      const planLine = line.match(/^Plan:\s*(.+)/i);
+      const planLine = matchLine.match(/^Plan:\s*(.+)/i);
       if (planLine && summarySymbol) {
         const rec = ensureRec(summarySymbol);
         if (rec) {
@@ -684,7 +1055,7 @@ function parseAIOutput(output, { provider, model } = {}) {
         continue;
       }
 
-      const notesLine = line.match(/^AI Notes:\s*(.+)/i);
+      const notesLine = matchLine.match(/^AI Notes:\s*(.+)/i);
       if (notesLine && summarySymbol) {
         const rec = ensureRec(summarySymbol);
         if (rec) {
@@ -693,7 +1064,7 @@ function parseAIOutput(output, { provider, model } = {}) {
         continue;
       }
 
-      const stepLine = line.match(/^(\d+)\)\s+Sell\s+(\d+)\s*@\s*([^—]+)—\s*(.+)$/);
+      const stepLine = matchLine.match(/^(\d+)\)\s+Sell\s+(\d+)\s*@\s*([^\s]+)\s+(.*)$/);
       if (stepLine && summarySymbol) {
         const rec = ensureRec(summarySymbol);
         addPlanStep(rec, Number(stepLine[1]), Number(stepLine[2]), stepLine[3], stepLine[4]);
@@ -706,7 +1077,7 @@ function parseAIOutput(output, { provider, model } = {}) {
     const rec = ensureRec(currentSymbol);
     if (!rec) continue;
 
-    if (line.startsWith('AI_SELECTED_STRATEGY ')) {
+    if (matchLine.startsWith('AI_SELECTED_STRATEGY ')) {
       const payload = line.slice('AI_SELECTED_STRATEGY '.length).trim();
       try {
         rec.ai.selectedStrategy = JSON.parse(payload);
@@ -716,7 +1087,7 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    if (line.startsWith('AI_RISK_FLAGS ')) {
+    if (matchLine.startsWith('AI_RISK_FLAGS ')) {
       const payload = line.slice('AI_RISK_FLAGS '.length).trim();
       try {
         const parsed = JSON.parse(payload);
@@ -731,7 +1102,7 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    if (line.startsWith('AI_ADJUSTMENTS ')) {
+    if (matchLine.startsWith('AI_ADJUSTMENTS ')) {
       const payload = line.slice('AI_ADJUSTMENTS '.length).trim();
       try {
         rec.ai.adjustments = JSON.parse(payload);
@@ -741,14 +1112,14 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    if (line.startsWith('📄 Option contract:')) {
-      const payload = line.replace('📄 Option contract:', '').trim();
+    if (matchLine.includes('Option contract:')) {
+      const payload = line.replace(/^.*Option contract:/i, '').trim();
       if (payload) {
-        const parts = payload.split('|').map(part => part.trim()).filter(Boolean);
+        const parts = payload.split('|').map((part) => part.trim()).filter(Boolean);
         if (parts.length) {
           rec.contract = parts[0];
         }
-        for (let i = 1; i < parts.length; i++) {
+        for (let i = 1; i < parts.length; i += 1) {
           const part = parts[i];
           if (part.toLowerCase().startsWith('expiry')) {
             const value = part.slice('expiry'.length).trim().replace(/^:/, '').trim();
@@ -771,27 +1142,33 @@ function parseAIOutput(output, { provider, model } = {}) {
           if (part.toLowerCase().startsWith('source')) {
             const value = part.slice('source'.length).trim().replace(/^:/, '').trim();
             rec.optionSource = value || rec.optionSource || null;
-            continue;
           }
         }
       }
       continue;
     }
 
-    if (line.includes('📋 Signals:')) {
-      const signalsText = line.split('📋 Signals:')[1]?.trim() || 'none';
-      rec.signals = signalsText === 'none' ? [] : signalsText.split(', ').map(s => s.trim()).filter(Boolean);
+    const signalsIndex = matchLine.indexOf('Signals:');
+    if (signalsIndex >= 0) {
+      const lowerLine = line.toLowerCase();
+      const originalIndex = lowerLine.indexOf('signals:');
+      const rawSignals = originalIndex >= 0
+        ? line.slice(originalIndex + 'signals:'.length).trim()
+        : matchLine.slice(signalsIndex + 'Signals:'.length).trim();
+      rec.signals = rawSignals === 'none'
+        ? []
+        : rawSignals.split(',').map((s) => s.trim()).filter(Boolean);
       continue;
     }
 
-    const priceMatch = line.match(/📊 Current price:\s*\$([0-9.]+)\s*\(([^)]+)\)/i);
+    const priceMatch = matchLine.match(/Current price:\s*\$([0-9.]+)\s*\(([^)]+)\)/i);
     if (priceMatch) {
       rec.price = parseCurrency(priceMatch[1]);
       rec.priceSource = priceMatch[2];
       continue;
     }
 
-    const strengthMatch = line.match(/🎯 .*?Strength\s*(-?\d+)%/i);
+    const strengthMatch = matchLine.match(/Strength\s*(-?\d+)%/i);
     if (strengthMatch) {
       const strength = Number(strengthMatch[1]);
       rec.ai.strength = strength;
@@ -801,7 +1178,7 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    const selectedMatch = line.match(/🟢 Selected\s+(CALL|PUT)?[^@]*@\s*~?\$([0-9.]+)/i);
+    const selectedMatch = matchLine.match(/Selected\s+(CALL|PUT)?[^@]*@\s*~?\$([0-9.]+)/i);
     if (selectedMatch) {
       if (selectedMatch[1]) {
         rec.side = selectedMatch[1].toLowerCase();
@@ -810,7 +1187,7 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    const suggestedMatch = line.match(/🧮 Suggested\s+(CALL|PUT)?[^@]*@\s*~?\$([0-9.]+)/i);
+    const suggestedMatch = matchLine.match(/Suggested\s+(CALL|PUT)?[^@]*@\s*~?\$([0-9.]+)/i);
     if (suggestedMatch) {
       if (suggestedMatch[1]) {
         rec.side = suggestedMatch[1].toLowerCase();
@@ -819,58 +1196,60 @@ function parseAIOutput(output, { provider, model } = {}) {
       continue;
     }
 
-    const stopTargetMatch = line.match(/Stop\s*~?\$([0-9.]+|N\/A)\s*\|\s*Target\s*~?\$([0-9.]+|N\/A)/i);
+    const stopTargetMatch = matchLine.match(/Stop\s*~?\$([0-9.]+|N\/A)\s*\|\s*Target\s*~?\$([0-9.]+|N\/A)/i);
     if (stopTargetMatch) {
       rec.stop = stopTargetMatch[1] !== 'N/A' ? parseCurrency(stopTargetMatch[1]) : rec.stop ?? null;
       rec.target = stopTargetMatch[2] !== 'N/A' ? parseCurrency(stopTargetMatch[2]) : rec.target ?? null;
       continue;
     }
 
-  const sizingMatch = line.match(/📦 Position sizing: buy\s+(\d+)\s+contract(?:\(s\))?/i);
+    const sizingMatch = matchLine.match(/Position sizing:\s*buy\s+(\d+)\s+contract(?:s)?/i);
     if (sizingMatch) {
       rec.qty = Number(sizingMatch[1]);
-      const riskMatch = line.match(/Risk\s*~?\$([0-9.]+)/i);
+      const riskMatch = matchLine.match(/Risk\s*~?\$([0-9.]+)/i);
       if (riskMatch) {
         rec.risk = parseCurrency(riskMatch[1]);
       }
-      const perContractMatch = line.match(/per contract\s*~?\$([0-9.]+)/i);
+      const perContractMatch = matchLine.match(/per contract\s*~?\$([0-9.]+)/i);
       if (perContractMatch) {
         rec.riskPerContract = parseCurrency(perContractMatch[1]);
       }
       continue;
     }
 
-    if (line.startsWith('⚠️')) {
-      rec.warning = line.replace(/^⚠️\s*/, '');
+    if (matchLine.toLowerCase().startsWith('risk ') || matchLine.toLowerCase().startsWith('warning')) {
+      rec.warning = asciiLine || line;
       continue;
     }
 
-    if (line.startsWith('📈 Profit plan:')) {
+    if (matchLine.startsWith('Profit plan:')) {
       rec.scalingPlan = [];
       collectingPlanFor = rec.symbol;
       continue;
     }
 
-    const planStepMatch = line.match(/^(\d+)\)\s+Sell\s+(\d+)\s*@\s*([^—]+)—\s*(.+)$/);
-    if (planStepMatch && collectingPlanFor === rec.symbol) {
-      addPlanStep(rec, Number(planStepMatch[1]), Number(planStepMatch[2]), planStepMatch[3], planStepMatch[4]);
-      continue;
+    if (collectingPlanFor === rec.symbol) {
+      const planStepMatch = matchLine.match(/^(\d+)\)\s+Sell\s+(\d+)\s*@\s*([^\s]+)\s+(.*)$/);
+      if (planStepMatch) {
+        addPlanStep(rec, Number(planStepMatch[1]), Number(planStepMatch[2]), planStepMatch[3], planStepMatch[4]);
+        continue;
+      }
     }
 
-    const aiDecisionMatch = line.match(/🧠 AI Decision:\s*(\w+)/i);
+    const aiDecisionMatch = matchLine.match(/AI Decision:\s*(approve|caution|reject)/i);
     if (aiDecisionMatch) {
       rec.ai.decision = aiDecisionMatch[1].toLowerCase();
-      const confidenceMatch = line.match(/confidence:\s*([0-9.]+)/i);
+      const confidenceMatch = matchLine.match(/confidence:\s*([0-9.]+)/i);
       if (confidenceMatch) {
         const confValue = Number(confidenceMatch[1]);
         if (Number.isFinite(confValue)) {
-          rec.ai.confidence = `${Math.round(confValue)}%`;
+          rec.ai.confidence = String(Math.round(confValue)) + '%';
         }
       }
       continue;
     }
 
-    if (line.includes('⏭️')) {
+    if (matchLine.toLowerCase().startsWith('skipping')) {
       rec.skipped = true;
       continue;
     }
@@ -886,6 +1265,23 @@ function parseAIOutput(output, { provider, model } = {}) {
   const providerLabel = activeProvider || provider || null;
   const modelLabel = activeModel || model || null;
   for (const rec of recommendations) {
+    const needsQty = !Number.isFinite(rec.qty) || rec.qty <= 0;
+    if (needsQty) {
+      const planIterations = Array.isArray(rec.scalingPlan) ? rec.scalingPlan : [];
+      const tradePlanSteps = Array.isArray(rec.tradePlan?.iterations) ? rec.tradePlan.iterations : [];
+      const steps = planIterations.length ? planIterations : tradePlanSteps;
+      if (steps.length) {
+        const inferredQty = steps.reduce((sum, step) => {
+          const sellQty = Number(step?.sellQty ?? step?.quantity ?? step?.qty);
+          return Number.isFinite(sellQty) && sellQty > 0 ? sum + sellQty : sum;
+        }, 0);
+        if (Number.isFinite(inferredQty) && inferredQty > 0) {
+          rec.qty = Math.trunc(inferredQty);
+          rec.qtySource = 'scaling_plan';
+        }
+      }
+    }
+
     rec.provider = rec.provider || providerLabel;
     rec.ai = rec.ai || {};
     if (providerLabel && !rec.ai.provider) {
@@ -904,7 +1300,6 @@ function parseAIOutput(output, { provider, model } = {}) {
     },
   };
 }
-
 async function triggerScan(source = 'auto') {
   if (isScanning) {
     return { success: false, statusCode: 409, error: 'Scan already in progress' };
