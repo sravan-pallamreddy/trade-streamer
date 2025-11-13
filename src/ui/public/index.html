@@ -40,27 +40,7 @@
             font-size: 0.7rem;
             letter-spacing: 0.08em;
         }
-        .tracked-floating-panel {
-            position: fixed;
-            left: 1.5rem;
-            bottom: 1.5rem;
-            width: 320px;
-            max-height: 70vh;
-            overflow-y: auto;
-            z-index: 50;
-            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        .tracked-floating-panel.hidden {
-            display: none;
-        }
-        .tracked-floating-toggle {
-            position: fixed;
-            left: 1.5rem;
-            bottom: 1.5rem;
-            z-index: 40;
-            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
-        }
+        /* Old floating panel styles removed */
         .day-pl-panel {
             width: min(22rem, 90vw);
             z-index: 60;
@@ -75,6 +55,46 @@
         @media (max-width: 1024px) {
             body.day-pl-panel-open {
                 padding-right: 0;
+            }
+        }
+        .scan-panel {
+            width: min(22rem, 90vw);
+            z-index: 60;
+        }
+        .scan-panel-scroll {
+            scrollbar-width: thin;
+        }
+        body.scan-panel-open {
+            padding-left: 22rem;
+            transition: padding-left 0.2s ease;
+        }
+        @media (max-width: 1024px) {
+            body.scan-panel-open {
+                padding-left: 0;
+            }
+        }
+        .tracked-panel {
+            width: min(22rem, 90vw);
+            z-index: 60;
+        }
+        .tracked-panel-scroll {
+            scrollbar-width: thin;
+        }
+        body.tracked-panel-open {
+            padding-left: 22rem;
+            transition: padding-left 0.2s ease;
+        }
+        @media (max-width: 1024px) {
+            body.tracked-panel-open {
+                padding-left: 0;
+            }
+        }
+        body.scan-panel-open.tracked-panel-open {
+            padding-left: 44rem;
+        }
+        @media (max-width: 1024px) {
+            body.scan-panel-open.tracked-panel-open {
+                padding-left: 0;
             }
         }
     </style>
@@ -106,19 +126,27 @@
         </div>
 
         <div class="flex justify-end gap-2 mb-4">
-            <button id="collapseLeftBtn" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg px-3 py-2 bg-white shadow-sm">
-                <i id="collapseLeftIcon" data-lucide="chevron-left" class="w-4 h-4"></i>
-                <span id="collapseLeftLabel">Hide Scan Panel</span>
-            </button>
-            <button id="collapseRightBtn" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg px-3 py-2 bg-white shadow-sm">
-                <i id="collapseRightIcon" data-lucide="chevron-right" class="w-4 h-4"></i>
-                <span id="collapseRightLabel">Hide Portfolio Rail</span>
-            </button>
+            <!-- Scan Panel button hidden - now using docked panel -->
+            <!-- Portfolio Rail button hidden -->
         </div>
 
-    <div id="layoutGrid" class="xl:grid xl:grid-cols-[320px_minmax(0,1.4fr)_360px] gap-8 items-start">
-            <aside id="scanSidebar" class="space-y-6 xl:sticky xl:top-6">
-                <div class="bg-white rounded-xl shadow-md border border-slate-100 p-6" id="scanPanel">
+    <div id="scanDockPanel" class="scan-panel fixed top-0 left-0 h-full w-80 bg-white border-r border-slate-200 shadow-2xl flex flex-col -translate-x-full transition-transform duration-300 ease-out">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div>
+                <div class="text-xs uppercase tracking-wide text-slate-500 flex items-center gap-1">
+                    <i data-lucide="search" class="w-3 h-3 text-blue-500"></i>
+                    Scan Panel
+                </div>
+                <div class="text-sm font-semibold text-slate-700 mt-1">Trade Scanner</div>
+            </div>
+            <button id="scanPanelToggleHandle" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-full px-3 py-1.5">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                <span>Hide</span>
+            </button>
+        </div>
+        <div class="scan-panel-scroll flex-1 overflow-y-auto">
+            <div class="p-5 space-y-6">
+                <div id="scanPanel" class="space-y-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex-1 space-y-3">
                             <div class="flex flex-wrap items-center gap-3">
@@ -138,7 +166,7 @@
                             <span id="toggleScanPanelLabel">Collapse</span>
                         </button>
                     </div>
-                    <div id="scanPanelBody" class="mt-5 space-y-5">
+                    <div id="scanPanelBody" class="space-y-5">
                         <div class="space-y-2">
                             <div class="flex items-center justify-between">
                                 <label for="symbolsInput" class="text-sm font-semibold text-slate-700">Symbols to scan</label>
@@ -178,80 +206,66 @@
                         </div>
                     </div>
                 </div>
-            </aside>
+            </div>
+        </div>
+    </div>
+    <button id="scanPanelRevealBtn" type="button" class="hidden fixed left-0 bg-slate-900 text-white text-xs font-semibold tracking-wide px-3 py-2 rounded-r-xl shadow-lg z-50" style="top: 40%;">
+        <span>Scan Panel</span>
+    </button>
 
-            <main class="space-y-6">
+    <div id="trackedIdeasDockPanel" class="tracked-panel fixed top-0 h-full w-80 bg-white border-r border-slate-200 shadow-2xl flex flex-col transition-all duration-300 ease-out -translate-x-full" style="z-index: 59; left: 0rem;">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div>
+                <div class="text-xs uppercase tracking-wide text-slate-500 flex items-center gap-1">
+                    <i data-lucide="bookmark" class="w-3 h-3 text-amber-500"></i>
+                    Tracked Ideas
+                </div>
+                <div class="text-sm font-semibold text-slate-700 mt-1">Pinned Options</div>
+            </div>
+            <button id="trackedPanelToggleHandle" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-full px-3 py-1.5">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                <span>Hide</span>
+            </button>
+        </div>
+        <div class="px-5 py-2 border-b border-slate-100 text-xs text-slate-500">
+            <p>Pin options and monitor buy / wait / ignore cues.</p>
+        </div>
+        <div class="tracked-panel-scroll flex-1 overflow-y-auto">
+            <div class="p-5 space-y-4">
+                <div id="trackedIdeasEmpty" class="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-4 flex gap-2">
+                    <i data-lucide="bookmark-plus" class="w-4 h-4 text-slate-400"></i>
+                    <span>Tap "Track Idea" on any card to pin it here.</span>
+                </div>
+                <div id="trackedIdeasList" class="space-y-3"></div>
+                <div id="trackedIdeasStatus" class="text-[11px] uppercase tracking-wide text-slate-400"></div>
+            </div>
+        </div>
+        <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+            <button id="clearTrackedIdeasBtn" type="button" class="text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 transition" aria-label="Clear tracked ideas" disabled>
+                Clear All
+            </button>
+        </div>
+    </div>
+    <button id="trackedPanelRevealBtn" type="button" class="hidden fixed bg-amber-900 text-white text-xs font-semibold tracking-wide px-3 py-2 rounded-r-xl shadow-lg transition-all duration-300" style="z-index: 58; left: 22rem; top: 55%;">
+        <span>Tracked Ideas</span>
+    </button>
+
+    <div id="layoutGrid" class="xl:flex gap-8 items-start">
+
+            <main class="space-y-6" style="flex: 1; min-width: 0;">
                 <div id="recommendationSummary" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></div>
                 <div id="recommendations" class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 auto-rows-fr">
                     <!-- Recommendations will be inserted here -->
                 </div>
             </main>
 
-            <aside id="portfolioRail" class="hidden xl:flex xl:flex-col gap-4">
-                <div id="portfolioSummaryCard" class="bg-white rounded-xl shadow-md border border-slate-100 p-5 space-y-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="wallet" class="w-4 h-4 text-emerald-500"></i>
-                                Options Portfolio
-                            </h2>
-                            <span id="portfolioStatus" class="text-xs text-slate-500"></span>
-                        </div>
-                        <button id="refreshPortfolioBtn" type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg px-3 py-2 bg-white">
-                            <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                            <span>Refresh</span>
-                        </button>
-                    </div>
-                    <div id="accountSummary" class="grid grid-cols-2 gap-3 text-sm"></div>
-                </div>
-                <div class="bg-white rounded-xl shadow-md border border-slate-100 p-4 flex-1 overflow-y-auto max-h-[70vh]">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                            <i data-lucide="zap" class="w-4 h-4 text-purple-500"></i>
-                            Active Options
-                        </h3>
-                        <span class="text-[11px] uppercase tracking-wide text-slate-400" id="portfolioOptionsMeta"></span>
-                    </div>
-                    <div id="portfolioOptionsList" class="space-y-3"></div>
-                    <div id="portfolioEmptyState" class="text-center text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-5 hidden">
-                        <i data-lucide="archive" class="w-6 h-6 text-slate-300 mx-auto mb-2"></i>
-                        <div>No options positions yet.</div>
-                        <div class="text-xs text-slate-400">Connect your account or refresh to see updates.</div>
-                    </div>
-                </div>
+            <aside id="portfolioRail" class="hidden xl:flex xl:flex-col gap-4" style="display: none !important;">
+                <!-- Portfolio rail hidden -->
             </aside>
         </div>
     </div>
 
-    <div id="trackedIdeasFloating" class="tracked-floating-panel bg-white rounded-xl border border-slate-100 p-5 space-y-4">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="bookmark" class="w-4 h-4 text-amber-500"></i>
-                    Tracked Ideas
-                </h2>
-                <p class="text-xs text-slate-500">Pin options and monitor buy / wait / ignore cues.</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button id="collapseTrackedIdeasBtn" type="button" class="inline-flex items-center justify-center text-xs font-semibold text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-2 py-1 bg-white" aria-label="Collapse tracked ideas">
-                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
-                </button>
-                <button id="clearTrackedIdeasBtn" type="button" class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 transition" aria-label="Clear tracked ideas" disabled>
-                    Clear
-                </button>
-            </div>
-        </div>
-        <div id="trackedIdeasEmpty" class="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-4 flex gap-2">
-            <i data-lucide="bookmark-plus" class="w-4 h-4 text-slate-400"></i>
-            <span>Tap "Track Idea" on any card to pin it here.</span>
-        </div>
-        <div id="trackedIdeasList" class="space-y-3"></div>
-        <div id="trackedIdeasStatus" class="text-[11px] uppercase tracking-wide text-slate-400"></div>
-    </div>
-
-    <button id="trackedIdeasToggleBtn" type="button" class="tracked-floating-toggle hidden bg-white text-slate-700 text-xs font-semibold uppercase tracking-wide rounded-full px-4 py-2">
-        Show Tracked Ideas
-    </button>
+    <!-- Old floating tracked ideas panel removed -->
 
     <div id="dayPlPanel" class="day-pl-panel hidden fixed top-0 right-0 h-full w-80 bg-white border-l border-slate-200 shadow-2xl flex flex-col translate-x-0 transition-transform duration-300 ease-out">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -281,6 +295,12 @@
         // Initialize Lucide icons
         lucide.createIcons();
 
+    const scanDockPanel = document.getElementById('scanDockPanel');
+    const scanPanelToggleHandle = document.getElementById('scanPanelToggleHandle');
+    const scanPanelRevealBtn = document.getElementById('scanPanelRevealBtn');
+    const trackedIdeasDockPanel = document.getElementById('trackedIdeasDockPanel');
+    const trackedPanelToggleHandle = document.getElementById('trackedPanelToggleHandle');
+    const trackedPanelRevealBtn = document.getElementById('trackedPanelRevealBtn');
     const scanSidebar = document.getElementById('scanSidebar');
     const scanBtn = document.getElementById('scanBtn');
     const scanStatus = document.getElementById('scanStatus');
@@ -317,8 +337,8 @@
     const trackedIdeasEmpty = document.getElementById('trackedIdeasEmpty');
     const trackedIdeasStatus = document.getElementById('trackedIdeasStatus');
     const clearTrackedIdeasBtn = document.getElementById('clearTrackedIdeasBtn');
-    const collapseTrackedIdeasBtn = document.getElementById('collapseTrackedIdeasBtn');
-    const trackedIdeasToggleBtn = document.getElementById('trackedIdeasToggleBtn');
+    const collapseTrackedIdeasBtn = document.getElementById('collapseTrackedIdeasBtn'); // No longer used
+    const trackedIdeasToggleBtn = document.getElementById('trackedIdeasToggleBtn'); // No longer used
     const recommendationSummary = document.getElementById('recommendationSummary');
     const scanInsights = document.getElementById('scanInsights');
     const dayPlPanel = document.getElementById('dayPlPanel');
@@ -346,7 +366,9 @@
         let lastPortfolioBalance = null;
         let lastPortfolioRefreshAt = null;
         let portfolioAutoInitStarted = false;
-    let dayPlPanelOpen = true;
+    let dayPlPanelOpen = false;
+    let scanPanelOpen = false;
+    let trackedPanelOpen = false;
     let lastDayPlSnapshot = null;
     let lastDayOrdersPayload = null;
     const TRACKED_STORAGE_KEY = 'trade_streamer_tracked_ideas_v1';
@@ -365,6 +387,8 @@
     const autoExitCooldowns = new Map();
     const autoExitPending = new Set();
     initDayPlPanel();
+    initScanPanel();
+    initTrackedPanel();
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -407,22 +431,8 @@
         }
 
         function setTrackedPanelCollapsed(collapsed) {
-            trackedPanelCollapsed = !!collapsed;
-            if (!trackedIdeasPanel || !trackedIdeasToggleBtn) return;
-            if (trackedPanelCollapsed) {
-                trackedIdeasPanel.classList.add('hidden');
-                trackedIdeasToggleBtn.classList.remove('hidden');
-            } else {
-                trackedIdeasPanel.classList.remove('hidden');
-                trackedIdeasToggleBtn.classList.add('hidden');
-            }
-            if (collapseTrackedIdeasBtn) {
-                const icon = collapseTrackedIdeasBtn.querySelector('i');
-                if (icon) {
-                    icon.setAttribute('data-lucide', trackedPanelCollapsed ? 'chevron-up' : 'chevron-down');
-                }
-            }
-            lucide.createIcons();
+            // Now handled by toggleTrackedPanel
+            toggleTrackedPanel(!collapsed);
         }
 
         function normalizeDecision(value) {
@@ -740,65 +750,24 @@
 
         function updateLayoutColumns() {
             if (!layoutGrid) return;
-            if (leftSidebarCollapsed && rightSidebarCollapsed) {
-                layoutGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
-            } else if (leftSidebarCollapsed) {
-                layoutGrid.style.gridTemplateColumns = 'minmax(0, 1fr) 360px';
-            } else if (rightSidebarCollapsed) {
-                layoutGrid.style.gridTemplateColumns = '320px minmax(0, 1fr)';
-            } else {
-                layoutGrid.style.gridTemplateColumns = '320px minmax(0, 1.4fr) 360px';
-            }
+            // Layout now uses flexbox, no grid-template-columns needed
         }
 
         function updateSidebarToggleUI() {
-            if (collapseLeftIcon && collapseLeftLabel) {
-                if (leftSidebarCollapsed) {
-                    collapseLeftIcon.setAttribute('data-lucide', 'chevron-right');
-                    collapseLeftLabel.textContent = 'Show Scan Panel';
-                } else {
-                    collapseLeftIcon.setAttribute('data-lucide', 'chevron-left');
-                    collapseLeftLabel.textContent = 'Hide Scan Panel';
-                }
-            }
-            if (collapseRightIcon && collapseRightLabel) {
-                if (rightSidebarCollapsed) {
-                    collapseRightIcon.setAttribute('data-lucide', 'chevron-left');
-                    collapseRightLabel.textContent = 'Show Portfolio Rail';
-                } else {
-                    collapseRightIcon.setAttribute('data-lucide', 'chevron-right');
-                    collapseRightLabel.textContent = 'Hide Portfolio Rail';
-                }
-            }
-            lucide.createIcons();
+            // Not needed with docked panels
         }
 
         function updateSidebarVisibility() {
-            if (scanSidebar) {
-                scanSidebar.style.display = leftSidebarCollapsed ? 'none' : '';
-            }
-            if (portfolioRail) {
-                portfolioRail.style.display = rightSidebarCollapsed ? 'none' : '';
-            }
-            updateLayoutColumns();
-            updateSidebarToggleUI();
+            // Not needed with docked panels
         }
 
         if (collapseLeftBtn) {
-            collapseLeftBtn.addEventListener('click', () => {
-                leftSidebarCollapsed = !leftSidebarCollapsed;
-                updateSidebarVisibility();
-            });
+            // Not needed with docked scan panel
         }
 
         if (collapseRightBtn) {
-            collapseRightBtn.addEventListener('click', () => {
-                rightSidebarCollapsed = !rightSidebarCollapsed;
-                updateSidebarVisibility();
-            });
+            // Not needed - portfolio rail removed
         }
-
-        updateSidebarVisibility();
 
         function formatSymbolSummary(list) {
             if (!Array.isArray(list) || list.length === 0) {
@@ -896,11 +865,11 @@
         }
 
         if (collapseTrackedIdeasBtn) {
-            collapseTrackedIdeasBtn.addEventListener('click', () => setTrackedPanelCollapsed(true));
+            // Old button - no longer used with docked panel
         }
 
         if (trackedIdeasToggleBtn) {
-            trackedIdeasToggleBtn.addEventListener('click', () => setTrackedPanelCollapsed(false));
+            // Old button - no longer used with docked panel
         }
 
         async function handleMarketBuyFromButton(button) {
@@ -1258,7 +1227,11 @@
                 return;
             }
             dayPlPanel.classList.remove('hidden');
-            document.body.classList.add('day-pl-panel-open');
+            // Start hidden
+            dayPlPanel.classList.add('translate-x-full');
+            if (dayPlRevealBtn) {
+                dayPlRevealBtn.classList.remove('hidden');
+            }
             if (dayPlToggleHandle) {
                 dayPlToggleHandle.addEventListener('click', () => toggleDayPlPanel());
             }
@@ -1266,6 +1239,119 @@
                 dayPlRevealBtn.addEventListener('click', () => toggleDayPlPanel(true));
             }
             renderDayPlPanel(null);
+        }
+
+        function initScanPanel() {
+            if (!scanDockPanel) {
+                return;
+            }
+            // Panel already starts hidden with -translate-x-full class
+            if (scanPanelRevealBtn) {
+                scanPanelRevealBtn.classList.remove('hidden');
+            }
+            if (scanPanelToggleHandle) {
+                scanPanelToggleHandle.addEventListener('click', () => toggleScanPanel());
+            }
+            if (scanPanelRevealBtn) {
+                scanPanelRevealBtn.addEventListener('click', () => toggleScanPanel(true));
+            }
+        }
+
+        function initTrackedPanel() {
+            if (!trackedIdeasDockPanel) {
+                return;
+            }
+            // Panel already starts hidden with -translate-x-full class
+            // Just ensure left position is set correctly
+            trackedIdeasDockPanel.style.left = '0rem';
+            if (trackedPanelRevealBtn) {
+                trackedPanelRevealBtn.classList.remove('hidden');
+                trackedPanelRevealBtn.style.left = '0rem';
+                trackedPanelRevealBtn.style.top = '50%';
+            }
+            if (trackedPanelToggleHandle) {
+                trackedPanelToggleHandle.addEventListener('click', () => toggleTrackedPanel());
+            }
+            if (trackedPanelRevealBtn) {
+                trackedPanelRevealBtn.addEventListener('click', () => toggleTrackedPanel(true));
+            }
+        }
+
+        function toggleScanPanel(forceOpen = null) {
+            if (!scanDockPanel) {
+                return;
+            }
+            const nextState = forceOpen != null ? forceOpen : !scanPanelOpen;
+            scanPanelOpen = nextState;
+            scanDockPanel.classList.toggle('-translate-x-full', !nextState);
+            if (scanPanelRevealBtn) {
+                scanPanelRevealBtn.classList.toggle('hidden', nextState);
+            }
+            const toggleLabel = scanPanelToggleHandle?.querySelector('span');
+            if (toggleLabel) {
+                toggleLabel.textContent = nextState ? 'Hide' : 'Show';
+            }
+            const toggleIcon = scanPanelToggleHandle?.querySelector('i');
+            if (toggleIcon) {
+                toggleIcon.setAttribute('data-lucide', nextState ? 'chevron-left' : 'chevron-right');
+            }
+            document.body.classList.toggle('scan-panel-open', nextState);
+            updateTrackedPanelPosition(); // Update tracked panel when scan panel changes
+            lucide.createIcons();
+        }
+
+        function toggleTrackedPanel(forceOpen = null) {
+            if (!trackedIdeasDockPanel) {
+                return;
+            }
+            const nextState = forceOpen != null ? forceOpen : !trackedPanelOpen;
+            trackedPanelOpen = nextState;
+            
+            // Calculate left position based on scan panel state
+            const scanPanelWidth = scanPanelOpen ? '22rem' : '0rem';
+            const topPosition = scanPanelOpen ? '55%' : '50%'; // Adjust vertical position
+            
+            // Update left position
+            trackedIdeasDockPanel.style.left = scanPanelWidth;
+            
+            if (nextState) {
+                // Show the panel - remove the translate class and use inline transform
+                trackedIdeasDockPanel.classList.remove('-translate-x-full');
+                trackedIdeasDockPanel.style.transform = 'translateX(0)';
+            } else {
+                // Hide the panel - add the translate class back
+                trackedIdeasDockPanel.classList.add('-translate-x-full');
+                trackedIdeasDockPanel.style.transform = '';
+            }
+            
+            if (trackedPanelRevealBtn) {
+                trackedPanelRevealBtn.classList.toggle('hidden', nextState);
+                trackedPanelRevealBtn.style.left = scanPanelWidth;
+                trackedPanelRevealBtn.style.top = topPosition;
+            }
+            
+            const toggleLabel = trackedPanelToggleHandle?.querySelector('span');
+            if (toggleLabel) {
+                toggleLabel.textContent = nextState ? 'Hide' : 'Show';
+            }
+            const toggleIcon = trackedPanelToggleHandle?.querySelector('i');
+            if (toggleIcon) {
+                toggleIcon.setAttribute('data-lucide', nextState ? 'chevron-left' : 'chevron-right');
+            }
+            document.body.classList.toggle('tracked-panel-open', nextState);
+            lucide.createIcons();
+        }
+
+        // Update tracked panel position when scan panel toggles
+        function updateTrackedPanelPosition() {
+            if (!trackedIdeasDockPanel) return;
+            const scanPanelWidth = scanPanelOpen ? '22rem' : '0rem';
+            const topPosition = scanPanelOpen ? '55%' : '50%'; // Adjust vertical position
+            trackedIdeasDockPanel.style.left = scanPanelWidth;
+            if (trackedPanelRevealBtn) {
+                trackedPanelRevealBtn.style.left = scanPanelWidth;
+                trackedPanelRevealBtn.style.top = topPosition;
+            }
         }
 
         function toggleDayPlPanel(forceOpen = null) {
@@ -1294,6 +1380,9 @@
                 })
                 : [];
             const enriched = optionPositions.map((position) => {
+                // Debug: Log original position data
+                console.log('[buildDayPlSnapshot] Original position:', position);
+                
                 const totalCost = Number(position.totalCost || 0);
                 const marketValue = Number(position.marketValue || 0);
                 const basePl = Number.isFinite(position.unrealizedGainLoss)
@@ -1301,7 +1390,8 @@
                     : marketValue - totalCost;
                 const dayPl = Number(basePl.toFixed(2));
                 const dayPlPct = totalCost !== 0 ? Number(((dayPl / totalCost) * 100).toFixed(2)) : null;
-                return {
+                
+                const enrichedPos = {
                     symbol: position.symbol,
                     optionSymbol: position.optionSymbol || position.osiKey || null,
                     qty: Number(position.quantity || 0),
@@ -1313,6 +1403,11 @@
                     dayPl,
                     dayPlPct,
                 };
+                
+                // Debug: Log enriched position
+                console.log('[buildDayPlSnapshot] Enriched position:', enrichedPos);
+                
+                return enrichedPos;
             }).sort((a, b) => Math.abs(b.dayPl) - Math.abs(a.dayPl));
 
             const openTotals = enriched.reduce((acc, row) => {
@@ -1394,15 +1489,55 @@
                             pos.expiry || null,
                         ].filter(Boolean).join(' | ');
                         return `
-                            <div class="px-4 py-3 flex items-center justify-between gap-4">
-                                <div>
+                            <div class="group relative px-4 py-3 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors cursor-pointer">
+                                <div class="flex-1">
                                     <div class="text-sm font-semibold text-slate-800">${escapeHtml(pos.symbol || 'Option')}</div>
                                     <div class="text-xs text-slate-500">${escapeHtml(details || 'Option contract')}</div>
                                     <div class="text-[11px] uppercase tracking-wide text-slate-400 mt-1">${escapeHtml(qtyLabel)}</div>
                                 </div>
-                                <div class="text-right">
-                                    <div class="text-sm font-semibold ${directionClass}">${getCurrencyString(pos.dayPl)}</div>
-                                    <div class="text-xs text-slate-500">${pos.dayPlPct != null ? `${pos.dayPlPct > 0 ? '+' : ''}${pos.dayPlPct.toFixed(2)}%` : '&mdash;'}</div>
+                                <div class="text-right flex items-center gap-2">
+                                    <div class="group-hover:hidden">
+                                        <div class="text-sm font-semibold ${directionClass}">${getCurrencyString(pos.dayPl)}</div>
+                                        <div class="text-xs text-slate-500">${pos.dayPlPct != null ? `${pos.dayPlPct > 0 ? '+' : ''}${pos.dayPlPct.toFixed(2)}%` : '&mdash;'}</div>
+                                    </div>
+                                    <div class="hidden group-hover:flex items-center gap-2">
+                                        <button type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-2.5 py-1.5 transition" 
+                                            data-action="buy-more" 
+                                            data-symbol="${escapeHtml(pos.symbol || '')}"
+                                            data-qty="${pos.qty || 0}"
+                                            data-callput="${escapeHtml(pos.side || '')}"
+                                            data-strike="${pos.strike || ''}"
+                                            data-expiry="${escapeHtml(pos.expiry || '')}"
+                                            data-price="${pos.qty > 0 ? (pos.marketValue / pos.qty).toFixed(2) : 0}"
+                                            data-underlying="${escapeHtml(pos.symbol || '')}">
+                                            <i data-lucide="plus" class="w-3 h-3"></i>
+                                            Buy
+                                        </button>
+                                        <button type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg px-2.5 py-1.5 transition" 
+                                            data-action="trim-position" 
+                                            data-symbol="${escapeHtml(pos.symbol || '')}"
+                                            data-qty="${pos.qty || 0}"
+                                            data-callput="${escapeHtml(pos.side || '')}"
+                                            data-strike="${pos.strike || ''}"
+                                            data-expiry="${escapeHtml(pos.expiry || '')}"
+                                            data-price="${pos.qty > 0 ? (pos.marketValue / pos.qty).toFixed(2) : 0}"
+                                            data-underlying="${escapeHtml(pos.symbol || '')}">
+                                            <i data-lucide="percent" class="w-3 h-3"></i>
+                                            Trim
+                                        </button>
+                                        <button type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg px-2.5 py-1.5 transition" 
+                                            data-action="close-position" 
+                                            data-symbol="${escapeHtml(pos.symbol || '')}"
+                                            data-qty="${pos.qty || 0}"
+                                            data-callput="${escapeHtml(pos.side || '')}"
+                                            data-strike="${pos.strike || ''}"
+                                            data-expiry="${escapeHtml(pos.expiry || '')}"
+                                            data-price="${pos.qty > 0 ? (pos.marketValue / pos.qty).toFixed(2) : 0}"
+                                            data-underlying="${escapeHtml(pos.symbol || '')}">
+                                            <i data-lucide="x" class="w-3 h-3"></i>
+                                            Close
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         `;
@@ -1460,6 +1595,452 @@
             }
 
             lucide.createIcons();
+        }
+
+        // Helper function to show order preview
+        async function showOrderPreview({ symbol, qty, action, currentQty, callPut, strike, expiry, price, underlying }) {
+            return new Promise(async (resolve) => {
+                // Debug: Log received parameters
+                console.log('[showOrderPreview] Parameters:', { symbol, qty, action, currentQty, callPut, strike, expiry, price, underlying });
+                
+                // Get account key
+                const accountIdKey = window.selectedAccountIdKey;
+                if (!accountIdKey) {
+                    alert('No account selected. Please select an account first.');
+                    resolve(false);
+                    return;
+                }
+                
+                // Build descriptive title
+                const callPutLabel = callPut ? callPut.toUpperCase() : '';
+                const strikeLabel = strike ? `$${strike}` : '';
+                const titleParts = [symbol, callPutLabel, strikeLabel].filter(Boolean).join(' ');
+                const orderTitle = `${action} ${titleParts}`;
+                
+                // Create preview overlay
+                const previewOverlay = document.createElement('div');
+                previewOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[110]';
+                previewOverlay.innerHTML = `
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 w-[500px] max-w-[90vw]" onclick="event.stopPropagation()">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-4">${escapeHtml(orderTitle)}</h3>
+                        <div id="previewContent" class="min-h-[200px] flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="inline-block animate-spin text-3xl mb-2">⏳</div>
+                                <div class="text-sm text-slate-500">Loading order details...</div>
+                            </div>
+                        </div>
+                        <div id="previewActions" class="hidden flex gap-3 mt-4">
+                            <button type="button" id="previewCancelBtn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                                Cancel
+                            </button>
+                            <button type="button" id="previewConfirmBtn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition">
+                                Place Order
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(previewOverlay);
+                
+                try {
+                    // Call preview API
+                    const orderType = action === 'Buy' ? 'BUY' : 'SELL';
+                    const requestBody = {
+                        symbol: symbol,
+                        quantity: qty,
+                        orderType: orderType,
+                        priceType: 'MARKET',
+                        callPut: callPut,
+                        strike: strike,
+                        expiry: expiry,
+                        price: price,
+                        underlyingSymbol: underlying
+                    };
+                    
+                    console.log('[showOrderPreview] Sending request:', requestBody);
+                    
+                    const response = await fetch(`/api/portfolio/${accountIdKey}/options/preview-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    // Use preview data from response (whether success or error with fallback)
+                    const previewData = result.previewData || result || {
+                        orderType: 'MARKET',
+                        estimatedPrice: null,
+                        estimatedCost: null,
+                        commission: 0.65,
+                        warnings: response.ok ? [] : ['Unable to fetch live preview']
+                    };
+                    
+                    // Display preview data
+                    const content = previewOverlay.querySelector('#previewContent');
+                    const actions = previewOverlay.querySelector('#previewActions');
+                    
+                    content.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 rounded-lg p-4">
+                                <div class="text-xs text-slate-500 uppercase tracking-wide mb-2">Order Details</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Symbol:</span>
+                                        <span class="font-semibold text-slate-800">${escapeHtml(symbol)}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Action:</span>
+                                        <span class="font-semibold ${action === 'Buy' ? 'text-green-600' : 'text-orange-600'}">${action}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Quantity:</span>
+                                        <span class="font-semibold text-slate-800">${qty} contract${qty === 1 ? '' : 's'}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Order Type:</span>
+                                        <span class="font-semibold text-slate-800">${previewData.orderType || 'MARKET'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${previewData.estimatedCost ? `
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="text-xs text-blue-600 uppercase tracking-wide mb-2">Estimated Cost</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Price per contract:</span>
+                                        <span class="font-semibold text-slate-800">$${previewData.estimatedPrice?.toFixed(2) || 'N/A'}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Total value:</span>
+                                        <span class="font-semibold text-slate-800">$${previewData.estimatedCost?.toFixed(2) || 'N/A'}</span>
+                                    </div>
+                                    ${previewData.commission ? `
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Commission:</span>
+                                        <span class="font-semibold text-slate-800">$${previewData.commission.toFixed(2)}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="bg-slate-50 rounded-lg p-4">
+                                <div class="text-xs text-slate-500 uppercase tracking-wide mb-2">Position Summary</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">Current:</span>
+                                        <span class="font-semibold text-slate-800">${currentQty} contract${currentQty === 1 ? '' : 's'}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-600">${action === 'Buy' ? 'After purchase:' : 'After sale:'}</span>
+                                        <span class="font-semibold text-slate-800">${action === 'Buy' ? currentQty + qty : currentQty - qty} contract${action === 'Buy' ? (currentQty + qty === 1 ? '' : 's') : (currentQty - qty === 1 ? '' : 's')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${previewData.warnings && previewData.warnings.length > 0 ? `
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <div class="text-xs text-yellow-800 font-semibold mb-1">⚠️ Warnings</div>
+                                ${previewData.warnings.map(w => `<div class="text-xs text-yellow-700">• ${escapeHtml(w)}</div>`).join('')}
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    actions.classList.remove('hidden');
+                    
+                    const confirmBtn = previewOverlay.querySelector('#previewConfirmBtn');
+                    const cancelBtn = previewOverlay.querySelector('#previewCancelBtn');
+                    
+                    confirmBtn.addEventListener('click', () => {
+                        previewOverlay.remove();
+                        resolve(true);
+                    });
+                    
+                    const handleCancel = () => {
+                        previewOverlay.remove();
+                        resolve(false);
+                    };
+                    cancelBtn.addEventListener('click', handleCancel);
+                    previewOverlay.addEventListener('click', handleCancel);
+                    
+                } catch (error) {
+                    console.error('Preview error:', error);
+                    const content = previewOverlay.querySelector('#previewContent');
+                    content.innerHTML = `
+                        <div class="text-center">
+                            <div class="text-red-500 text-2xl mb-2">⚠️</div>
+                            <div class="text-sm text-slate-700 mb-1">Failed to load order preview</div>
+                            <div class="text-xs text-slate-500">${escapeHtml(error.message)}</div>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        previewOverlay.remove();
+                        resolve(false);
+                    }, 2000);
+                }
+            });
+        }
+
+        // Helper function to show quantity selector modal
+        function showQuantitySelector({ title, symbol, currentQty, action, min, max, suggested, callPut, strike, expiry, price, underlying }) {
+            return new Promise((resolve) => {
+                // Create modal overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]';
+                overlay.innerHTML = `
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 w-96 max-w-[90vw]" onclick="event.stopPropagation()">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-slate-800">${escapeHtml(title)}</h3>
+                            <p class="text-sm text-slate-500 mt-1">Current position: ${currentQty} contract${currentQty === 1 ? '' : 's'}</p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-medium text-slate-700">Select Quantity</label>
+                                <div class="text-2xl font-bold text-blue-600" id="qtyDisplay">${suggested}</div>
+                            </div>
+                            <input type="range" id="qtySlider" min="${min}" max="${max}" value="${suggested}" 
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>${min}</span>
+                                <span>${max}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-50 rounded-lg p-3 mb-4">
+                            <div class="text-xs text-slate-500 mb-1">Summary</div>
+                            <div class="text-sm font-semibold text-slate-800" id="summaryCurrent">Current: ${currentQty} contracts</div>
+                            <div class="text-sm font-semibold" id="summaryAction">${action}: <span class="text-blue-600">${suggested}</span> contracts</div>
+                            <div class="text-sm font-semibold text-slate-800" id="summaryNew">Remaining: ${action === 'Buy' ? currentQty + suggested : currentQty - suggested} contracts</div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button type="button" id="cancelBtn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                                Cancel
+                            </button>
+                            <button type="button" id="confirmBtn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">
+                                Confirm ${action}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                
+                const slider = overlay.querySelector('#qtySlider');
+                const display = overlay.querySelector('#qtyDisplay');
+                const summaryAction = overlay.querySelector('#summaryAction');
+                const summaryNew = overlay.querySelector('#summaryNew');
+                const confirmBtn = overlay.querySelector('#confirmBtn');
+                const cancelBtn = overlay.querySelector('#cancelBtn');
+                
+                // Function to update display
+                const updateDisplay = (qty) => {
+                    display.textContent = qty;
+                    summaryAction.innerHTML = `${action}: <span class="text-blue-600">${qty}</span> contract${qty === 1 ? '' : 's'}`;
+                    const newTotal = action === 'Buy' ? currentQty + qty : currentQty - qty;
+                    summaryNew.textContent = `${action === 'Buy' ? 'New total' : 'Remaining'}: ${newTotal} contract${newTotal === 1 ? '' : 's'}`;
+                };
+                
+                // Update on mouse move (no click required)
+                slider.addEventListener('mousemove', (e) => {
+                    const rect = slider.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    const value = Math.round(min + percent * (max - min));
+                    slider.value = value;
+                    updateDisplay(value);
+                });
+                
+                // Also update on input for keyboard/touch support
+                slider.addEventListener('input', (e) => {
+                    updateDisplay(parseInt(e.target.value, 10));
+                });
+                
+                // Handle confirm - show order preview first
+                confirmBtn.addEventListener('click', async () => {
+                    const qty = parseInt(slider.value, 10);
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span>Loading preview...';
+                    
+                    try {
+                        // Preview order details
+                        const preview = await showOrderPreview({ 
+                            symbol, 
+                            qty, 
+                            action, 
+                            currentQty,
+                            callPut,
+                            strike,
+                            expiry,
+                            price,
+                            underlying
+                        });
+                        if (preview) {
+                            overlay.remove();
+                            resolve(qty);
+                        } else {
+                            // User cancelled preview
+                            confirmBtn.disabled = false;
+                            confirmBtn.textContent = `Confirm ${action}`;
+                        }
+                    } catch (error) {
+                        console.error('Preview failed:', error);
+                        alert('Failed to load order preview. Please try again.');
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = `Confirm ${action}`;
+                    }
+                });
+                
+                // Handle cancel
+                const handleCancel = () => {
+                    overlay.remove();
+                    resolve(null);
+                };
+                cancelBtn.addEventListener('click', handleCancel);
+                overlay.addEventListener('click', handleCancel);
+            });
+        }
+
+        // Add event listeners for Day P/L panel position actions
+        if (dayPlPositions) {
+            dayPlPositions.addEventListener('click', async (event) => {
+                const closeBtn = event.target.closest('button[data-action="close-position"]');
+                const trimBtn = event.target.closest('button[data-action="trim-position"]');
+                const buyBtn = event.target.closest('button[data-action="buy-more"]');
+                
+                if (buyBtn) {
+                    const symbol = buyBtn.dataset.symbol;
+                    const currentQty = Number(buyBtn.dataset.qty);
+                    const callPut = buyBtn.dataset.callput;
+                    const strike = buyBtn.dataset.strike;
+                    const expiry = buyBtn.dataset.expiry;
+                    const price = buyBtn.dataset.price;
+                    const underlying = buyBtn.dataset.underlying;
+                    
+                    // Debug: Log button dataset
+                    console.log('[Button Click] Dataset values:', {
+                        symbol, currentQty, callPut, strike, expiry, price, underlying,
+                        rawDataset: buyBtn.dataset
+                    });
+                    
+                    if (!symbol) return;
+                    
+                    // Build descriptive title
+                    const callPutLabel = callPut ? callPut.toUpperCase() : '';
+                    const strikeLabel = strike ? `$${strike}` : '';
+                    const titleParts = [symbol, callPutLabel, strikeLabel].filter(Boolean).join(' ');
+                    
+                    const suggestedQty = Math.max(1, Math.ceil(currentQty * 0.5));
+                    const buyQty = await showQuantitySelector({
+                        title: `Buy More: ${titleParts}`,
+                        symbol,
+                        currentQty,
+                        action: 'Buy',
+                        min: 1,
+                        max: Math.max(10, currentQty * 2),
+                        suggested: suggestedQty,
+                        callPut,
+                        strike,
+                        expiry,
+                        price,
+                        underlying
+                    });
+                    
+                    if (buyQty === null) return; // User cancelled
+                    
+                    // Show preview with all details
+                    const confirmed = await showOrderPreview({
+                        symbol,
+                        qty: buyQty,
+                        action: 'Buy',
+                        currentQty,
+                        callPut,
+                        strike,
+                        expiry,
+                        price,
+                        underlying
+                    });
+                    
+                    if (!confirmed) return;
+                    
+                    // TODO: Implement buy more logic
+                    alert(`Buy ${buyQty} contract${buyQty === 1 ? '' : 's'} of ${symbol} - Feature coming soon`);
+                }
+                
+                if (trimBtn) {
+                    const symbol = trimBtn.dataset.symbol;
+                    const currentQty = Number(trimBtn.dataset.qty);
+                    const callPut = trimBtn.dataset.callput;
+                    const strike = trimBtn.dataset.strike;
+                    const expiry = trimBtn.dataset.expiry;
+                    const price = trimBtn.dataset.price;
+                    const underlying = trimBtn.dataset.underlying;
+                    
+                    if (!symbol || !currentQty) return;
+                    
+                    // Build descriptive title
+                    const callPutLabel = callPut ? callPut.toUpperCase() : '';
+                    const strikeLabel = strike ? `$${strike}` : '';
+                    const titleParts = [symbol, callPutLabel, strikeLabel].filter(Boolean).join(' ');
+                    
+                    const suggestedTrimQty = Math.max(1, Math.floor(currentQty / 2));
+                    const maxTrimQty = currentQty - 1;
+                    
+                    if (maxTrimQty < 1) {
+                        alert('Cannot trim a position of 1 contract. Use Close button instead.');
+                        return;
+                    }
+                    
+                    const trimQty = await showQuantitySelector({
+                        title: `Trim Position: ${titleParts}`,
+                        symbol,
+                        currentQty,
+                        action: 'Sell',
+                        min: 1,
+                        max: maxTrimQty,
+                        suggested: suggestedTrimQty,
+                        callPut,
+                        strike,
+                        expiry,
+                        price,
+                        underlying
+                    });
+                    
+                    if (trimQty === null) return; // User cancelled
+                    
+                    // Show preview with all details
+                    const confirmed = await showOrderPreview({
+                        symbol,
+                        qty: trimQty,
+                        action: 'Sell',
+                        currentQty,
+                        callPut,
+                        strike,
+                        expiry,
+                        price,
+                        underlying
+                    });
+                    
+                    if (!confirmed) return;
+                    
+                    // TODO: Implement trim position logic
+                    alert(`Trim ${trimQty} contract${trimQty === 1 ? '' : 's'} of ${symbol} - Feature coming soon`);
+                }
+                
+                if (closeBtn) {
+                    const symbol = closeBtn.dataset.symbol;
+                    const qty = Number(closeBtn.dataset.qty);
+                    if (!symbol || !qty) return;
+                    
+                    if (!window.confirm(`Close entire position for ${symbol} (${qty} contract${qty === 1 ? '' : 's'})?`)) return;
+                    
+                    // TODO: Implement close position logic
+                    alert(`Close position for ${symbol} - Feature coming soon`);
+                }
+            });
         }
 
         function updateDayPlPanelData(portfolio, dayOrders = null) {
