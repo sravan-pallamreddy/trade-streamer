@@ -1,10 +1,10 @@
 require('dotenv').config();
 
 const openai = require('./openai');
-const xai = require('./xai');
+const deepseek = require('./deepseek');
 
 const registry = {};
-for (const mod of [openai, xai]) {
+for (const mod of [openai, deepseek]) {
   if (!mod || !mod.PROVIDER_ID) continue;
   const id = String(mod.PROVIDER_ID).toLowerCase();
   registry[id] = mod;
@@ -20,12 +20,16 @@ if (!registry[defaultProvider]) {
 
 const DEFAULT_PROVIDER = defaultProvider;
 const ALIASES = {
-  grok: 'xai',
-  'grok-beta': 'xai',
-  'grok-1': 'xai',
-  'grok-3': 'xai',
-  'x.ai': 'xai',
-  x: 'xai',
+  deepseek: 'deepseek',
+  'deep-seek': 'deepseek',
+  ds: 'deepseek',
+  xai: 'deepseek', // legacy flag
+  grok: 'deepseek',
+  'grok-beta': 'deepseek',
+  'grok-1': 'deepseek',
+  'grok-3': 'deepseek',
+  'x.ai': 'deepseek',
+  x: 'deepseek',
 };
 
 function resolveProviderId(preferred) {

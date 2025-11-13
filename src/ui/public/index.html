@@ -61,6 +61,22 @@
             z-index: 40;
             box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
         }
+        .day-pl-panel {
+            width: min(22rem, 90vw);
+            z-index: 60;
+        }
+        .day-pl-panel-scroll {
+            scrollbar-width: thin;
+        }
+        body.day-pl-panel-open {
+            padding-right: 22rem;
+            transition: padding-right 0.2s ease;
+        }
+        @media (max-width: 1024px) {
+            body.day-pl-panel-open {
+                padding-right: 0;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -237,6 +253,30 @@
         Show Tracked Ideas
     </button>
 
+    <div id="dayPlPanel" class="day-pl-panel hidden fixed top-0 right-0 h-full w-80 bg-white border-l border-slate-200 shadow-2xl flex flex-col translate-x-0 transition-transform duration-300 ease-out">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div>
+                <div class="text-xs uppercase tracking-wide text-slate-500 flex items-center gap-1">
+                    <i data-lucide="activity" class="w-3 h-3 text-emerald-500"></i>
+                    Day P/L
+                </div>
+                <div id="dayPlTotal" class="text-3xl font-semibold text-emerald-600 mt-1">$0.00</div>
+                <div id="dayPlSummaryMeta" class="text-xs text-slate-500 mt-1">Awaiting portfolio sync...</div>
+            </div>
+            <button id="dayPlToggleHandle" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-full px-3 py-1.5">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span>Hide</span>
+            </button>
+        </div>
+        <div id="dayPlUpdatedAt" class="px-5 py-2 border-b border-slate-100 text-xs text-slate-500">Not updated yet</div>
+        <div id="dayPlPositions" class="day-pl-panel-scroll flex-1 overflow-y-auto">
+            <div class="p-5 text-sm text-slate-500">Day P/L will appear after the portfolio syncs.</div>
+        </div>
+    </div>
+    <button id="dayPlRevealBtn" type="button" class="hidden fixed top-1/2 right-0 -translate-y-1/2 bg-slate-900 text-white text-xs font-semibold tracking-wide px-3 py-2 rounded-l-xl shadow-lg z-50">
+        <span>Day P/L</span>
+    </button>
+
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
@@ -281,6 +321,13 @@
     const trackedIdeasToggleBtn = document.getElementById('trackedIdeasToggleBtn');
     const recommendationSummary = document.getElementById('recommendationSummary');
     const scanInsights = document.getElementById('scanInsights');
+    const dayPlPanel = document.getElementById('dayPlPanel');
+    const dayPlToggleHandle = document.getElementById('dayPlToggleHandle');
+    const dayPlRevealBtn = document.getElementById('dayPlRevealBtn');
+    const dayPlTotal = document.getElementById('dayPlTotal');
+    const dayPlSummaryMeta = document.getElementById('dayPlSummaryMeta');
+    const dayPlUpdatedAt = document.getElementById('dayPlUpdatedAt');
+    const dayPlPositions = document.getElementById('dayPlPositions');
 
         const POLL_INTERVAL_MS = 15000;
         const PORTFOLIO_REFRESH_INTERVAL_MS = 60000;
@@ -299,6 +346,9 @@
         let lastPortfolioBalance = null;
         let lastPortfolioRefreshAt = null;
         let portfolioAutoInitStarted = false;
+    let dayPlPanelOpen = true;
+    let lastDayPlSnapshot = null;
+    let lastDayOrdersPayload = null;
     const TRACKED_STORAGE_KEY = 'trade_streamer_tracked_ideas_v1';
     const TRACKED_IDEA_LIMIT = 8;
     let trackedIdeas = [];
@@ -314,6 +364,7 @@
     const autoExitState = { ...autoExitDefaults };
     const autoExitCooldowns = new Map();
     const autoExitPending = new Set();
+    initDayPlPanel();
 
         // Update header balance display
         function updateHeaderBalance(balanceData) {
@@ -1202,6 +1253,222 @@
             return revealSensitive ? str : maskAccountId(str);
         }
 
+        function initDayPlPanel() {
+            if (!dayPlPanel) {
+                return;
+            }
+            dayPlPanel.classList.remove('hidden');
+            document.body.classList.add('day-pl-panel-open');
+            if (dayPlToggleHandle) {
+                dayPlToggleHandle.addEventListener('click', () => toggleDayPlPanel());
+            }
+            if (dayPlRevealBtn) {
+                dayPlRevealBtn.addEventListener('click', () => toggleDayPlPanel(true));
+            }
+            renderDayPlPanel(null);
+        }
+
+        function toggleDayPlPanel(forceOpen = null) {
+            if (!dayPlPanel) {
+                return;
+            }
+            const nextState = forceOpen != null ? forceOpen : !dayPlPanelOpen;
+            dayPlPanelOpen = nextState;
+            dayPlPanel.classList.toggle('translate-x-full', !nextState);
+            if (dayPlRevealBtn) {
+                dayPlRevealBtn.classList.toggle('hidden', nextState);
+            }
+            const toggleLabel = dayPlToggleHandle?.querySelector('span');
+            if (toggleLabel) {
+                toggleLabel.textContent = nextState ? 'Hide' : 'Show';
+            }
+            document.body.classList.toggle('day-pl-panel-open', nextState);
+        }
+
+        function buildDayPlSnapshot(portfolio, dayOrders = null) {
+            const optionPositions = Array.isArray(portfolio?.positions)
+                ? portfolio.positions.filter((position) => {
+                    if (!position) return false;
+                    const type = (position.positionType || '').toUpperCase();
+                    return Boolean(position.optionSymbol || position.callPut || type.includes('OPTION'));
+                })
+                : [];
+            const enriched = optionPositions.map((position) => {
+                const totalCost = Number(position.totalCost || 0);
+                const marketValue = Number(position.marketValue || 0);
+                const basePl = Number.isFinite(position.unrealizedGainLoss)
+                    ? position.unrealizedGainLoss
+                    : marketValue - totalCost;
+                const dayPl = Number(basePl.toFixed(2));
+                const dayPlPct = totalCost !== 0 ? Number(((dayPl / totalCost) * 100).toFixed(2)) : null;
+                return {
+                    symbol: position.symbol,
+                    optionSymbol: position.optionSymbol || position.osiKey || null,
+                    qty: Number(position.quantity || 0),
+                    strike: position.strike,
+                    expiry: position.expiry,
+                    side: position.callPut,
+                    marketValue: Number(marketValue.toFixed(2)),
+                    totalCost: Number(totalCost.toFixed(2)),
+                    dayPl,
+                    dayPlPct,
+                };
+            }).sort((a, b) => Math.abs(b.dayPl) - Math.abs(a.dayPl));
+
+            const openTotals = enriched.reduce((acc, row) => {
+                acc.totalCost += row.totalCost || 0;
+                acc.marketValue += row.marketValue || 0;
+                acc.open += row.dayPl || 0;
+                return acc;
+            }, { totalCost: 0, marketValue: 0, open: 0 });
+
+            openTotals.totalCost = Number(openTotals.totalCost.toFixed(2));
+            openTotals.marketValue = Number(openTotals.marketValue.toFixed(2));
+            openTotals.open = Number(openTotals.open.toFixed(2));
+
+            const realizedTotals = {
+                realized: Number(dayOrders?.totals?.realized ?? 0),
+                grossBuys: Number(dayOrders?.totals?.grossBuys ?? 0),
+                grossSells: Number(dayOrders?.totals?.grossSells ?? 0),
+            };
+
+            const combined = Number((openTotals.open + realizedTotals.realized).toFixed(2));
+
+            return {
+                updatedAt: dayOrders?.updatedAt || new Date().toISOString(),
+                positions: enriched,
+                totals: {
+                    totalCost: openTotals.totalCost,
+                    marketValue: openTotals.marketValue,
+                    open: openTotals.open,
+                    realized: realizedTotals.realized,
+                    combined,
+                    grossBuys: realizedTotals.grossBuys,
+                    grossSells: realizedTotals.grossSells,
+                },
+                orders: Array.isArray(dayOrders?.trades) ? dayOrders.trades : [],
+            };
+        }
+
+        function renderDayPlPanel(snapshot) {
+            if (!dayPlPanel) {
+                return;
+            }
+            lastDayPlSnapshot = snapshot;
+            if (!snapshot) {
+                if (dayPlTotal) dayPlTotal.textContent = '$0.00';
+                if (dayPlSummaryMeta) dayPlSummaryMeta.textContent = 'Day P/L requires an active portfolio.';
+                if (dayPlUpdatedAt) dayPlUpdatedAt.textContent = 'Awaiting portfolio sync...';
+                if (dayPlPositions) {
+                    dayPlPositions.innerHTML = '<div class="p-5 text-sm text-slate-500">Connect your brokerage account to view live option P/L.</div>';
+                }
+                return;
+            }
+
+            const totals = snapshot.totals || { open: 0, realized: 0, combined: 0 };
+
+            if (dayPlTotal) {
+                dayPlTotal.classList.remove('text-emerald-600', 'text-rose-600');
+                const signClass = totals.combined >= 0 ? 'text-emerald-600' : 'text-rose-600';
+                dayPlTotal.classList.add(signClass);
+                dayPlTotal.textContent = getCurrencyString(totals.combined);
+            }
+            if (dayPlSummaryMeta) {
+                const countLabel = snapshot.positions.length === 1 ? 'position' : 'positions';
+                const realizedLabel = `Realized ${getCurrencyString(totals.realized)}`;
+                const openLabel = `Open ${getCurrencyString(totals.open)}`;
+                dayPlSummaryMeta.textContent = `${snapshot.positions.length} option ${countLabel} • ${realizedLabel} • ${openLabel}`;
+            }
+            if (dayPlUpdatedAt) {
+                dayPlUpdatedAt.textContent = snapshot.updatedAt ? `Updated ${formatRelativeTime(snapshot.updatedAt)}` : 'Updated just now';
+            }
+
+            if (dayPlPositions) {
+                const positionsHtml = snapshot.positions.length
+                    ? snapshot.positions.map((pos) => {
+                        const directionClass = pos.dayPl >= 0 ? 'text-emerald-600' : 'text-rose-600';
+                        const qtyLabel = `${pos.qty} contract${Math.abs(pos.qty) === 1 ? '' : 's'}`;
+                        const details = [
+                            pos.side ? pos.side.toUpperCase() : null,
+                            pos.strike != null ? `@ ${pos.strike}` : null,
+                            pos.expiry || null,
+                        ].filter(Boolean).join(' | ');
+                        return `
+                            <div class="px-4 py-3 flex items-center justify-between gap-4">
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-800">${escapeHtml(pos.symbol || 'Option')}</div>
+                                    <div class="text-xs text-slate-500">${escapeHtml(details || 'Option contract')}</div>
+                                    <div class="text-[11px] uppercase tracking-wide text-slate-400 mt-1">${escapeHtml(qtyLabel)}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-semibold ${directionClass}">${getCurrencyString(pos.dayPl)}</div>
+                                    <div class="text-xs text-slate-500">${pos.dayPlPct != null ? `${pos.dayPlPct > 0 ? '+' : ''}${pos.dayPlPct.toFixed(2)}%` : '&mdash;'}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<div class="p-4 text-sm text-slate-500">No open option positions.</div>';
+
+                const ordersHtml = snapshot.orders && snapshot.orders.length
+                    ? snapshot.orders.map((order) => {
+                        const netClass = order.netCash >= 0 ? 'text-emerald-600' : 'text-rose-600';
+                        const qtyLabel = `${order.qty} contract${Math.abs(order.qty) === 1 ? '' : 's'}`;
+                        const timeLabel = order.timestamp ? formatRelativeTime(order.timestamp) : 'Today';
+                        const metaParts = [
+                            order.side || null,
+                            order.strike != null ? `@ ${order.strike}` : null,
+                            order.expiry || null,
+                        ].filter(Boolean).join(' • ');
+                        const realizedLabel = order.realized != null
+                            ? `<div class="text-[11px] text-slate-500">Realized ${getCurrencyString(order.realized)}</div>`
+                            : '';
+                        const unmatchedLabel = order.unmatchedQty > 0
+                            ? `<div class="text-[11px] text-amber-600">Unmatched ${order.unmatchedQty} contract${order.unmatchedQty === 1 ? '' : 's'}</div>`
+                            : '';
+                        return `
+                            <div class="px-4 py-3 flex items-center justify-between gap-4">
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-800">${escapeHtml(order.description || order.optionSymbol || 'Executed order')}</div>
+                                    <div class="text-xs text-slate-500">${escapeHtml(metaParts || qtyLabel)}</div>
+                                    <div class="text-[11px] uppercase tracking-wide text-slate-400 mt-1">${escapeHtml(timeLabel)}</div>
+                                    ${realizedLabel}
+                                    ${unmatchedLabel}
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-semibold ${netClass}">${getCurrencyString(order.netCash)}</div>
+                                    <div class="text-xs text-slate-500">${order.price ? `Avg ${order.price.toFixed(2)}` : '&mdash;'}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<div class="p-4 text-sm text-slate-500">No executed option orders yet today.</div>';
+
+                dayPlPositions.innerHTML = `
+                    <section class="pb-4">
+                        <div class="text-xs uppercase tracking-wide text-slate-400 px-4 pb-2">Open Positions</div>
+                        <div class="divide-y divide-slate-100">
+                            ${positionsHtml}
+                        </div>
+                    </section>
+                    <section class="border-t border-slate-200 pt-4">
+                        <div class="text-xs uppercase tracking-wide text-slate-400 px-4 pb-2">Executed Orders</div>
+                        <div class="divide-y divide-slate-100">
+                            ${ordersHtml}
+                        </div>
+                    </section>
+                `;
+            }
+
+            lucide.createIcons();
+        }
+
+        function updateDayPlPanelData(portfolio, dayOrders = null) {
+            if (!dayPlPanel) {
+                return;
+            }
+            const snapshot = buildDayPlSnapshot(portfolio, dayOrders || lastDayOrdersPayload);
+            renderDayPlPanel(snapshot);
+        }
         function renderHeaderBalance() {
             if (!headerBalance) return;
             const rawValue = Number(lastBalancePayload?.totalAccountValue);
@@ -1244,7 +1511,10 @@
 
         function refreshPortfolioDisplay() {
             if (lastPortfolioPayload) {
-                displayPortfolio(lastPortfolioPayload, lastPortfolioBalance, { skipStore: true });
+                displayPortfolio(lastPortfolioPayload, lastPortfolioBalance, {
+                    skipStore: true,
+                    dayOrders: lastDayOrdersPayload,
+                });
             }
         }
 
@@ -1729,7 +1999,7 @@
                 }
 
                 revealPortfolioRail();
-                displayPortfolio(portfolioData.portfolio, balanceData);
+                displayPortfolio(portfolioData.portfolio, balanceData, { dayOrders: portfolioData.dayOrders || null });
                 updateHeaderBalance(balanceData);
                 lastPortfolioRefreshAt = Date.now();
                 const label = reason === 'auto' ? 'Auto refreshed' : 'Updated';
@@ -1742,6 +2012,8 @@
                 if (accountDetails) {
                     displayBasicAccountInfo(accountDetails);
                     updateHeaderBalance(null);
+                    lastDayOrdersPayload = null;
+                    renderDayPlPanel(null);
                 } else {
                     if (accountSummary) {
                         accountSummary.innerHTML = `
@@ -1826,6 +2098,7 @@
                 const strike = button.dataset.strike !== '' ? Number(button.dataset.strike) : null;
                 const expiry = button.dataset.expiry || null;
                 const positionId = button.dataset.positionId || null;
+                const lastPrice = button.dataset.price !== '' ? Number(button.dataset.price) : null;
 
                 const confirmationLines = [
                     `Account: ${accountIdKey}`,
@@ -1849,6 +2122,7 @@
                     callPut,
                     strike: Number.isFinite(strike) ? strike : null,
                     expiry,
+                    price: Number.isFinite(lastPrice) ? lastPrice : null,
                 };
 
                 const originalLabel = button.innerHTML;
@@ -2751,15 +3025,18 @@
         }
 
         // Display portfolio
-        function displayPortfolio(portfolio, balanceData = null, { skipStore = false } = {}) {
+        function displayPortfolio(portfolio, balanceData = null, { skipStore = false, dayOrders = null } = {}) {
             if (!portfolio) {
                 return;
             }
 
-            if (!skipStore) {
-                lastPortfolioPayload = portfolio;
-                lastPortfolioBalance = balanceData || null;
-            }
+        if (!skipStore) {
+            lastPortfolioPayload = portfolio;
+            lastPortfolioBalance = balanceData || null;
+            lastDayOrdersPayload = dayOrders || null;
+        }
+
+        updateDayPlPanelData(portfolio, dayOrders || lastDayOrdersPayload);
 
             revealPortfolioRail();
 
@@ -2900,7 +3177,14 @@
 
                     const optionCards = optionPositions
                         .map((position) => {
-                            const symbol = escapeHtml(position.symbol || 'N/A');
+                            const optionSymbolRaw = position.osiKey
+                                || position.optionSymbol
+                                || position.symbol
+                                || '';
+                            const underlyingRaw = position.Product?.symbol
+                                || position.underlyingSymbol
+                                || (optionSymbolRaw ? optionSymbolRaw.replace(/[-\s]+.*$/, '').trim() : '');
+                            const symbol = escapeHtml(underlyingRaw || optionSymbolRaw || position.symbolDescription || 'N/A');
                             const description = escapeHtml(position.symbolDescription || '');
                             const quantity = Number.isFinite(Number(position.quantity)) ? Number(position.quantity) : null;
                             const avgPrice = position.pricePaid || position.averagePrice;
@@ -2908,13 +3192,16 @@
                             const pnlClass = Number.isFinite(pnl) && pnl >= 0 ? 'text-emerald-600' : 'text-rose-600';
                             const pnlLabel = Number.isFinite(pnl) ? getCurrencyString(pnl) : 'N/A';
                             const pnlPercentLabel = renderPercent(position.unrealizedGainLossPercent);
+                            const lastPrice = Number.isFinite(Number(position.currentPrice)) ? Number(position.currentPrice) : null;
                             const currentPriceLabel = renderValue(position.currentPrice, { currency: true });
                             const marketValueLabel = renderValue(position.marketValue, { currency: true });
                             const avgPriceLabel = renderValue(avgPrice, { currency: true });
                             const strikeDecimals = Number.isFinite(Number(position.strike)) && Number(position.strike) % 1 === 0 ? 0 : 2;
                             const strikeLabel = renderValue(position.strike, { currency: true, decimals: strikeDecimals });
                             const expiryLabel = position.expiry ? escapeHtml(position.expiry) : 'N/A';
-                            const callPutLabel = formatCallPut(position.callPut, position.symbol);
+                            const callPutLabel = formatCallPut(position.callPut, optionSymbolRaw || position.symbol);
+                            const optionSymbolDataset = escapeHtml(optionSymbolRaw || '');
+                            const underlyingDataset = escapeHtml(underlyingRaw || '');
 
                             return `
                                 <article class="border border-slate-200 rounded-xl p-4 shadow-sm bg-white">
@@ -2955,7 +3242,7 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 flex items-center justify-between gap-2">
-                                        <button class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" data-action="emergency-sell" data-option-symbol="${symbol}" data-symbol="${symbol}" data-quantity="${quantity != null ? quantity : 0}" data-position-id="${escapeHtml(position.positionId || '')}" data-call-put="${escapeHtml(position.callPut || '')}" data-strike="${Number.isFinite(position.strike) ? position.strike : ''}" data-expiry="${escapeHtml(position.expiry || '')}">
+                                        <button class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" data-action="emergency-sell" data-option-symbol="${optionSymbolDataset}" data-symbol="${underlyingDataset}" data-quantity="${quantity != null ? quantity : 0}" data-position-id="${escapeHtml(position.positionId || '')}" data-call-put="${escapeHtml(position.callPut || '')}" data-strike="${Number.isFinite(position.strike) ? position.strike : ''}" data-expiry="${escapeHtml(position.expiry || '')}" data-price="${lastPrice != null ? lastPrice : ''}">
                                             <i data-lucide="log-out" class="w-3 h-3"></i>
                                             Exit
                                         </button>
@@ -2997,6 +3284,7 @@
             revealPortfolioRail();
             lastPortfolioPayload = null;
             lastPortfolioBalance = null;
+            lastDayOrdersPayload = null;
 
             const safe = (value, fallback = '') => escapeHtml(value != null ? value : fallback);
             const accountIdDisplay = escapeHtml(getAccountIdString(accountDetails?.accountId || accountDetails?.accountIdKey || 'N/A'));
@@ -3044,6 +3332,7 @@
                 portfolioEmptyState.classList.add('hidden');
             }
 
+            renderDayPlPanel(null);
             lucide.createIcons();
         }
 
@@ -3168,3 +3457,4 @@
     </script>
 </body>
 </html>
+

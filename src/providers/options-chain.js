@@ -9,9 +9,70 @@ function hasEtradeCredentials() {
   );
 }
 
+function pad(value) {
+  return String(value).padStart(2, '0');
+}
+
+function toIsoDate(year, month, day) {
+  if (![year, month, day].every((n) => Number.isFinite(n))) return null;
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+function normalizeExpiryValue(value) {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const millis = value > 1e12 ? value : value * 1000;
+    const date = new Date(millis);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const isoMatch = trimmed.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if (isoMatch) {
+      const [, y, m, d] = isoMatch;
+      return toIsoDate(Number(y), Number(m), Number(d));
+    }
+    const shortMatch = trimmed.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2})$/);
+    if (shortMatch) {
+      const [, m, d, y] = shortMatch;
+      return toIsoDate(2000 + Number(y), Number(m), Number(d));
+    }
+  }
+  return null;
+}
+
+function parseOptionSymbolMeta(optionSymbol) {
+  if (!optionSymbol || typeof optionSymbol !== 'string') return null;
+  const trimmed = optionSymbol.trim();
+  const match = trimmed.match(/(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/i);
+  if (!match) return null;
+  const [, yy, mm, dd, cp, strikeRaw] = match;
+  const year = 2000 + Number(yy);
+  const month = Number(mm);
+  const day = Number(dd);
+  const strike = Number(strikeRaw) / 1000;
+  const type = cp.toUpperCase() === 'C' ? 'CALL' : 'PUT';
+  return {
+    expiry: toIsoDate(year, month, day),
+    strike: Number.isFinite(strike) ? strike : null,
+    type,
+  };
+}
+
 function normalizeOptionRecord(raw, { source } = {}) {
   if (!raw) return null;
-  const strike = Number(raw.strike ?? raw.StrikePrice ?? raw.strikePrice);
+  let strike = Number(raw.strike ?? raw.StrikePrice ?? raw.strikePrice);
+  const optionSymbol = raw.contractSymbol || raw.optionSymbol || raw.symbol || raw.OptionSymbol || raw.osiKey || raw.displaySymbol || null;
+  const occMeta = parseOptionSymbolMeta(optionSymbol);
+  if (!Number.isFinite(strike) && Number.isFinite(occMeta?.strike)) {
+    strike = occMeta.strike;
+  }
   if (!Number.isFinite(strike)) return null;
   const typeRaw = raw.type ?? raw.optionType ?? raw.callPut ?? raw.callOrPut ?? raw.contractType ?? raw.putCall;
   let type = typeof typeRaw === 'string' ? typeRaw.toUpperCase() : null;
@@ -23,11 +84,25 @@ function normalizeOptionRecord(raw, { source } = {}) {
   const delta = raw.delta != null ? Number(raw.delta) : (raw.OptionGreeks?.delta != null ? Number(raw.OptionGreeks.delta) : undefined);
   const oi = Number(raw.oi ?? raw.openInterest ?? raw.openint ?? raw.openinterest);
   const vol = Number(raw.vol ?? raw.volume ?? raw.totalVolume);
-  const optionSymbol = raw.contractSymbol || raw.optionSymbol || raw.symbol || raw.OptionSymbol || raw.osiKey || raw.displaySymbol || null;
+  if (!type && occMeta?.type) {
+    type = occMeta.type;
+  }
+  let expiry =
+    normalizeExpiryValue(raw.expiryDate || raw.expirationDate || raw.expiration || raw.expiry) ||
+    (Number.isFinite(raw.expiryYear) && Number.isFinite(raw.expiryMonth) && Number.isFinite(raw.expiryDay)
+      ? toIsoDate(
+          raw.expiryYear < 100 ? raw.expiryYear + 2000 : Number(raw.expiryYear),
+          Number(raw.expiryMonth),
+          Number(raw.expiryDay),
+        )
+      : null) ||
+    occMeta?.expiry ||
+    null;
   return {
     source,
     strike,
     type,
+    expiry,
     bid: Number.isFinite(bid) ? bid : null,
     ask: Number.isFinite(ask) ? ask : null,
     last: Number.isFinite(last) ? last : null,
@@ -119,4 +194,5 @@ module.exports = {
   fetchEtradeChain,
   fetchFmpChain,
   hasEtradeCredentials,
+  parseOptionSymbolMeta,
 };

@@ -150,46 +150,51 @@ async function fetchIEXQuotes(symbols, { apiKey, debug = false } = {}) {
 }
 
 async function fetchFMPQuotes(symbols, { apiKey, debug = false } = {}) {
-  if (!apiKey) return {};
+  if (!apiKey || !Array.isArray(symbols) || !symbols.length) return {};
   const out = {};
-  for (const symbol of symbols) {
+  const chunkSize = 50;
+
+  for (let i = 0; i < symbols.length; i += chunkSize) {
+    const chunk = symbols.slice(i, i + chunkSize);
+    const joined = chunk.join(',');
     try {
-      const url = `https://financialmodelingprep.com/stable/quote?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`;
+      const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${encodeURIComponent(joined)}&apikey=${apiKey}`;
+      if (debug) console.log(`fmp bulk url=${url}`);
       const res = await fetch(url, {
-        headers: {
-          'Accept': 'application/json, text/plain, */*'
-        }
+        headers: { 'Accept': 'application/json, text/plain, */*' },
       });
       if (!res.ok) throw new Error(`FMP HTTP ${res.status}`);
       const data = await res.json();
-      if (Array.isArray(data)) {
-        for (const quote of data) {
-          if (!quote || !quote.symbol) continue;
-          const price = quote.price ?? quote.ask ?? quote.bid;
-          if (price == null) continue;
-          const tsMillis = quote.timestamp ? Number(quote.timestamp) * 1000 : Date.now();
-          const payload = {
-            price: Number(price),
-            ts: new Date(tsMillis).toISOString(),
-            source: 'fmp'
-          };
-          const volume = Number(quote.volume ?? quote.avgVolume ?? Number.NaN);
-          if (Number.isFinite(volume) && volume >= 0) {
-            payload.volume = volume;
-          }
-          const prevClose = Number(quote.previousClose);
-          if (Number.isFinite(prevClose)) {
-            payload.prevClose = prevClose;
-          }
-          out[quote.symbol.toUpperCase()] = payload;
+      const records = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : (data && typeof data === 'object' ? Object.values(data) : []);
+      for (const quote of records) {
+        if (!quote || !quote.symbol) continue;
+        const price = quote.price ?? quote.ask ?? quote.bid;
+        if (price == null) continue;
+        const tsMillis = quote.timestamp ? Number(quote.timestamp) * 1000 : Date.now();
+        const payload = {
+          price: Number(price),
+          ts: new Date(tsMillis).toISOString(),
+          source: 'fmp',
+        };
+        const volume = Number(quote.volume ?? quote.avgVolume ?? Number.NaN);
+        if (Number.isFinite(volume) && volume >= 0) {
+          payload.volume = volume;
         }
+        const prevClose = Number(quote.previousClose);
+        if (Number.isFinite(prevClose)) {
+          payload.prevClose = prevClose;
+        }
+        out[quote.symbol.toUpperCase()] = payload;
       }
-      if (debug) console.log(`fmp url=${url} fetched=${out[symbol.toUpperCase()] ? 'yes' : 'no'}`);
-      await new Promise(r => setTimeout(r, 250));
     } catch (e) {
-      if (debug) console.log('FMP error:', e.message);
+      if (debug) console.log('FMP bulk error:', e.message);
     }
   }
+
   return out;
 }
 

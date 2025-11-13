@@ -29,7 +29,7 @@ For each surviving symbol, the scanner feeds the model:
 - Support/resistance snippets, float/sector info, and headline risk markers.
 - Recent option liquidity stats (spread %, OI, IV snapshot).
 
-The AI returns a normalized record with decision, confidence, buy/exit checklist, scaling plan, and risk flags. Multiple providers (OpenAI + xAI) can run per scan; the UI merges them into a comparison grid.
+The AI returns a normalized record with decision, confidence, buy/exit checklist, scaling plan, and risk flags. Multiple providers (OpenAI + DeepSeek) can run per scan; the UI merges them into a comparison grid.
 
 ## 4. Option Contract Selection
 

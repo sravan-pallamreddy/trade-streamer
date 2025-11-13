@@ -1,0 +1,5114 @@
+﻿
+> trade-streamer@0.1.0 day-trade
+> npm run ai-agent -- --strategy day_trade --expiry-type 0dte --symbols SPY,QQQ,AAPL,TSLA,GOOGL,NVDA --symbols SPY,QQQ,AAPL,COIN,TSLA,GOOGL,AMAT,SNOW,NVDA,SPX,AVGO,CVNA,PLTR,HOOD,MSFT,META,NFLX,BABA,AMD,CRWV --strategy day_trade --expiry-type 0dte
+
+
+> trade-streamer@0.1.0 ai-agent
+> node src/cli/ai-agent.js --strategy day_trade --expiry-type 0dte --symbols SPY,QQQ,AAPL,TSLA,GOOGL,NVDA --symbols SPY,QQQ,AAPL,COIN,TSLA,GOOGL,AMAT,SNOW,NVDA,SPX,AVGO,CVNA,PLTR,HOOD,MSFT,META,NFLX,BABA,AMD,CRWV --strategy day_trade --expiry-type 0dte
+
+
+==================== AI TRADING AGENT ====================
+Tick: 2025-11-12T15:35:59.457Z | Run 1
+📈 Strategy: DAY_TRADE | Expiry: 0DTE
+💰 Account: $3,000 | Symbols: SPY, QQQ, AAPL, COIN, TSLA, GOOGL, AMAT, SNOW, NVDA, SPX, AVGO, CVNA, PLTR, HOOD, MSFT, META, NFLX, BABA, AMD, CRWV
+🤖 AI: openai | Model: gpt-4o-mini
+
+🔍 Analyzing SPY...
+📊 Current price: $682.44 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -65%
+📋 Signals: macd_bearish, bb_lower_breakout, near_resistance, resistance_reject
+📡 Option chain response {
+  symbol: 'SPY',
+  expiry: '2025-11-12',
+  source: 'etrade',
+  total: 258,
+  sample: [
+    {
+      side: null,
+      strike: 500,
+      bid: 181.15,
+      ask: 183.86,
+      last: 183.49,
+      delta: 1,
+      oi: 1,
+      volume: 0,
+      optionSymbol: 'SPY---251112C00500000'
+    },
+    {
+      side: null,
+      strike: 500,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 1051,
+      volume: 14,
+      optionSymbol: 'SPY---251112P00500000'
+    },
+    {
+      side: null,
+      strike: 505,
+      bid: 176.16,
+      ask: 178.86,
+      last: 178.22,
+      delta: 1,
+      oi: 0,
+      volume: 1,
+      optionSymbol: 'SPY---251112C00505000'
+    },
+    {
+      side: null,
+      strike: 505,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 1009,
+      volume: 14,
+      optionSymbol: 'SPY---251112P00505000'
+    },
+    {
+      side: null,
+      strike: 510,
+      bid: 171.15,
+      ask: 173.86,
+      last: 173.26,
+      delta: 1,
+      oi: 0,
+      volume: 15,
+      optionSymbol: 'SPY---251112C00510000'
+    },
+    {
+      side: null,
+      strike: 510,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 25,
+      volume: 0,
+      optionSymbol: 'SPY---251112P00510000'
+    },
+    {
+      side: null,
+      strike: 515,
+      bid: 166.15,
+      ask: 168.91,
+      last: 169.14,
+      delta: 1,
+      oi: 0,
+      volume: 14,
+      optionSymbol: 'SPY---251112C00515000'
+    },
+    {
+      side: null,
+      strike: 515,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 10,
+      volume: 0,
+      optionSymbol: 'SPY---251112P00515000'
+    }
+  ]
+}
+🟢 Selected PUT 682 @ ~$1.18 (Δ -0.44612, OI 8256)
+   Stop ~$0.94 | Target ~$2.95
+📄 Option contract: SPY 2025-11-12 682P | Symbol SPY---251112P00682000 | Expiry 2025-11-12 | Strike 682 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $0.94 | Target $2.95 | Risk ~$120.00 (per contract ~$24.00)
+📈 Profit plan:
+   1) Sell 3 @ $2.95 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $3.48 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $4.01 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "SPY",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 682.44,
+    "contract": "SPY 2025-11-12 682P",
+    "expiry": "2025-11-12",
+    "strike": 682,
+    "multiplier": 100,
+    "expiry_type": "0dte",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": null,
+    "target_otm_pct": 0.01,
+    "est_entry": 1.18,
+    "stop": 0.94,
+    "take_profit": 2.95,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "0dte",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "0DTE PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 1.17,
+    "ask": 1.19,
+    "last": 1.18,
+    "delta": -0.44612,
+    "oi": 8256,
+    "volume": 128679,
+    "entry_source": "etrade_chain",
+    "option_symbol": "SPY---251112P00682000",
+    "liquidity": {
+      "spread": 0.02,
+      "spread_pct": 1.69,
+      "oi": 8256,
+      "volume": 128679,
+      "score": 0.9698208474576273
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 24,
+    "risk_total": 120,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout",
+        "near_resistance",
+        "resistance_reject"
+      ],
+      "strength": -0.65
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 682,
+      "delta": -0.44612,
+      "oi": 8256,
+      "volume": 128679,
+      "spread_pct": 1.69,
+      "score": 0.9698208474576273,
+      "chain_source": "etrade",
+      "option_symbol": "SPY---251112P00682000",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 0.94,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 2.95,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 3.48,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 4.01,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.38,
+      "spread_pct": 1.69,
+      "volume_oi_ratio": 15.59,
+      "delta_gap": 0.006,
+      "signal_strength": 0.65,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 0.2,
+      "moneyness_pct": -0.06,
+      "risk_per_contract": 0.24,
+      "total_position_risk": 120,
+      "liquidity_score": 0.97
+    }
+  },
+  "context": {
+    "price": 682.44,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 36.11991008334335,
+      "macd": {
+        "macd": -0.18187315653005953,
+        "signal": -0.14549852522404763,
+        "histogram": -0.0363746313060119
+      },
+      "bb": {
+        "upper": 683.3572556811771,
+        "middle": 683.0308350000001,
+        "lower": 682.7044143188232
+      },
+      "stoch": {
+        "k": 23.045630544525334,
+        "d": 23.045630544525334
+      },
+      "atr": 0.2464428571428568,
+      "sma20": 683.0308350000001,
+      "sma50": 683.4330319999999,
+      "ema20": 683.0783992078663,
+      "volume": 139980,
+      "avgVolume": 133295.45
+    },
+    "option": {
+      "contract": "SPY 2025-11-12 682P",
+      "entry": 1.18,
+      "stop": 0.94,
+      "take_profit": 2.95,
+      "delta": -0.44612,
+      "oi": 8256,
+      "volume": 128679,
+      "spread_pct": 1.69,
+      "target_delta": -0.45199999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "SPY---251112P00682000"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout",
+          "near_resistance",
+          "resistance_reject"
+        ],
+        "strength": -0.65
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 682.44,
+              "ema20": 683.0783992078663,
+              "sma50": 683.4330319999999
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 36.11991008334335,
+              "bollinger": {
+                "upper": 683.3572556811771,
+                "lower": 682.7044143188232
+              },
+              "sma20": 683.0308350000001
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 684.11,
+              "recentLow": 682.53,
+              "atr": 0.2464428571428568
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 682.44,
+              "ema20": 683.0783992078663,
+              "sma50": 683.4330319999999
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 36.11991008334335,
+              "bollinger": {
+                "upper": 683.3572556811771,
+                "lower": 682.7044143188232
+              },
+              "sma20": 683.0308350000001
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 684.11,
+              "recentLow": 682.53,
+              "atr": 0.2464428571428568
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 682.44,
+            "ema20": 683.0783992078663,
+            "sma50": 683.4330319999999
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "0dte",
+        "otmPct": 0.005,
+        "confidence": 0.65
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.38,
+      "spread_pct": 1.69,
+      "volume_oi_ratio": 15.59,
+      "delta_gap": 0.006,
+      "signal_strength": 0.65,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 0.2,
+      "moneyness_pct": -0.06,
+      "risk_per_contract": 0.24,
+      "total_position_risk": 120,
+      "liquidity_score": 0.97
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.5,
+        "magnitude": 0.5,
+        "bias": "bearish",
+        "reasons": [
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 682.44,
+          "ema20": 683.0783992078663,
+          "sma50": 683.4330319999999
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 682.44,
+            "ema20": 683.0783992078663,
+            "sma50": 683.4330319999999
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 36.11991008334335,
+            "bollinger": {
+              "upper": 683.3572556811771,
+              "lower": 682.7044143188232
+            },
+            "sma20": 683.0308350000001
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": -0.35,
+          "magnitude": 0.35,
+          "bias": "bearish",
+          "reasons": [
+            "Price breaking below recent lows"
+          ],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 684.11,
+            "recentLow": 682.53,
+            "atr": 0.2464428571428568
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: caution (confidence: 60%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.5,"rationale":"Bearish momentum signals with potential resistance."}
+AI_RISK_FLAGS ["Tight range, breakout may lack follow-through"]
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing QQQ...
+📊 Current price: $619.75 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -65%
+📋 Signals: macd_bearish, bb_lower_breakout, near_resistance, resistance_reject
+📡 Option chain response {
+  symbol: 'QQQ',
+  expiry: '2025-11-12',
+  source: 'etrade',
+  total: 222,
+  sample: [
+    {
+      side: null,
+      strike: 500,
+      bid: 118,
+      ask: 121.76,
+      last: 122.23,
+      delta: 0.99992,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'QQQ---251112C00500000'
+    },
+    {
+      side: null,
+      strike: 500,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00008,
+      oi: 17,
+      volume: 0,
+      optionSymbol: 'QQQ---251112P00500000'
+    },
+    {
+      side: null,
+      strike: 505,
+      bid: 113.02,
+      ask: 116.84,
+      last: 117.14,
+      delta: 0.99984,
+      oi: 11,
+      volume: 0,
+      optionSymbol: 'QQQ---251112C00505000'
+    },
+    {
+      side: null,
+      strike: 505,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00016,
+      oi: 10,
+      volume: 0,
+      optionSymbol: 'QQQ---251112P00505000'
+    },
+    {
+      side: null,
+      strike: 510,
+      bid: 108,
+      ask: 111.76,
+      last: 110.11,
+      delta: 0.99969,
+      oi: 0,
+      volume: 1,
+      optionSymbol: 'QQQ---251112C00510000'
+    },
+    {
+      side: null,
+      strike: 510,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00031,
+      oi: 5,
+      volume: 0,
+      optionSymbol: 'QQQ---251112P00510000'
+    },
+    {
+      side: null,
+      strike: 515,
+      bid: 103,
+      ask: 106.66,
+      last: 105.15,
+      delta: 0.99943,
+      oi: 0,
+      volume: 1,
+      optionSymbol: 'QQQ---251112C00515000'
+    },
+    {
+      side: null,
+      strike: 515,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00057,
+      oi: 19,
+      volume: 0,
+      optionSymbol: 'QQQ---251112P00515000'
+    }
+  ]
+}
+🟢 Selected PUT 619 @ ~$1.5 (Δ -0.43737, OI 5294)
+   Stop ~$1.2 | Target ~$3.75
+📄 Option contract: QQQ 2025-11-12 619P | Symbol QQQ---251112P00619000 | Expiry 2025-11-12 | Strike 619 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $1.20 | Target $3.75 | Risk ~$150.00 (per contract ~$30.00)
+📈 Profit plan:
+   1) Sell 3 @ $3.75 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $4.43 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $5.10 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "QQQ",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 619.75,
+    "contract": "QQQ 2025-11-12 619P",
+    "expiry": "2025-11-12",
+    "strike": 619,
+    "multiplier": 100,
+    "expiry_type": "0dte",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": null,
+    "target_otm_pct": 0.01,
+    "est_entry": 1.5,
+    "stop": 1.2,
+    "take_profit": 3.75,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "0dte",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "0DTE PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 1.49,
+    "ask": 1.51,
+    "last": 1.49,
+    "delta": -0.43737,
+    "oi": 5294,
+    "volume": 59146,
+    "entry_source": "etrade_chain",
+    "option_symbol": "QQQ---251112P00619000",
+    "liquidity": {
+      "spread": 0.02,
+      "spread_pct": 1.33,
+      "oi": 5294,
+      "volume": 59146,
+      "score": 0.9537491666666666
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 30,
+    "risk_total": 150,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout",
+        "near_resistance",
+        "resistance_reject"
+      ],
+      "strength": -0.65
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 619,
+      "delta": -0.43737,
+      "oi": 5294,
+      "volume": 59146,
+      "spread_pct": 1.33,
+      "score": 0.9537491666666666,
+      "chain_source": "etrade",
+      "option_symbol": "QQQ---251112P00619000",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 1.2,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 3.75,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 4.43,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 5.1,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.5,
+      "spread_pct": 1.33,
+      "volume_oi_ratio": 11.17,
+      "delta_gap": 0.015,
+      "signal_strength": 0.65,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 0.2,
+      "moneyness_pct": -0.12,
+      "risk_per_contract": 0.3,
+      "total_position_risk": 150,
+      "liquidity_score": 0.95
+    }
+  },
+  "context": {
+    "price": 619.75,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 38.56155832564342,
+      "macd": {
+        "macd": -0.1427418565182279,
+        "signal": -0.11419348521458234,
+        "histogram": -0.02854837130364557
+      },
+      "bb": {
+        "upper": 620.8766877960234,
+        "middle": 620.441175,
+        "lower": 620.0056622039767
+      },
+      "stoch": {
+        "k": 33.6235882403613,
+        "d": 33.6235882403613
+      },
+      "atr": 0.36930714285714267,
+      "sma20": 620.441175,
+      "sma50": 620.6264360000001,
+      "ema20": 620.5329707462791,
+      "volume": 142138,
+      "avgVolume": 114497.4
+    },
+    "option": {
+      "contract": "QQQ 2025-11-12 619P",
+      "entry": 1.5,
+      "stop": 1.2,
+      "take_profit": 3.75,
+      "delta": -0.43737,
+      "oi": 5294,
+      "volume": 59146,
+      "spread_pct": 1.33,
+      "target_delta": -0.45199999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "QQQ---251112P00619000"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout",
+          "near_resistance",
+          "resistance_reject"
+        ],
+        "strength": -0.65
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 619.75,
+              "ema20": 620.5329707462791,
+              "sma50": 620.6264360000001
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 38.56155832564342,
+              "bollinger": {
+                "upper": 620.8766877960234,
+                "lower": 620.0056622039767
+              },
+              "sma20": 620.441175
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 621.9188,
+              "recentLow": 619.927,
+              "atr": 0.36930714285714267
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 619.75,
+              "ema20": 620.5329707462791,
+              "sma50": 620.6264360000001
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 38.56155832564342,
+              "bollinger": {
+                "upper": 620.8766877960234,
+                "lower": 620.0056622039767
+              },
+              "sma20": 620.441175
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 621.9188,
+              "recentLow": 619.927,
+              "atr": 0.36930714285714267
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 619.75,
+            "ema20": 620.5329707462791,
+            "sma50": 620.6264360000001
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "0dte",
+        "otmPct": 0.005,
+        "confidence": 0.65
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.5,
+      "spread_pct": 1.33,
+      "volume_oi_ratio": 11.17,
+      "delta_gap": 0.015,
+      "signal_strength": 0.65,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 0.2,
+      "moneyness_pct": -0.12,
+      "risk_per_contract": 0.3,
+      "total_position_risk": 150,
+      "liquidity_score": 0.95
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.5,
+        "magnitude": 0.5,
+        "bias": "bearish",
+        "reasons": [
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 619.75,
+          "ema20": 620.5329707462791,
+          "sma50": 620.6264360000001
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 619.75,
+            "ema20": 620.5329707462791,
+            "sma50": 620.6264360000001
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 38.56155832564342,
+            "bollinger": {
+              "upper": 620.8766877960234,
+              "lower": 620.0056622039767
+            },
+            "sma20": 620.441175
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": -0.35,
+          "magnitude": 0.35,
+          "bias": "bearish",
+          "reasons": [
+            "Price breaking below recent lows"
+          ],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 621.9188,
+            "recentLow": 619.927,
+            "atr": 0.36930714285714267
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: reject (confidence: 30%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.5,"rationale":"Bearish momentum signals conflict with long put direction."}
+AI_RISK_FLAGS ["Tight range, breakout may lack follow-through"]
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing AAPL...
+📊 Current price: $273.54 (fmp)
+🧭 Primary playbook: Momentum Trend (bullish bias, score 70.0pts)
+🎯 DAY_TRADE Analysis: Strength 65%
+📋 Signals: macd_bullish, bb_upper_breakout, near_support, support_bounce
+📡 Option chain response {
+  symbol: 'AAPL',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 158,
+  sample: [
+    {
+      side: null,
+      strike: 110,
+      bid: 162.15,
+      ask: 164.45,
+      last: 165.15,
+      delta: 1,
+      oi: 2,
+      volume: 0,
+      optionSymbol: 'AAPL--251114C00110000'
+    },
+    {
+      side: null,
+      strike: 110,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 7,
+      volume: 0,
+      optionSymbol: 'AAPL--251114P00110000'
+    },
+    {
+      side: null,
+      strike: 120,
+      bid: 152.15,
+      ask: 154.25,
+      last: 155.35,
+      delta: 1,
+      oi: 7,
+      volume: 0,
+      optionSymbol: 'AAPL--251114C00120000'
+    },
+    {
+      side: null,
+      strike: 120,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AAPL--251114P00120000'
+    },
+    {
+      side: null,
+      strike: 125,
+      bid: 147.1,
+      ask: 149.3,
+      last: 150.38,
+      delta: 1,
+      oi: 6,
+      volume: 0,
+      optionSymbol: 'AAPL--251114C00125000'
+    },
+    {
+      side: null,
+      strike: 125,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AAPL--251114P00125000'
+    },
+    {
+      side: null,
+      strike: 130,
+      bid: 142.15,
+      ask: 144.5,
+      last: 145.18,
+      delta: 1,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AAPL--251114C00130000'
+    },
+    {
+      side: null,
+      strike: 130,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00001,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AAPL--251114P00130000'
+    }
+  ]
+}
+🟢 Selected CALL 275 @ ~$1.53 (Δ 0.40493, OI 30970)
+   Stop ~$1.22 | Target ~$3.83
+📄 Option contract: AAPL 2025-11-14 275C | Symbol AAPL--251114C00275000 | Expiry 2025-11-14 | Strike 275 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $1.22 | Target $3.83 | Risk ~$155.00 (per contract ~$31.00)
+📈 Profit plan:
+   1) Sell 3 @ $3.83 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $4.52 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $5.21 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "AAPL",
+    "direction": "long",
+    "side": "call",
+    "underlying_price": 273.54,
+    "contract": "AAPL 2025-11-14 275C",
+    "expiry": "2025-11-14",
+    "strike": 275,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 1.53,
+    "stop": 1.22,
+    "take_profit": 3.83,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) CALL ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 1.52,
+    "ask": 1.54,
+    "last": 1.53,
+    "delta": 0.40493,
+    "oi": 30970,
+    "volume": 32634,
+    "entry_source": "etrade_chain",
+    "option_symbol": "AAPL--251114C00275000",
+    "liquidity": {
+      "spread": 0.02,
+      "spread_pct": 1.31,
+      "oi": 30970,
+      "volume": 32634,
+      "score": 0.8720206045751635
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 31,
+    "risk_total": 155,
+    "analysis": {
+      "signals": [
+        "macd_bullish",
+        "bb_upper_breakout",
+        "near_support",
+        "support_bounce"
+      ],
+      "strength": 0.65
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 275,
+      "delta": 0.40493,
+      "oi": 30970,
+      "volume": 32634,
+      "spread_pct": 1.31,
+      "score": 0.8720206045751635,
+      "chain_source": "etrade",
+      "option_symbol": "AAPL--251114C00275000",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 1.22,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 3.83,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 4.52,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 5.21,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.42,
+      "spread_pct": 1.31,
+      "volume_oi_ratio": 1.05,
+      "delta_gap": -0.051,
+      "signal_strength": 0.65,
+      "playbook_alignment": {
+        "score": 0.7,
+        "bias": "bullish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": 0.53,
+      "risk_per_contract": 0.31,
+      "total_position_risk": 155,
+      "liquidity_score": 0.87
+    }
+  },
+  "context": {
+    "price": 273.54,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 54.789227634723495,
+      "macd": {
+        "macd": 0.03335986322019835,
+        "signal": 0.026687890576158682,
+        "histogram": 0.006671972644039667
+      },
+      "bb": {
+        "upper": 273.55383706149206,
+        "middle": 273.16198999999995,
+        "lower": 272.77014293850783
+      },
+      "stoch": {
+        "k": 81.51443483746853,
+        "d": 81.51443483746853
+      },
+      "atr": 0.22577142857142413,
+      "sma20": 273.16198999999995,
+      "sma50": 272.866498,
+      "ema20": 273.10098826208053,
+      "volume": 150240,
+      "avgVolume": 104341.45
+    },
+    "option": {
+      "contract": "AAPL 2025-11-14 275C",
+      "entry": 1.53,
+      "stop": 1.22,
+      "take_profit": 3.83,
+      "delta": 0.40493,
+      "oi": 30970,
+      "volume": 32634,
+      "spread_pct": 1.31,
+      "target_delta": 0.45599999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "AAPL--251114C00275000"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bullish",
+          "bb_upper_breakout",
+          "near_support",
+          "support_bounce"
+        ],
+        "strength": 0.65
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": 0.7,
+            "magnitude": 0.7000000000000001,
+            "bias": "bullish",
+            "reasons": [
+              "Above EMA20 intraday trendline",
+              "Holding above 50-period base",
+              "Volume expansion 144% of average",
+              "MACD histogram positive"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 273.54,
+              "ema20": 273.10098826208053,
+              "sma50": 272.866498
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price testing upper Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 54.789227634723495,
+              "bollinger": {
+                "upper": 273.55383706149206,
+                "lower": 272.77014293850783
+              },
+              "sma20": 273.16198999999995
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price clearing recent highs"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "recentHigh": 273.4194,
+              "recentLow": 272.7158,
+              "atr": 0.22577142857142413
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": 0.7,
+            "magnitude": 0.7000000000000001,
+            "bias": "bullish",
+            "reasons": [
+              "Above EMA20 intraday trendline",
+              "Holding above 50-period base",
+              "Volume expansion 144% of average",
+              "MACD histogram positive"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 273.54,
+              "ema20": 273.10098826208053,
+              "sma50": 272.866498
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price testing upper Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 54.789227634723495,
+              "bollinger": {
+                "upper": 273.55383706149206,
+                "lower": 272.77014293850783
+              },
+              "sma20": 273.16198999999995
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price clearing recent highs"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "recentHigh": 273.4194,
+              "recentLow": 272.7158,
+              "atr": 0.22577142857142413
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": 0.7,
+          "magnitude": 0.7000000000000001,
+          "bias": "bullish",
+          "reasons": [
+            "Above EMA20 intraday trendline",
+            "Holding above 50-period base",
+            "Volume expansion 144% of average",
+            "MACD histogram positive"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 273.54,
+            "ema20": 273.10098826208053,
+            "sma50": 272.866498
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "call",
+        "expiry": "0dte",
+        "otmPct": 0.005,
+        "confidence": 0.7000000000000001
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.42,
+      "spread_pct": 1.31,
+      "volume_oi_ratio": 1.05,
+      "delta_gap": -0.051,
+      "signal_strength": 0.65,
+      "playbook_alignment": {
+        "score": 0.7,
+        "bias": "bullish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": 0.53,
+      "risk_per_contract": 0.31,
+      "total_position_risk": 155,
+      "liquidity_score": 0.87
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": 0.7,
+        "magnitude": 0.7000000000000001,
+        "bias": "bullish",
+        "reasons": [
+          "Above EMA20 intraday trendline",
+          "Holding above 50-period base",
+          "Volume expansion 144% of average",
+          "MACD histogram positive"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 273.54,
+          "ema20": 273.10098826208053,
+          "sma50": 272.866498
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": 0.7,
+          "magnitude": 0.7000000000000001,
+          "bias": "bullish",
+          "reasons": [
+            "Above EMA20 intraday trendline",
+            "Holding above 50-period base",
+            "Volume expansion 144% of average",
+            "MACD histogram positive"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 273.54,
+            "ema20": 273.10098826208053,
+            "sma50": 272.866498
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": -0.35,
+          "magnitude": 0.35,
+          "bias": "bearish",
+          "reasons": [
+            "Price testing upper Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 54.789227634723495,
+            "bollinger": {
+              "upper": 273.55383706149206,
+              "lower": 272.77014293850783
+            },
+            "sma20": 273.16198999999995
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price clearing recent highs"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "recentHigh": 273.4194,
+            "recentLow": 272.7158,
+            "atr": 0.22577142857142413
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: approve (confidence: 90%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bullish","score":0.7,"rationale":"Strong bullish signals with positive volume expansion."}
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing COIN...
+📊 Current price: $304.83 (fmp)
+🧭 Primary playbook: Mean Reversion (bullish bias, score 55.0pts)
+🎯 DAY_TRADE Analysis: Strength -0%
+📋 Signals: oversold, macd_bearish, bb_lower_breakout, high_volume
+⏭️  Skipping COIN - insufficient signal strength
+
+🔍 Analyzing TSLA...
+📊 Current price: $431.98 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -5%
+📋 Signals: macd_bearish, near_support
+⏭️  Skipping TSLA - insufficient signal strength
+
+🔍 Analyzing GOOGL...
+📊 Current price: $286.13 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -25%
+📋 Signals: macd_bearish, bb_lower_breakout, near_support
+📡 Option chain response {
+  symbol: 'GOOGL',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 174,
+  sample: [
+    {
+      side: null,
+      strike: 100,
+      bid: 185,
+      ask: 188.3,
+      last: 191.35,
+      delta: 1,
+      oi: 3,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114C00100000'
+    },
+    {
+      side: null,
+      strike: 100,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 6,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114P00100000'
+    },
+    {
+      side: null,
+      strike: 105,
+      bid: 179.95,
+      ask: 183.1,
+      last: 186.48,
+      delta: 1,
+      oi: 10,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114C00105000'
+    },
+    {
+      side: null,
+      strike: 105,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 2,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114P00105000'
+    },
+    {
+      side: null,
+      strike: 110,
+      bid: 174.9,
+      ask: 178.35,
+      last: 181.35,
+      delta: 1,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114C00110000'
+    },
+    {
+      side: null,
+      strike: 110,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114P00110000'
+    },
+    {
+      side: null,
+      strike: 115,
+      bid: 170,
+      ask: 173.1,
+      last: 176.35,
+      delta: 1,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114C00115000'
+    },
+    {
+      side: null,
+      strike: 115,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 1,
+      volume: 0,
+      optionSymbol: 'GOOGL-251114P00115000'
+    }
+  ]
+}
+🟢 Selected PUT 285 @ ~$2.48 (Δ -0.43332, OI 2639)
+   Stop ~$1.98 | Target ~$6.2
+📄 Option contract: GOOGL 2025-11-14 285P | Symbol GOOGL-251114P00285000 | Expiry 2025-11-14 | Strike 285 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $1.98 | Target $6.20 | Risk ~$250.00 (per contract ~$50.00)
+📈 Profit plan:
+   1) Sell 3 @ $6.20 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $7.32 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $8.43 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "GOOGL",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 286.1299,
+    "contract": "GOOGL 2025-11-14 285P",
+    "expiry": "2025-11-14",
+    "strike": 285,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 2.48,
+    "stop": 1.98,
+    "take_profit": 6.2,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 2.45,
+    "ask": 2.51,
+    "last": 2.5,
+    "delta": -0.43332,
+    "oi": 2639,
+    "volume": 5833,
+    "entry_source": "etrade_chain",
+    "option_symbol": "GOOGL-251114P00285000",
+    "liquidity": {
+      "spread": 0.06,
+      "spread_pct": 2.42,
+      "oi": 2639,
+      "volume": 5833,
+      "score": 0.8783364516129033
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 50,
+    "risk_total": 250,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout",
+        "near_support"
+      ],
+      "strength": -0.25
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 285,
+      "delta": -0.43332,
+      "oi": 2639,
+      "volume": 5833,
+      "spread_pct": 2.42,
+      "score": 0.8783364516129033,
+      "chain_source": "etrade",
+      "option_symbol": "GOOGL-251114P00285000",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 1.98,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 6.2,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 7.32,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 8.43,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.44,
+      "spread_pct": 2.42,
+      "volume_oi_ratio": 2.21,
+      "delta_gap": -0.043,
+      "signal_strength": 0.25,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.39,
+      "risk_per_contract": 0.5,
+      "total_position_risk": 250,
+      "liquidity_score": 0.88
+    }
+  },
+  "context": {
+    "price": 286.1299,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 44.93850236411336,
+      "macd": {
+        "macd": -0.07907731809319785,
+        "signal": -0.06326185447455827,
+        "histogram": -0.015815463618639572
+      },
+      "bb": {
+        "upper": 287.3462983685392,
+        "middle": 286.94773,
+        "lower": 286.5491616314608
+      },
+      "stoch": {
+        "k": 16.046578700702383,
+        "d": 16.046578700702383
+      },
+      "atr": 0.2945928571428575,
+      "sma20": 286.94773,
+      "sma50": 286.80182399999995,
+      "ema20": 286.880643498352,
+      "volume": 46059,
+      "avgVolume": 60387.15
+    },
+    "option": {
+      "contract": "GOOGL 2025-11-14 285P",
+      "entry": 2.48,
+      "stop": 1.98,
+      "take_profit": 6.2,
+      "delta": -0.43332,
+      "oi": 2639,
+      "volume": 5833,
+      "spread_pct": 2.42,
+      "target_delta": -0.38999999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "GOOGL-251114P00285000"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout",
+          "near_support"
+        ],
+        "strength": -0.25
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 286.1299,
+              "ema20": 286.880643498352,
+              "sma50": 286.80182399999995
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 44.93850236411336,
+              "bollinger": {
+                "upper": 287.3462983685392,
+                "lower": 286.5491616314608
+              },
+              "sma20": 286.94773
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 287.4829,
+              "recentLow": 285.87,
+              "atr": 0.2945928571428575
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 286.1299,
+              "ema20": 286.880643498352,
+              "sma50": 286.80182399999995
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 44.93850236411336,
+              "bollinger": {
+                "upper": 287.3462983685392,
+                "lower": 286.5491616314608
+              },
+              "sma20": 286.94773
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 287.4829,
+              "recentLow": 285.87,
+              "atr": 0.2945928571428575
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 286.1299,
+            "ema20": 286.880643498352,
+            "sma50": 286.80182399999995
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "weekly",
+        "otmPct": 0.02,
+        "confidence": 0.5
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.44,
+      "spread_pct": 2.42,
+      "volume_oi_ratio": 2.21,
+      "delta_gap": -0.043,
+      "signal_strength": 0.25,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.39,
+      "risk_per_contract": 0.5,
+      "total_position_risk": 250,
+      "liquidity_score": 0.88
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.5,
+        "magnitude": 0.5,
+        "bias": "bearish",
+        "reasons": [
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 286.1299,
+          "ema20": 286.880643498352,
+          "sma50": 286.80182399999995
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 286.1299,
+            "ema20": 286.880643498352,
+            "sma50": 286.80182399999995
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 44.93850236411336,
+            "bollinger": {
+              "upper": 287.3462983685392,
+              "lower": 286.5491616314608
+            },
+            "sma20": 286.94773
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": 0,
+          "magnitude": 0,
+          "bias": "neutral",
+          "reasons": [],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 287.4829,
+            "recentLow": 285.87,
+            "atr": 0.2945928571428575
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: caution (confidence: 60%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.5,"rationale":"Bearish momentum trend with conflicting signals."}
+AI_RISK_FLAGS ["Bearish momentum signals","Tight range, breakout may lack follow-through"]
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing AMAT...
+📊 Current price: $229.36 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -25%
+📋 Signals: macd_bearish, bb_lower_breakout, near_support
+📡 Option chain response {
+  symbol: 'AMAT',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 120,
+  sample: [
+    {
+      side: null,
+      strike: 110,
+      bid: 119.05,
+      ask: 121.6,
+      last: 119.2,
+      delta: 1,
+      oi: 1,
+      volume: 0,
+      optionSymbol: 'AMAT--251114C00110000'
+    },
+    {
+      side: null,
+      strike: 110,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 108,
+      volume: 0,
+      optionSymbol: 'AMAT--251114P00110000'
+    },
+    {
+      side: null,
+      strike: 115,
+      bid: 114.05,
+      ask: 116.55,
+      last: 114.2,
+      delta: 1,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AMAT--251114C00115000'
+    },
+    {
+      side: null,
+      strike: 115,
+      bid: 0,
+      ask: 0.01,
+      last: 0.03,
+      delta: 0,
+      oi: 4,
+      volume: 4,
+      optionSymbol: 'AMAT--251114P00115000'
+    },
+    {
+      side: null,
+      strike: 120,
+      bid: 109.05,
+      ask: 111.55,
+      last: 109.2,
+      delta: 1,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AMAT--251114C00120000'
+    },
+    {
+      side: null,
+      strike: 120,
+      bid: 0,
+      ask: 0.01,
+      last: 0.02,
+      delta: 0,
+      oi: 4,
+      volume: 0,
+      optionSymbol: 'AMAT--251114P00120000'
+    },
+    {
+      side: null,
+      strike: 125,
+      bid: 103.2,
+      ask: 106.55,
+      last: 104.2,
+      delta: 1,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AMAT--251114C00125000'
+    },
+    {
+      side: null,
+      strike: 125,
+      bid: 0,
+      ask: 0.01,
+      last: 0.24,
+      delta: 0,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AMAT--251114P00125000'
+    }
+  ]
+}
+🟢 Selected PUT 227.5 @ ~$5.45 (Δ -0.4363, OI 379)
+   Stop ~$4.36 | Target ~$13.62
+📄 Option contract: AMAT 2025-11-14 227.5P | Symbol AMAT--251114P00227500 | Expiry 2025-11-14 | Strike 227.5 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $4.36 | Target $13.62 | Risk ~$545.00 (per contract ~$109.00)
+📈 Profit plan:
+   1) Sell 3 @ $13.62 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $16.07 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $18.52 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "AMAT",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 229.36,
+    "contract": "AMAT 2025-11-14 227.5P",
+    "expiry": "2025-11-14",
+    "strike": 227.5,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 5.45,
+    "stop": 4.36,
+    "take_profit": 13.62,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 5.1,
+    "ask": 5.8,
+    "last": 5.29,
+    "delta": -0.4363,
+    "oi": 379,
+    "volume": 8,
+    "entry_source": "etrade_chain",
+    "option_symbol": "AMAT--251114P00227500",
+    "liquidity": {
+      "spread": 0.7,
+      "spread_pct": 12.84,
+      "oi": 379,
+      "volume": 8,
+      "score": 0.6991927166755003
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 109,
+    "risk_total": 545,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout",
+        "near_support"
+      ],
+      "strength": -0.25
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 227.5,
+      "delta": -0.4363,
+      "oi": 379,
+      "volume": 8,
+      "spread_pct": 12.84,
+      "score": 0.6991927166755003,
+      "chain_source": "etrade",
+      "option_symbol": "AMAT--251114P00227500",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 4.36,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 13.62,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 16.07,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 18.52,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.5,
+      "spread_pct": 12.84,
+      "volume_oi_ratio": 0.02,
+      "delta_gap": -0.046,
+      "signal_strength": 0.25,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.81,
+      "risk_per_contract": 1.09,
+      "total_position_risk": 545,
+      "liquidity_score": 0.7
+    }
+  },
+  "context": {
+    "price": 229.36,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 44.795268570115404,
+      "macd": {
+        "macd": -0.04560782818762732,
+        "signal": -0.03648626255010186,
+        "histogram": -0.009121565637525461
+      },
+      "bb": {
+        "upper": 230.17170852978865,
+        "middle": 229.81557000000004,
+        "lower": 229.45943147021143
+      },
+      "stoch": {
+        "k": 39.006493043044195,
+        "d": 39.006493043044195
+      },
+      "atr": 0.31492857142857084,
+      "sma20": 229.81557000000004,
+      "sma50": 229.94423999999998,
+      "ema20": 229.86813220086074,
+      "volume": 10238,
+      "avgVolume": 10397.55
+    },
+    "option": {
+      "contract": "AMAT 2025-11-14 227.5P",
+      "entry": 5.45,
+      "stop": 4.36,
+      "take_profit": 13.62,
+      "delta": -0.4363,
+      "oi": 379,
+      "volume": 8,
+      "spread_pct": 12.84,
+      "target_delta": -0.38999999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "AMAT--251114P00227500"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout",
+          "near_support"
+        ],
+        "strength": -0.25
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 229.36,
+              "ema20": 229.86813220086074,
+              "sma50": 229.94423999999998
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 44.795268570115404,
+              "bollinger": {
+                "upper": 230.17170852978865,
+                "lower": 229.45943147021143
+              },
+              "sma20": 229.81557000000004
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 231.23,
+              "recentLow": 229.32,
+              "atr": 0.31492857142857084
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 229.36,
+              "ema20": 229.86813220086074,
+              "sma50": 229.94423999999998
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 44.795268570115404,
+              "bollinger": {
+                "upper": 230.17170852978865,
+                "lower": 229.45943147021143
+              },
+              "sma20": 229.81557000000004
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 231.23,
+              "recentLow": 229.32,
+              "atr": 0.31492857142857084
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 229.36,
+            "ema20": 229.86813220086074,
+            "sma50": 229.94423999999998
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "weekly",
+        "otmPct": 0.02,
+        "confidence": 0.5
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.5,
+      "spread_pct": 12.84,
+      "volume_oi_ratio": 0.02,
+      "delta_gap": -0.046,
+      "signal_strength": 0.25,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.81,
+      "risk_per_contract": 1.09,
+      "total_position_risk": 545,
+      "liquidity_score": 0.7
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.5,
+        "magnitude": 0.5,
+        "bias": "bearish",
+        "reasons": [
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 229.36,
+          "ema20": 229.86813220086074,
+          "sma50": 229.94423999999998
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 229.36,
+            "ema20": 229.86813220086074,
+            "sma50": 229.94423999999998
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 44.795268570115404,
+            "bollinger": {
+              "upper": 230.17170852978865,
+              "lower": 229.45943147021143
+            },
+            "sma20": 229.81557000000004
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": 0,
+          "magnitude": 0,
+          "bias": "neutral",
+          "reasons": [],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 231.23,
+            "recentLow": 229.32,
+            "atr": 0.31492857142857084
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: reject (confidence: 30%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.5,"rationale":"Bearish momentum signals conflict with long put direction."}
+AI_RISK_FLAGS ["volume_oi_ratio < 0.3","bearish momentum signals"]
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing SNOW...
+📊 Current price: $272.23 (fmp)
+🧭 Primary playbook: Momentum Trend (neutral bias, score 0.0pts)
+🎯 DAY_TRADE Analysis: Strength 20%
+📋 Signals: macd_bullish
+📡 Option chain response {
+  symbol: 'SNOW',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 138,
+  sample: [
+    {
+      side: null,
+      strike: 120,
+      bid: 149.15,
+      ask: 155.25,
+      last: 149.43,
+      delta: 0.99999,
+      oi: 39,
+      volume: 0,
+      optionSymbol: 'SNOW--251114C00120000'
+    },
+    {
+      side: null,
+      strike: 120,
+      bid: 0,
+      ask: 0.2,
+      last: 0.01,
+      delta: 0,
+      oi: 54,
+      volume: 0,
+      optionSymbol: 'SNOW--251114P00120000'
+    },
+    {
+      side: null,
+      strike: 125,
+      bid: 144.15,
+      ask: 150.3,
+      last: 144.48,
+      delta: 0.99999,
+      oi: 39,
+      volume: 0,
+      optionSymbol: 'SNOW--251114C00125000'
+    },
+    {
+      side: null,
+      strike: 125,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: 0,
+      oi: 75,
+      volume: 1,
+      optionSymbol: 'SNOW--251114P00125000'
+    },
+    {
+      side: null,
+      strike: 130,
+      bid: 139.55,
+      ask: 146.85,
+      last: 141.63,
+      delta: 0.99999,
+      oi: 1,
+      volume: 0,
+      optionSymbol: 'SNOW--251114C00130000'
+    },
+    {
+      side: null,
+      strike: 130,
+      bid: 0,
+      ask: 0.2,
+      last: 0.01,
+      delta: -0.00001,
+      oi: 17,
+      volume: 0,
+      optionSymbol: 'SNOW--251114P00130000'
+    },
+    {
+      side: null,
+      strike: 135,
+      bid: 134.55,
+      ask: 141.85,
+      last: 136.65,
+      delta: 0.99998,
+      oi: 1,
+      volume: 0,
+      optionSymbol: 'SNOW--251114C00135000'
+    },
+    {
+      side: null,
+      strike: 135,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00002,
+      oi: 24,
+      volume: 2,
+      optionSymbol: 'SNOW--251114P00135000'
+    }
+  ]
+}
+🟢 Selected CALL 275 @ ~$2.84 (Δ 0.40717, OI 1617)
+   Stop ~$2.28 | Target ~$7.11
+📄 Option contract: SNOW 2025-11-14 275C | Symbol SNOW--251114C00275000 | Expiry 2025-11-14 | Strike 275 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $2.28 | Target $7.11 | Risk ~$280.00 (per contract ~$56.00)
+📈 Profit plan:
+   1) Sell 3 @ $7.11 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $8.39 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $9.67 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "SNOW",
+    "direction": "long",
+    "side": "call",
+    "underlying_price": 272.23,
+    "contract": "SNOW 2025-11-14 275C",
+    "expiry": "2025-11-14",
+    "strike": 275,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 2.84,
+    "stop": 2.28,
+    "take_profit": 7.11,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) CALL ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 2.59,
+    "ask": 3.1,
+    "last": 3.1,
+    "delta": 0.40717,
+    "oi": 1617,
+    "volume": 808,
+    "entry_source": "etrade_chain",
+    "option_symbol": "SNOW--251114C00275000",
+    "liquidity": {
+      "spread": 0.51,
+      "spread_pct": 17.93,
+      "oi": 1617,
+      "volume": 808,
+      "score": 0.7250372544696768
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 56,
+    "risk_total": 280,
+    "analysis": {
+      "signals": [
+        "macd_bullish"
+      ],
+      "strength": 0.2
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 275,
+      "delta": 0.40717,
+      "oi": 1617,
+      "volume": 808,
+      "spread_pct": 17.93,
+      "score": 0.7250372544696768,
+      "chain_source": "etrade",
+      "option_symbol": "SNOW--251114C00275000",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 2.28,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 7.11,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 8.39,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 9.67,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.63,
+      "spread_pct": 17.93,
+      "volume_oi_ratio": 0.5,
+      "delta_gap": 0.041,
+      "signal_strength": 0.2,
+      "playbook_alignment": {
+        "score": 0,
+        "bias": "neutral",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": 1.02,
+      "risk_per_contract": 0.56,
+      "total_position_risk": 280,
+      "liquidity_score": 0.73
+    }
+  },
+  "context": {
+    "price": 272.23,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 53.02473026540787,
+      "macd": {
+        "macd": 0.3407437853218198,
+        "signal": 0.27259502825745585,
+        "histogram": 0.06814875706436396
+      },
+      "bb": {
+        "upper": 274.1520817109137,
+        "middle": 272.654555,
+        "lower": 271.1570282890863
+      },
+      "stoch": {
+        "k": 40.93136823558249,
+        "d": 40.93136823558249
+      },
+      "atr": 0.41483571428571103,
+      "sma20": 272.654555,
+      "sma50": 272.12805399999996,
+      "ema20": 272.7538081629792,
+      "volume": 6605,
+      "avgVolume": 5787.65
+    },
+    "option": {
+      "contract": "SNOW 2025-11-14 275C",
+      "entry": 2.84,
+      "stop": 2.28,
+      "take_profit": 7.11,
+      "delta": 0.40717,
+      "oi": 1617,
+      "volume": 808,
+      "spread_pct": 17.93,
+      "target_delta": 0.366,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "SNOW--251114C00275000"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bullish"
+        ],
+        "strength": 0.2
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Holding above 50-period base",
+              "MACD histogram positive"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 272.23,
+              "ema20": 272.7538081629792,
+              "sma50": 272.12805399999996
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "No extreme deviation from mean detected"
+            ],
+            "inputs": {
+              "rsi": 53.02473026540787,
+              "bollinger": {
+                "upper": 274.1520817109137,
+                "lower": 271.1570282890863
+              },
+              "sma20": 272.654555
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 273.9999,
+              "recentLow": 270.2753,
+              "atr": 0.41483571428571103
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [
+              "Below EMA20 intraday trendline",
+              "Holding above 50-period base",
+              "MACD histogram positive"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 272.23,
+              "ema20": 272.7538081629792,
+              "sma50": 272.12805399999996
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "No extreme deviation from mean detected"
+            ],
+            "inputs": {
+              "rsi": 53.02473026540787,
+              "bollinger": {
+                "upper": 274.1520817109137,
+                "lower": 271.1570282890863
+              },
+              "sma20": 272.654555
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": 0,
+            "magnitude": 0,
+            "bias": "neutral",
+            "reasons": [],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 273.9999,
+              "recentLow": 270.2753,
+              "atr": 0.41483571428571103
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": 0,
+          "magnitude": 0,
+          "bias": "neutral",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Holding above 50-period base",
+            "MACD histogram positive"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 272.23,
+            "ema20": 272.7538081629792,
+            "sma50": 272.12805399999996
+          }
+        }
+      },
+      "recommendedStrategy": null,
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.63,
+      "spread_pct": 17.93,
+      "volume_oi_ratio": 0.5,
+      "delta_gap": 0.041,
+      "signal_strength": 0.2,
+      "playbook_alignment": {
+        "score": 0,
+        "bias": "neutral",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": 1.02,
+      "risk_per_contract": 0.56,
+      "total_position_risk": 280,
+      "liquidity_score": 0.73
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": 0,
+        "magnitude": 0,
+        "bias": "neutral",
+        "reasons": [
+          "Below EMA20 intraday trendline",
+          "Holding above 50-period base",
+          "MACD histogram positive"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 272.23,
+          "ema20": 272.7538081629792,
+          "sma50": 272.12805399999996
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": 0,
+          "magnitude": 0,
+          "bias": "neutral",
+          "reasons": [
+            "Below EMA20 intraday trendline",
+            "Holding above 50-period base",
+            "MACD histogram positive"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 272.23,
+            "ema20": 272.7538081629792,
+            "sma50": 272.12805399999996
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0,
+          "magnitude": 0,
+          "bias": "neutral",
+          "reasons": [],
+          "riskFlags": [
+            "No extreme deviation from mean detected"
+          ],
+          "inputs": {
+            "rsi": 53.02473026540787,
+            "bollinger": {
+              "upper": 274.1520817109137,
+              "lower": 271.1570282890863
+            },
+            "sma20": 272.654555
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": 0,
+          "magnitude": 0,
+          "bias": "neutral",
+          "reasons": [],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 273.9999,
+            "recentLow": 270.2753,
+            "atr": 0.41483571428571103
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: approve (confidence: 80%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bullish","score":0,"rationale":"Strong reward-to-risk and favorable spread."}
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing NVDA...
+📊 Current price: $191.90 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -5%
+📋 Signals: macd_bearish, near_support
+⏭️  Skipping NVDA - insufficient signal strength
+
+🔍 Analyzing SPX...
+❌ No quote available for SPX
+
+🔍 Analyzing AVGO...
+📊 Current price: $353.16 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -70.0pts)
+🎯 DAY_TRADE Analysis: Strength -40%
+📋 Signals: macd_bearish, bb_lower_breakout
+📡 Option chain response {
+  symbol: 'AVGO',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 200,
+  sample: [
+    {
+      side: null,
+      strike: 185,
+      bid: 167.4,
+      ask: 168.9,
+      last: 170.6,
+      delta: 1,
+      oi: 6,
+      volume: 2,
+      optionSymbol: 'AVGO--251114C00185000'
+    },
+    {
+      side: null,
+      strike: 185,
+      bid: 0,
+      ask: 0.09,
+      last: 0.01,
+      delta: -0.00006,
+      oi: 18,
+      volume: 0,
+      optionSymbol: 'AVGO--251114P00185000'
+    },
+    {
+      side: null,
+      strike: 190,
+      bid: 162.4,
+      ask: 164.05,
+      last: 165.68,
+      delta: 1,
+      oi: 3,
+      volume: 2,
+      optionSymbol: 'AVGO--251114C00190000'
+    },
+    {
+      side: null,
+      strike: 190,
+      bid: 0,
+      ask: 0.09,
+      last: 0.07,
+      delta: -0.00011,
+      oi: 186,
+      volume: 0,
+      optionSymbol: 'AVGO--251114P00190000'
+    },
+    {
+      side: null,
+      strike: 195,
+      bid: 157.2,
+      ask: 160.25,
+      last: 157.1,
+      delta: 1,
+      oi: 2,
+      volume: 0,
+      optionSymbol: 'AVGO--251114C00195000'
+    },
+    {
+      side: null,
+      strike: 195,
+      bid: 0,
+      ask: 0.09,
+      last: 0.07,
+      delta: -0.00019,
+      oi: 21,
+      volume: 0,
+      optionSymbol: 'AVGO--251114P00195000'
+    },
+    {
+      side: null,
+      strike: 200,
+      bid: 152.1,
+      ask: 155.25,
+      last: 152.05,
+      delta: 0.99992,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'AVGO--251114C00200000'
+    },
+    {
+      side: null,
+      strike: 200,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00034,
+      oi: 56,
+      volume: 0,
+      optionSymbol: 'AVGO--251114P00200000'
+    }
+  ]
+}
+🟢 Selected PUT 352.5 @ ~$5.05 (Δ -0.46965, OI 719)
+   Stop ~$4.04 | Target ~$12.63
+📄 Option contract: AVGO 2025-11-14 352.5P | Symbol AVGO--251114P00352500 | Expiry 2025-11-14 | Strike 352.5 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $4.04 | Target $12.63 | Risk ~$505.00 (per contract ~$101.00)
+📈 Profit plan:
+   1) Sell 3 @ $12.63 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $14.90 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $17.18 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "AVGO",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 353.1586,
+    "contract": "AVGO 2025-11-14 352.5P",
+    "expiry": "2025-11-14",
+    "strike": 352.5,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 5.05,
+    "stop": 4.04,
+    "take_profit": 12.63,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 4.8,
+    "ask": 5.3,
+    "last": 4.67,
+    "delta": -0.46965,
+    "oi": 719,
+    "volume": 261,
+    "entry_source": "etrade_chain",
+    "option_symbol": "AVGO--251114P00352500",
+    "liquidity": {
+      "spread": 0.5,
+      "spread_pct": 9.9,
+      "oi": 719,
+      "volume": 261,
+      "score": 0.8508876420538924
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 101,
+    "risk_total": 505,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout"
+      ],
+      "strength": -0.4
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 352.5,
+      "delta": -0.46965,
+      "oi": 719,
+      "volume": 261,
+      "spread_pct": 9.9,
+      "score": 0.8508876420538924,
+      "chain_source": "etrade",
+      "option_symbol": "AVGO--251114P00352500",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 4.04,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 12.63,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 14.9,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 17.18,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.5,
+      "spread_pct": 9.9,
+      "volume_oi_ratio": 0.36,
+      "delta_gap": -0.014,
+      "signal_strength": 0.4,
+      "playbook_alignment": {
+        "score": 0.7,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.19,
+      "risk_per_contract": 1.01,
+      "total_position_risk": 505,
+      "liquidity_score": 0.85
+    }
+  },
+  "context": {
+    "price": 353.1586,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 40.02887815801283,
+      "macd": {
+        "macd": -0.15742285976818948,
+        "signal": -0.1259382878145516,
+        "histogram": -0.03148457195363788
+      },
+      "bb": {
+        "upper": 355.69861999608645,
+        "middle": 354.91927,
+        "lower": 354.1399200039135
+      },
+      "stoch": {
+        "k": 23.469238306979125,
+        "d": 23.469238306979125
+      },
+      "atr": 0.6306214285714346,
+      "sma20": 354.91927,
+      "sma50": 354.8604,
+      "ema20": 354.92953126926824,
+      "volume": 22477,
+      "avgVolume": 24071.95
+    },
+    "option": {
+      "contract": "AVGO 2025-11-14 352.5P",
+      "entry": 5.05,
+      "stop": 4.04,
+      "take_profit": 12.63,
+      "delta": -0.46965,
+      "oi": 719,
+      "volume": 261,
+      "spread_pct": 9.9,
+      "target_delta": -0.45599999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "AVGO--251114P00352500"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout"
+        ],
+        "strength": -0.4
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.7,
+            "magnitude": 0.7,
+            "bias": "bearish",
+            "reasons": [
+              "Price fading -0.32% last bar",
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 353.1586,
+              "ema20": 354.92953126926824,
+              "sma50": 354.8604
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 40.02887815801283,
+              "bollinger": {
+                "upper": 355.69861999608645,
+                "lower": 354.1399200039135
+              },
+              "sma20": 354.91927
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 357.8399,
+              "recentLow": 353.9131,
+              "atr": 0.6306214285714346
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.7,
+            "magnitude": 0.7,
+            "bias": "bearish",
+            "reasons": [
+              "Price fading -0.32% last bar",
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 353.1586,
+              "ema20": 354.92953126926824,
+              "sma50": 354.8604
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 40.02887815801283,
+              "bollinger": {
+                "upper": 355.69861999608645,
+                "lower": 354.1399200039135
+              },
+              "sma20": 354.91927
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 357.8399,
+              "recentLow": 353.9131,
+              "atr": 0.6306214285714346
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.7,
+          "magnitude": 0.7,
+          "bias": "bearish",
+          "reasons": [
+            "Price fading -0.32% last bar",
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 353.1586,
+            "ema20": 354.92953126926824,
+            "sma50": 354.8604
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "0dte",
+        "otmPct": 0.005,
+        "confidence": 0.7
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.5,
+      "spread_pct": 9.9,
+      "volume_oi_ratio": 0.36,
+      "delta_gap": -0.014,
+      "signal_strength": 0.4,
+      "playbook_alignment": {
+        "score": 0.7,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.19,
+      "risk_per_contract": 1.01,
+      "total_position_risk": 505,
+      "liquidity_score": 0.85
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.7,
+        "magnitude": 0.7,
+        "bias": "bearish",
+        "reasons": [
+          "Price fading -0.32% last bar",
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 353.1586,
+          "ema20": 354.92953126926824,
+          "sma50": 354.8604
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.7,
+          "magnitude": 0.7,
+          "bias": "bearish",
+          "reasons": [
+            "Price fading -0.32% last bar",
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 353.1586,
+            "ema20": 354.92953126926824,
+            "sma50": 354.8604
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 40.02887815801283,
+            "bollinger": {
+              "upper": 355.69861999608645,
+              "lower": 354.1399200039135
+            },
+            "sma20": 354.91927
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": -0.35,
+          "magnitude": 0.35,
+          "bias": "bearish",
+          "reasons": [
+            "Price breaking below recent lows"
+          ],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 357.8399,
+            "recentLow": 353.9131,
+            "atr": 0.6306214285714346
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: reject (confidence: 30%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.3,"rationale":"Bearish momentum signals conflict with trade direction."}
+AI_RISK_FLAGS ["Bearish momentum signals","Tight range, breakout may lack follow-through"]
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing CVNA...
+📊 Current price: $337.83 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -30%
+📋 Signals: macd_bearish, bb_lower_breakout, high_volume
+📡 Option chain response {
+  symbol: 'CVNA',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 220,
+  sample: [
+    {
+      side: null,
+      strike: 195,
+      bid: 141.45,
+      ask: 144.95,
+      last: 135.6,
+      delta: 0.99988,
+      oi: 13,
+      volume: 1,
+      optionSymbol: 'CVNA--251114C00195000'
+    },
+    {
+      side: null,
+      strike: 195,
+      bid: 0,
+      ask: 0.04,
+      last: 0.01,
+      delta: -0.00003,
+      oi: 143,
+      volume: 7,
+      optionSymbol: 'CVNA--251114P00195000'
+    },
+    {
+      side: null,
+      strike: 197.5,
+      bid: 138.6,
+      ask: 142.45,
+      last: 138.59,
+      delta: 0.99987,
+      oi: 0,
+      volume: 2,
+      optionSymbol: 'CVNA--251114C00197500'
+    },
+    {
+      side: null,
+      strike: 197.5,
+      bid: 0,
+      ask: 0.14,
+      last: 0.02,
+      delta: -0.00004,
+      oi: 1,
+      volume: 0,
+      optionSymbol: 'CVNA--251114P00197500'
+    },
+    {
+      side: null,
+      strike: 200,
+      bid: 136.5,
+      ask: 139.95,
+      last: 136.33,
+      delta: 0.99985,
+      oi: 3,
+      volume: 1,
+      optionSymbol: 'CVNA--251114C00200000'
+    },
+    {
+      side: null,
+      strike: 200,
+      bid: 0,
+      ask: 0.3,
+      last: 0.03,
+      delta: -0.00006,
+      oi: 219,
+      volume: 0,
+      optionSymbol: 'CVNA--251114P00200000'
+    },
+    {
+      side: null,
+      strike: 202.5,
+      bid: 133.55,
+      ask: 137.45,
+      last: 124.85,
+      delta: 0.99982,
+      oi: 0,
+      volume: 0,
+      optionSymbol: 'CVNA--251114C00202500'
+    },
+    {
+      side: null,
+      strike: 202.5,
+      bid: 0,
+      ask: 0.3,
+      last: 0.02,
+      delta: -0.00009,
+      oi: 22,
+      volume: 0,
+      optionSymbol: 'CVNA--251114P00202500'
+    }
+  ]
+}
+🟢 Selected PUT 335 @ ~$5.93 (Δ -0.42872, OI 167)
+   Stop ~$4.74 | Target ~$14.81
+📄 Option contract: CVNA 2025-11-14 335P | Symbol CVNA--251114P00335000 | Expiry 2025-11-14 | Strike 335 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $4.74 | Target $14.81 | Risk ~$595.00 (per contract ~$119.00)
+📈 Profit plan:
+   1) Sell 3 @ $14.81 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $17.47 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $20.14 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "CVNA",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 337.831,
+    "contract": "CVNA 2025-11-14 335P",
+    "expiry": "2025-11-14",
+    "strike": 335,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 5.93,
+    "stop": 4.74,
+    "take_profit": 14.81,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 5.4,
+    "ask": 6.45,
+    "last": 5.85,
+    "delta": -0.42872,
+    "oi": 167,
+    "volume": 477,
+    "entry_source": "etrade_chain",
+    "option_symbol": "CVNA--251114P00335000",
+    "liquidity": {
+      "spread": 1.05,
+      "spread_pct": 17.72,
+      "oi": 167,
+      "volume": 477,
+      "score": 0.7249790733469862
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 119,
+    "risk_total": 595,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout",
+        "high_volume"
+      ],
+      "strength": -0.30000000000000004
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 335,
+      "delta": -0.42872,
+      "oi": 167,
+      "volume": 477,
+      "spread_pct": 17.72,
+      "score": 0.7249790733469862,
+      "chain_source": "etrade",
+      "option_symbol": "CVNA--251114P00335000",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 4.74,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 14.81,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 17.47,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 20.14,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.46,
+      "spread_pct": 17.72,
+      "volume_oi_ratio": 2.86,
+      "delta_gap": -0.039,
+      "signal_strength": 0.3,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.84,
+      "risk_per_contract": 1.19,
+      "total_position_risk": 595,
+      "liquidity_score": 0.72
+    }
+  },
+  "context": {
+    "price": 337.831,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 36.27392496237537,
+      "macd": {
+        "macd": -0.21572832432769928,
+        "signal": -0.17258265946215945,
+        "histogram": -0.043145664865539834
+      },
+      "bb": {
+        "upper": 341.3966448168916,
+        "middle": 340.31525,
+        "lower": 339.2338551831084
+      },
+      "stoch": {
+        "k": 8.854804695604605,
+        "d": 8.854804695604605
+      },
+      "atr": 0.6480142857142945,
+      "sma20": 340.31525,
+      "sma50": 340.06890599999997,
+      "ema20": 340.2342593271787,
+      "volume": 18282,
+      "avgVolume": 8625.35
+    },
+    "option": {
+      "contract": "CVNA 2025-11-14 335P",
+      "entry": 5.93,
+      "stop": 4.74,
+      "take_profit": 14.81,
+      "delta": -0.42872,
+      "oi": 167,
+      "volume": 477,
+      "spread_pct": 17.72,
+      "target_delta": -0.38999999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "CVNA--251114P00335000"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout",
+          "high_volume"
+        ],
+        "strength": -0.30000000000000004
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Price fading -0.52% last bar",
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "Volume expansion 212% of average",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 337.831,
+              "ema20": 340.2342593271787,
+              "sma50": 340.06890599999997
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 36.27392496237537,
+              "bollinger": {
+                "upper": 341.3966448168916,
+                "lower": 339.2338551831084
+              },
+              "sma20": 340.31525
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 345.24,
+              "recentLow": 338.55,
+              "atr": 0.6480142857142945
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.5,
+            "magnitude": 0.5,
+            "bias": "bearish",
+            "reasons": [
+              "Price fading -0.52% last bar",
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "Volume expansion 212% of average",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 337.831,
+              "ema20": 340.2342593271787,
+              "sma50": 340.06890599999997
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 36.27392496237537,
+              "bollinger": {
+                "upper": 341.3966448168916,
+                "lower": 339.2338551831084
+              },
+              "sma20": 340.31525
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 345.24,
+              "recentLow": 338.55,
+              "atr": 0.6480142857142945
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Price fading -0.52% last bar",
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "Volume expansion 212% of average",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 337.831,
+            "ema20": 340.2342593271787,
+            "sma50": 340.06890599999997
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "weekly",
+        "otmPct": 0.02,
+        "confidence": 0.5
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.46,
+      "spread_pct": 17.72,
+      "volume_oi_ratio": 2.86,
+      "delta_gap": -0.039,
+      "signal_strength": 0.3,
+      "playbook_alignment": {
+        "score": 0.5,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.84,
+      "risk_per_contract": 1.19,
+      "total_position_risk": 595,
+      "liquidity_score": 0.72
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.5,
+        "magnitude": 0.5,
+        "bias": "bearish",
+        "reasons": [
+          "Price fading -0.52% last bar",
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "Volume expansion 212% of average",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 337.831,
+          "ema20": 340.2342593271787,
+          "sma50": 340.06890599999997
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.5,
+          "magnitude": 0.5,
+          "bias": "bearish",
+          "reasons": [
+            "Price fading -0.52% last bar",
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "Volume expansion 212% of average",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 337.831,
+            "ema20": 340.2342593271787,
+            "sma50": 340.06890599999997
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 36.27392496237537,
+            "bollinger": {
+              "upper": 341.3966448168916,
+              "lower": 339.2338551831084
+            },
+            "sma20": 340.31525
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": -0.35,
+          "magnitude": 0.35,
+          "bias": "bearish",
+          "reasons": [
+            "Price breaking below recent lows"
+          ],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 345.24,
+            "recentLow": 338.55,
+            "atr": 0.6480142857142945
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: reject (confidence: 20%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.5,"rationale":"Bearish momentum signals conflict with long put direction."}
+AI_RISK_FLAGS ["Bearish momentum signals","Tight range, breakout may lack follow-through"]
+
+🔍 Analyzing PLTR...
+📊 Current price: $183.24 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -70.0pts)
+🎯 DAY_TRADE Analysis: Strength -40%
+📋 Signals: macd_bearish, bb_lower_breakout
+📡 Option chain response {
+  symbol: 'PLTR',
+  expiry: '2025-11-14',
+  source: 'etrade',
+  total: 180,
+  sample: [
+    {
+      side: null,
+      strike: 95,
+      bid: 87.7,
+      ask: 88.75,
+      last: 90.57,
+      delta: 1,
+      oi: 207,
+      volume: 46,
+      optionSymbol: 'PLTR--251114C00095000'
+    },
+    {
+      side: null,
+      strike: 95,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00002,
+      oi: 3911,
+      volume: 0,
+      optionSymbol: 'PLTR--251114P00095000'
+    },
+    {
+      side: null,
+      strike: 100,
+      bid: 82.9,
+      ask: 83.55,
+      last: 84.01,
+      delta: 0.99995,
+      oi: 480,
+      volume: 41,
+      optionSymbol: 'PLTR--251114C00100000'
+    },
+    {
+      side: null,
+      strike: 100,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00007,
+      oi: 9135,
+      volume: 0,
+      optionSymbol: 'PLTR--251114P00100000'
+    },
+    {
+      side: null,
+      strike: 105,
+      bid: 77.75,
+      ask: 78.65,
+      last: 79.5,
+      delta: 0.9998,
+      oi: 80,
+      volume: 6,
+      optionSymbol: 'PLTR--251114C00105000'
+    },
+    {
+      side: null,
+      strike: 105,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00023,
+      oi: 3329,
+      volume: 0,
+      optionSymbol: 'PLTR--251114P00105000'
+    },
+    {
+      side: null,
+      strike: 110,
+      bid: 72.9,
+      ask: 73.5,
+      last: 74.55,
+      delta: 0.99938,
+      oi: 48,
+      volume: 8,
+      optionSymbol: 'PLTR--251114C00110000'
+    },
+    {
+      side: null,
+      strike: 110,
+      bid: 0,
+      ask: 0.01,
+      last: 0.01,
+      delta: -0.00065,
+      oi: 1804,
+      volume: 4,
+      optionSymbol: 'PLTR--251114P00110000'
+    }
+  ]
+}
+🟢 Selected PUT 182.5 @ ~$3.17 (Δ -0.45374, OI 4251)
+   Stop ~$2.54 | Target ~$7.94
+📄 Option contract: PLTR 2025-11-14 182.5P | Symbol PLTR--251114P00182500 | Expiry 2025-11-14 | Strike 182.5 | Source etrade_chain | Chain etrade
+📦 Position sizing: buy 5 contract(s) | Stop $2.54 | Target $7.94 | Risk ~$315.00 (per contract ~$63.00)
+📈 Profit plan:
+   1) Sell 3 @ $7.94 — Scale out half and move stop to breakeven once target prints.
+   2) Sell 1 @ $9.37 — Take additional profits if extension continues; trail stop under VWAP.
+   3) Sell 1 @ $10.80 — Leave final runner for outsized move; ratchet stop up aggressively.
+🤖 Getting AI analysis...
+🧾 AI system prompt: You are an AI options trading analyst. Blend deterministic technical rules with judgment to approve or reject trades.
+
+Always follow this evaluation stack:
+1. Review the strategy playbook summary and select the single best lens. Cite two terse bullet-style fragments referencing the supplied reasons.
+2. Interpret the confluence metrics (reward_to_risk, spread_pct, volume_oi_ratio, delta_gap, signal_strength, playbook_alignment.score, time_to_expiry_days). Call out any metric outside healthy ranges (e.g. reward_to_risk < 1.2, spread_pct > 35 for day trades, volume_oi_ratio < 0.3, |delta_gap| > 0.15, insufficient expiry runway) and recommend targeted adjustments only when they materially improve the setup.
+3. Stress-test risk budget, scaling plan, and liquidity before deferring to broader market context. Respect hard guardrails and flag any violations explicitly.
+4. Deliver a decision (approve/caution/reject) with confidence calibrated 0.0-1.0. Default to caution if signals conflict or liquidity is suspect.
+
+Output strict JSON. Avoid markdown, prose paragraphs, or extra keys. Keep notes ≤200 chars.
+🧾 AI user prompt: Review the payload and reply with compact JSON:
+{
+  "decision": "approve|caution|reject",
+  "confidence": 0-1,
+  "selected_strategy": {"name": "...", "bias": "...", "score": 0-1, "rationale": ""},
+  "risk_flags": [..],
+  "notes": "<=200 chars",
+  "strategy_type": "day_trade|swing_trade|hold",
+  "adjustments": {"entry": number|null, "stop": number|null, "target": number|null}
+}
+
+Payload:
+{
+  "suggestion": {
+    "symbol": "PLTR",
+    "direction": "long",
+    "side": "put",
+    "underlying_price": 183.24,
+    "contract": "PLTR 2025-11-14 182.5P",
+    "expiry": "2025-11-14",
+    "strike": 182.5,
+    "multiplier": 100,
+    "expiry_type": "weekly",
+    "requested_expiry_type": "0dte",
+    "expiry_fallback_reason": "0DTE expiration not available for this symbol; falling back to weekly expiry.",
+    "target_otm_pct": 0.01,
+    "est_entry": 3.17,
+    "stop": 2.54,
+    "take_profit": 7.94,
+    "assumptions": {
+      "iv": 0.2,
+      "r": 0.01,
+      "otm_pct": 0.01,
+      "otm_pct_used": 0.01,
+      "min_business_days": 2,
+      "stop_loss_pct": 0.2,
+      "take_profit_mult": 1.5,
+      "expiry_type": "weekly",
+      "expiry_type_requested": "0dte"
+    },
+    "rationale": "Weekly (requested 0DTE) PUT ~1% OTM with TP 1.5x and SL 20%",
+    "bid": 3.15,
+    "ask": 3.2,
+    "last": 3.15,
+    "delta": -0.45374,
+    "oi": 4251,
+    "volume": 6021,
+    "entry_source": "etrade_chain",
+    "option_symbol": "PLTR--251114P00182500",
+    "liquidity": {
+      "spread": 0.05,
+      "spread_pct": 1.57,
+      "oi": 4251,
+      "volume": 6021,
+      "score": 0.979166968503937
+    },
+    "chain_source": "etrade",
+    "qty": 5,
+    "risk_per_contract": 63,
+    "risk_total": 315,
+    "analysis": {
+      "signals": [
+        "macd_bearish",
+        "bb_lower_breakout"
+      ],
+      "strength": -0.4
+    },
+    "strategyType": "day_trade",
+    "option_source": "etrade_chain",
+    "option_details": {
+      "strike": 182.5,
+      "delta": -0.45374,
+      "oi": 4251,
+      "volume": 6021,
+      "spread_pct": 1.57,
+      "score": 0.979166968503937,
+      "chain_source": "etrade",
+      "option_symbol": "PLTR--251114P00182500",
+      "source": "etrade_chain"
+    },
+    "tradePlan": {
+      "qty": 5,
+      "stop": 2.54,
+      "iterations": [
+        {
+          "sellQty": 3,
+          "target": 7.94,
+          "note": "Scale out half and move stop to breakeven once target prints."
+        },
+        {
+          "sellQty": 1,
+          "target": 9.37,
+          "note": "Take additional profits if extension continues; trail stop under VWAP."
+        },
+        {
+          "sellQty": 1,
+          "target": 10.8,
+          "note": "Leave final runner for outsized move; ratchet stop up aggressively."
+        }
+      ]
+    },
+    "confluence": {
+      "reward_to_risk": 7.57,
+      "spread_pct": 1.57,
+      "volume_oi_ratio": 1.42,
+      "delta_gap": 0.002,
+      "signal_strength": 0.4,
+      "playbook_alignment": {
+        "score": 0.7,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.4,
+      "risk_per_contract": 0.63,
+      "total_position_risk": 315,
+      "liquidity_score": 0.98
+    }
+  },
+  "context": {
+    "price": 183.24,
+    "source": "fmp",
+    "indicators": {
+      "rsi": 36.23698098042385,
+      "macd": {
+        "macd": -0.42656068872517494,
+        "signal": -0.34124855098013995,
+        "histogram": -0.08531213774503499
+      },
+      "bb": {
+        "upper": 185.96273716176293,
+        "middle": 184.94399,
+        "lower": 183.9252428382371
+      },
+      "stoch": {
+        "k": 8.695154736359084,
+        "d": 8.695154736359084
+      },
+      "atr": 0.43796428571428486,
+      "sma20": 184.94399,
+      "sma50": 185.50421399999996,
+      "ema20": 184.91111001209404,
+      "volume": 190864,
+      "avgVolume": 188938.05
+    },
+    "option": {
+      "contract": "PLTR 2025-11-14 182.5P",
+      "entry": 3.17,
+      "stop": 2.54,
+      "take_profit": 7.94,
+      "delta": -0.45374,
+      "oi": 4251,
+      "volume": 6021,
+      "spread_pct": 1.57,
+      "target_delta": -0.45599999999999996,
+      "source": "etrade_chain",
+      "chain_source": "etrade",
+      "option_symbol": "PLTR--251114P00182500"
+    },
+    "algorithmic": {
+      "day_trade": {
+        "signals": [
+          "macd_bearish",
+          "bb_lower_breakout"
+        ],
+        "strength": -0.4
+      },
+      "strategyInsights": {
+        "all": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.7,
+            "magnitude": 0.7,
+            "bias": "bearish",
+            "reasons": [
+              "Price fading -0.44% last bar",
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 183.24,
+              "ema20": 184.91111001209404,
+              "sma50": 185.50421399999996
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 36.23698098042385,
+              "bollinger": {
+                "upper": 185.96273716176293,
+                "lower": 183.9252428382371
+              },
+              "sma20": 184.94399
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 187.1393,
+              "recentLow": 183.9903,
+              "atr": 0.43796428571428486
+            }
+          }
+        ],
+        "ranked": [
+          {
+            "name": "momentum",
+            "label": "Momentum Trend",
+            "score": -0.7,
+            "magnitude": 0.7,
+            "bias": "bearish",
+            "reasons": [
+              "Price fading -0.44% last bar",
+              "Below EMA20 intraday trendline",
+              "Losing the 50-period base",
+              "MACD histogram negative"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "price": 183.24,
+              "ema20": 184.91111001209404,
+              "sma50": 185.50421399999996
+            }
+          },
+          {
+            "name": "mean_reversion",
+            "label": "Mean Reversion",
+            "score": 0.35,
+            "magnitude": 0.35,
+            "bias": "bullish",
+            "reasons": [
+              "Price hugging lower Bollinger band"
+            ],
+            "riskFlags": [],
+            "inputs": {
+              "rsi": 36.23698098042385,
+              "bollinger": {
+                "upper": 185.96273716176293,
+                "lower": 183.9252428382371
+              },
+              "sma20": 184.94399
+            }
+          },
+          {
+            "name": "breakout",
+            "label": "Breakout / Breakdown",
+            "score": -0.35,
+            "magnitude": 0.35,
+            "bias": "bearish",
+            "reasons": [
+              "Price breaking below recent lows"
+            ],
+            "riskFlags": [
+              "Tight range, breakout may lack follow-through"
+            ],
+            "inputs": {
+              "recentHigh": 187.1393,
+              "recentLow": 183.9903,
+              "atr": 0.43796428571428486
+            }
+          }
+        ],
+        "primary": {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.7,
+          "magnitude": 0.7,
+          "bias": "bearish",
+          "reasons": [
+            "Price fading -0.44% last bar",
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 183.24,
+            "ema20": 184.91111001209404,
+            "sma50": 185.50421399999996
+          }
+        }
+      },
+      "recommendedStrategy": {
+        "type": "put",
+        "expiry": "0dte",
+        "otmPct": 0.005,
+        "confidence": 0.7
+      },
+      "optionTimeFrame": "day"
+    },
+    "confluence": {
+      "reward_to_risk": 7.57,
+      "spread_pct": 1.57,
+      "volume_oi_ratio": 1.42,
+      "delta_gap": 0.002,
+      "signal_strength": 0.4,
+      "playbook_alignment": {
+        "score": 0.7,
+        "bias": "bearish",
+        "label": "Momentum Trend"
+      },
+      "time_to_expiry_days": 2.2,
+      "moneyness_pct": -0.4,
+      "risk_per_contract": 0.63,
+      "total_position_risk": 315,
+      "liquidity_score": 0.98
+    },
+    "strategy_playbook": {
+      "primary": {
+        "name": "momentum",
+        "label": "Momentum Trend",
+        "score": -0.7,
+        "magnitude": 0.7,
+        "bias": "bearish",
+        "reasons": [
+          "Price fading -0.44% last bar",
+          "Below EMA20 intraday trendline",
+          "Losing the 50-period base",
+          "MACD histogram negative"
+        ],
+        "riskFlags": [],
+        "inputs": {
+          "price": 183.24,
+          "ema20": 184.91111001209404,
+          "sma50": 185.50421399999996
+        }
+      },
+      "ranked": [
+        {
+          "name": "momentum",
+          "label": "Momentum Trend",
+          "score": -0.7,
+          "magnitude": 0.7,
+          "bias": "bearish",
+          "reasons": [
+            "Price fading -0.44% last bar",
+            "Below EMA20 intraday trendline",
+            "Losing the 50-period base",
+            "MACD histogram negative"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "price": 183.24,
+            "ema20": 184.91111001209404,
+            "sma50": 185.50421399999996
+          }
+        },
+        {
+          "name": "mean_reversion",
+          "label": "Mean Reversion",
+          "score": 0.35,
+          "magnitude": 0.35,
+          "bias": "bullish",
+          "reasons": [
+            "Price hugging lower Bollinger band"
+          ],
+          "riskFlags": [],
+          "inputs": {
+            "rsi": 36.23698098042385,
+            "bollinger": {
+              "upper": 185.96273716176293,
+              "lower": 183.9252428382371
+            },
+            "sma20": 184.94399
+          }
+        },
+        {
+          "name": "breakout",
+          "label": "Breakout / Breakdown",
+          "score": -0.35,
+          "magnitude": 0.35,
+          "bias": "bearish",
+          "reasons": [
+            "Price breaking below recent lows"
+          ],
+          "riskFlags": [
+            "Tight range, breakout may lack follow-through"
+          ],
+          "inputs": {
+            "recentHigh": 187.1393,
+            "recentLow": 183.9903,
+            "atr": 0.43796428571428486
+          }
+        }
+      ]
+    }
+  },
+  "instructions": {
+    "objective": "Validate the option plan using provided technical diagnostics and strategy playbooks.",
+    "required_keys": [
+      "decision",
+      "confidence",
+      "selected_strategy",
+      "risk_flags",
+      "notes",
+      "strategy_type",
+      "adjustments"
+    ],
+    "adjustments_schema": {
+      "entry": "null or float adjustment in dollars",
+      "stop": "null or float adjustment in dollars",
+      "target": "null or float adjustment in dollars"
+    },
+    "selected_strategy_schema": {
+      "name": "one of momentum|mean_reversion|breakout",
+      "bias": "bullish|bearish|neutral",
+      "score": "0..1 absolute conviction",
+      "rationale": "≤120 chars summary"
+    },
+    "confluence_guidance": {
+      "reward_to_risk": "Prefer >= 1.5. Flag if < 1.0 or tightening stops could lift ratio.",
+      "spread_pct": "Day trades need <= 35%, swing trades <= 45%.",
+      "volume_oi_ratio": "Healthy >= 0.30. Warn if < 0.15.",
+      "delta_gap": "Aim for |delta_gap| <= 0.15. Large gaps imply wrong strike.",
+      "time_to_expiry_days": "Swing plans need at least ~3 trading days unless 0DTE explicitly chosen."
+    }
+  }
+}
+🧠 AI Decision: reject (confidence: 30%)
+AI_SELECTED_STRATEGY {"name":"momentum","bias":"bearish","score":0.3,"rationale":"Bearish momentum signals conflict with the put strategy."}
+AI_RISK_FLAGS ["Bearish momentum signals","Tight range may lack follow-through"]
+AI_ADJUSTMENTS {"entry":null,"stop":null,"target":null}
+
+🔍 Analyzing HOOD...
+📊 Current price: $129.66 (fmp)
+🧭 Primary playbook: Momentum Trend (bearish bias, score -50.0pts)
+🎯 DAY_TRADE Analysis: Strength -15%
+📋 Signals: macd_bearish, bb_lower_breakout, high_volume, near_support
+⏭️  Skipping HOOD - insufficient signal strength
+
+🔍 Analyzing MSFT...
+📊 Current price: $503.99 (fmp)
+🧭 Primary playbook: Mean Reversion (bullish bias, score 55.0pts)
+🎯 DAY_TRADE Analysis: Strength -0%
+📋 Signals: oversold, macd_bearish, bb_lower_breakout, high_volume
+⏭️  Skipping MSFT - insufficient signal strength
+
+🔍 Analyzing META...
+📊 Current price: $609.07 (fmp)
+🧭 Primary playbook: Mean Reversion (bullish bias, score 55.0pts)
+🎯 DAY_TRADE Analysis: Strength -0%
+📋 Signals: oversold, macd_bearish, bb_lower_breakout, high_volume
+⏭️  Skipping META - insufficient signal strength
+
+🔍 Analyzing NFLX...
+📊 Current price: $1138.37 (fmp)
+🧭 Primary playbook: Momentum Trend (neutral bias, score 0.0pts)
+🎯 DAY_TRADE Analysis: Strength 10%
+📋 Signals: macd_bullish, near_support, near_resistance, resistance_reject
+⏭️  Skipping NFLX - insufficient signal strength
+
+🔍 Analyzing BABA...
+📊 Current price: $157.53 (fmp)
+🧭 Primary playbook: Momentum Trend (bullish bias, score 50.0pts)
+🎯 DAY_TRADE Analysis: Strength -5%
+📋 Signals: macd_bullish, near_resistance, resistance_reject
+⏭️  Skipping BABA - insufficient signal strength
+

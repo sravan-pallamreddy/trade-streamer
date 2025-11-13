@@ -108,9 +108,25 @@ const OPTION_CONFIG = {
   BABA: { multiplier: 100, strikeIncrement: 0.5, supports0DTE: false, defaultOTMPct: 0.012 },
   SPX: { multiplier: 100, strikeIncrement: 5, supports0DTE: true, defaultOTMPct: 0.005 },
   NVDA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
+  GLD: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.01 },
   CVNA: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.015 },
   HOOD: { multiplier: 100, strikeIncrement: 0.5, supports0DTE: false, defaultOTMPct: 0.02, fallbackExpiryType: 'weekly' },
+  AVGO: { multiplier: 100, strikeIncrement: 5, supports0DTE: false, defaultOTMPct: 0.008 },
+  NFLX: { multiplier: 100, strikeIncrement: 5, supports0DTE: false, defaultOTMPct: 0.01 },
+  CRM: { multiplier: 100, strikeIncrement: 2.5, supports0DTE: false, defaultOTMPct: 0.01 },
+  AMD: { multiplier: 100, strikeIncrement: 2.5, supports0DTE: false, defaultOTMPct: 0.01 },
+  UNH: { multiplier: 100, strikeIncrement: 2.5, supports0DTE: false, defaultOTMPct: 0.008 },
+  COIN: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.015 },
+  SNOW: { multiplier: 100, strikeIncrement: 5, supports0DTE: false, defaultOTMPct: 0.01 },
+  PLTR: { multiplier: 100, strikeIncrement: 0.5, supports0DTE: false, defaultOTMPct: 0.02 },
+  NBIS: { multiplier: 100, strikeIncrement: 1, supports0DTE: false, defaultOTMPct: 0.02 },
 };
+
+function getOptionConfig(symbol) {
+  if (!symbol) return null;
+  const key = symbol.toString().trim().toUpperCase();
+  return OPTION_CONFIG[key] || null;
+}
 
 function describeExpiryType(type) {
   switch ((type || '').toLowerCase()) {
@@ -141,7 +157,7 @@ function resolveExpiryDate({ symbol, requestedType = 'weekly', minBusinessDays =
     };
   }
 
-  const conf = OPTION_CONFIG[symbol] || {};
+  const conf = getOptionConfig(symbol) || {};
   const normalizedRequested = (requestedType || 'weekly').toString().toLowerCase();
   let effectiveType = normalizedRequested;
   let fallbackReason = null;
@@ -197,11 +213,12 @@ function bsOptionPrice({ S, K, T, r = 0.01, sigma = 0.2, type = 'call' }) {
 }
 
 function pickContract({ symbol, side, underlyingPrice, otmPct, minBusinessDays = 2, expiryOverride, expiryType = 'weekly' }) {
-  const conf = OPTION_CONFIG[symbol];
+  const normalizedSymbol = symbol ? symbol.toString().trim().toUpperCase() : symbol;
+  const conf = getOptionConfig(normalizedSymbol);
   if (!conf) throw new Error(`Unsupported symbol for options config: ${symbol}`);
   const { strikeIncrement } = conf;
 
-  const resolvedExpiry = resolveExpiryDate({ symbol, requestedType: expiryType, minBusinessDays, expiryOverride });
+  const resolvedExpiry = resolveExpiryDate({ symbol: normalizedSymbol, requestedType: expiryType, minBusinessDays, expiryOverride });
   const expiryDate = resolvedExpiry.date;
   const expiry = formatExpiryISO(expiryDate);
 
@@ -219,7 +236,7 @@ function pickContract({ symbol, side, underlyingPrice, otmPct, minBusinessDays =
   }
 
   return {
-    symbol,
+    symbol: normalizedSymbol,
     side,
     strike,
     expiry,

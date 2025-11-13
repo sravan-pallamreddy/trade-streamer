@@ -43,10 +43,10 @@ TAKE_PROFIT_MULT=1.5
 DEFAULT_IV=0.2
 OTM_PCT=0.01
 
-# AI provider (OpenAI default; set AI_PROVIDER=xai for Grok)
+# AI provider (OpenAI default; set AI_PROVIDER=deepseek for DeepSeek)
 AI_PROVIDER=openai
 OPENAI_API_KEY=sk-your-key-here
-# XAI_API_KEY=sk-your-xai-key
+# DEEP_SEEK_API_KEY=sk-your-deepseek-key
 
 # E*TRADE API (sandbox or production)
 ETRADE_BASE_URL=https://api.etrade.com
@@ -158,9 +158,9 @@ Implementation:
 # Add your AI provider credentials to .env
 AI_PROVIDER=openai
 OPENAI_API_KEY=sk-your-key-here
-# Or switch to Grok (xAI)
-# AI_PROVIDER=xai
-# XAI_API_KEY=sk-your-xai-key
+# Or switch to DeepSeek
+# AI_PROVIDER=deepseek
+# DEEP_SEEK_API_KEY=sk-your-deepseek-key
 
 # Run daily scan
 npm run day-trade
@@ -252,7 +252,7 @@ Environment variables:
 - `ACCOUNT_SIZE` (required)
 - `TRADING_STRATEGY` (day_trade or swing_trade, default: day_trade)
 - `EXPIRY_TYPE` (weekly, monthly, 0dte, default: weekly)
-- `AI_PROVIDER` (`openai` default, set `xai` for Grok) plus the matching API key (`OPENAI_API_KEY` or `XAI_API_KEY`)
+- `AI_PROVIDER` (`openai` default, set `deepseek` for DeepSeek) plus the matching API key (`OPENAI_API_KEY` or `DEEP_SEEK_API_KEY`)
 
 Files:
 - `src/cli/ai-agent.js`: AI agent CLI entry point.
@@ -266,7 +266,7 @@ User-friendly web interface for the AI trading agent with real-time recommendati
 ### Integrations at a Glance
 - **E*TRADE API** – OAuth 1.0a connection powers account discovery, live balances, positions, and the emergency option exit workflow. Sensitive account numbers and balances render masked by default with an in-app reveal toggle, while the portfolio rail auto-syncs your default account at launch.
 - **Financial Modeling Prep (FMP)** – Supplements recommendations with fundamentals (earnings calendar, float, sector stats) that enrich the AI prompt and side-rail insights.
-- **AI Providers (OpenAI / xAI Grok)** – Generate narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card. Multiple providers can run per scan when `UI_AI_PROVIDERS` is defined.
+- **AI Providers (OpenAI / DeepSeek)** – Generate narrative playbooks, confidence scoring, and risk commentary surfaced inside each recommendation card. Multiple providers can run per scan when `UI_AI_PROVIDERS` is defined.
 - **Quote Providers** – Yahoo Finance remains the default intraday feed, with optional Stooq/IEX/Alpha Vantage fallbacks configured via environment settings.
 
 ### Features
@@ -374,8 +374,8 @@ node src/ui/server.js
 ### Configuration
 The dashboard uses the same environment variables as the CLI agent:
 - `ACCOUNT_SIZE`: Account balance for position sizing
-- `AI_PROVIDER` (`openai` default, `xai` for Grok) plus the corresponding key (`OPENAI_API_KEY` or `XAI_API_KEY`)
-- `UI_AI_PROVIDERS`: Comma-separated provider list (e.g., `openai,xai`) to override auto-detection and run multiple analyses per scan
+- `AI_PROVIDER` (`openai` default, `deepseek` for DeepSeek) plus the corresponding key (`OPENAI_API_KEY` or `DEEP_SEEK_API_KEY`)
+- `UI_AI_PROVIDERS`: Comma-separated provider list (e.g., `openai,deepseek`) to override auto-detection and run multiple analyses per scan
 - `SCAN_SYMBOLS`: Symbols to analyze (default: SPY,QQQ,AAPL,TSLA,GOOGL,NVDA)
 - `UI_AGENT_COMMAND`: Custom command to launch the AI agent (defaults to `npm run day-trade`). Placeholders `{{symbols}}`, `{{strategy}}`, and `{{expiryType}}` are dynamically substituted when present.
 - Auto-exit tuning (optional):
@@ -488,19 +488,19 @@ ETRADE_ACCESS_TOKEN_SECRET=...
 ```
 5) Add those to your `.env` and restart the stream with `--provider mix`.
 
-## Optional: AI Enrichment (OpenAI / xAI)
+## Optional: AI Enrichment (OpenAI / DeepSeek)
 
-You can send each suggestion to your configured AI provider—OpenAI by default, or xAI Grok—to get a short review with decision, confidence, risk flags, and notes.
+You can send each suggestion to your configured AI provider—OpenAI by default, or DeepSeek—to get a short review with decision, confidence, risk flags, and notes.
 
 Setup:
-- Add to `.env`: `AI_PROVIDER=openai` and `OPENAI_API_KEY=...` *(or* `AI_PROVIDER=xai` with `XAI_API_KEY=...`*)*
+- Add to `.env`: `AI_PROVIDER=openai` and `OPENAI_API_KEY=...` *(or* `AI_PROVIDER=deepseek` with `DEEP_SEEK_API_KEY=...` — default model `deepseek-chat`; override via `DEEP_SEEK_DEFAULT_MODEL` if you need `deepseek-r1` or other variants)*
 - Optional envs: `USE_AI=true`, `AI_MODEL=gpt-4o-mini`, `AI_INTERVAL_SEC=60`
 
 Run:
 ```
 AI_PROVIDER=openai OPENAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ,ES,NQ --provider mix --interval 30 --ai --ai-model gpt-4o-mini
 # or with Grok
-AI_PROVIDER=xai XAI_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ --provider mix --interval 30 --ai --ai-provider xai
+AI_PROVIDER=deepseek DEEP_SEEK_API_KEY=sk-... ACCOUNT_SIZE=25000 npm run suggest:stream -- --symbols SPY,QQQ --provider mix --interval 30 --ai --ai-provider deepseek
 ```
 
 #### Sample Prompt (0DTE AAPL call example)
@@ -539,7 +539,7 @@ Payload:
 Files:
 - `src/ai/client.js`: provider registry and selection helper.
 - `src/ai/openai.js`: minimal client wrapper returning JSON.
-- `src/ai/xai.js`: Grok chat completion wrapper.
+- `src/ai/deepseek.js`: DeepSeek chat completion wrapper.
 - `src/ai/prompt.js`: system/user prompts and schema.
 - `src/runner/suggest-stream.js`: `--ai` flag wiring and output.
 - `src/ui/server.js`: runs the agent against each provider listed in `UI_AI_PROVIDERS` and merges results for the dashboard.

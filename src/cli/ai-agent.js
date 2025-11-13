@@ -6,7 +6,7 @@ const util = require('util');
 const { buildSuggestion } = require('../strategy/options');
 const { computeQty } = require('../risk');
 const { getQuotes } = require('../providers/quotes');
-const { fetchOptionChain } = require('../providers/options-chain');
+const { fetchOptionChain, parseOptionSymbolMeta } = require('../providers/options-chain');
 const { getClient } = require('../ai/client');
 const { buildSystemPrompt, buildUserPrompt } = require('../ai/prompt');
 const { fetchBarsWithFallback } = require('../providers/bars');
@@ -15,6 +15,89 @@ const { evaluateStrategies } = require('../strategy/playbooks');
 const { selectOptimalOption, pickNearestStrike, midPrice } = require('../strategy/selector');
 
 const sleep = util.promisify(setTimeout);
+
+function roundNumber(value, decimals = 2) {
+  return Number.isFinite(value) ? Number(value.toFixed(decimals)) : null;
+}
+
+function computeRelativeVolume(indicators) {
+  if (!indicators) return null;
+  const vol = Number(indicators.volume);
+  const avg = Number(indicators.avgVolume);
+  if (!Number.isFinite(vol) || !Number.isFinite(avg) || avg <= 0) return null;
+  return Number((vol / avg).toFixed(2));
+}
+
+function summarizePriceLevels(bars, currentPrice) {
+  if (!Array.isArray(bars) || bars.length < 10 || !Number.isFinite(currentPrice)) {
+    return null;
+  }
+  const recent = bars.slice(-40);
+  const lows = recent
+    .map((b) => Number.isFinite(b.l) ? b.l : Number(b.low ?? b.c))
+    .filter(Number.isFinite);
+  const highs = recent
+    .map((b) => Number.isFinite(b.h) ? b.h : Number(b.high ?? b.c))
+    .filter(Number.isFinite);
+  if (!lows.length || !highs.length) return null;
+  const support = Math.min(...lows);
+  const resistance = Math.max(...highs);
+  const distToSupport = currentPrice > 0 ? ((currentPrice - support) / currentPrice) * 100 : null;
+  const distToResistance = currentPrice > 0 ? ((resistance - currentPrice) / currentPrice) * 100 : null;
+  return {
+    recent_support: roundNumber(support, 2),
+    recent_resistance: roundNumber(resistance, 2),
+    distance_to_support_pct: roundNumber(distToSupport, 2),
+    distance_to_resistance_pct: roundNumber(distToResistance, 2),
+  };
+}
+
+function buildSupplementalSignals({
+  indicators,
+  suggestion,
+  tradePlan,
+  confluence,
+  quotePrice,
+  bars,
+  riskBudgetValue,
+  params,
+  adjustedParams,
+}) {
+  const impliedVol = suggestion.assumptions?.iv ?? suggestion.assumptions?.sigma ?? null;
+  const volatilitySnapshot = {
+    implied_vol: roundNumber(impliedVol, 4),
+    atr: roundNumber(indicators?.atr, 3),
+    relative_volume: computeRelativeVolume(indicators),
+    delta_gap: confluence?.delta_gap ?? null,
+  };
+
+  const liquidity = suggestion.liquidity || {};
+  const liquiditySnapshot = {
+    spread_pct: roundNumber(liquidity.spread_pct, 2),
+    option_volume: suggestion.volume ?? suggestion.option_details?.volume ?? null,
+    option_oi: suggestion.oi ?? suggestion.option_details?.oi ?? null,
+    multiplier: suggestion.multiplier ?? null,
+    trade_qty: tradePlan?.qty ?? null,
+    per_contract_risk: suggestion.risk_per_contract ?? null,
+    total_risk: suggestion.risk_total ?? null,
+  };
+
+  const riskContext = {
+    account_size: params.account ?? null,
+    risk_pct: params.riskPct ?? null,
+    risk_budget: roundNumber(riskBudgetValue, 2),
+    stop_loss_pct: adjustedParams?.stopLossPct ?? params.stopLossPct ?? null,
+    take_profit_mult: adjustedParams?.takeProfitMult ?? params.takeProfitMult ?? null,
+    alert: tradePlan && tradePlan.qty === 0 ? 'per_contract_risk_exceeds_budget' : null,
+  };
+
+  return {
+    volatility: volatilitySnapshot,
+    liquidity: liquiditySnapshot,
+    price_levels: summarizePriceLevels(bars, quotePrice),
+    risk: riskContext,
+  };
+}
 
 function calculateConfluenceMetrics({ suggestion, quotePrice, analysis, strategyInsights, targetDelta }) {
   if (!suggestion) return {};
@@ -205,7 +288,7 @@ function usage() {
   `  --strategy <type>        Trading strategy: day_trade or swing_trade (default: day_trade)\n`+
   `  --expiry-type <type>     Options expiry: weekly, monthly, or 0dte (default: weekly)\n`+
   `  --risk-pct <num>         Risk per trade fraction (default: 0.01)\n`+
-  `  --ai-provider <name>     AI provider (openai|xai)\n`+
+  `  --ai-provider <name>     AI provider (openai|deepseek)\n`+
   `  --ai-model <model>       AI model to use (default depends on provider)\n`+
   `  --watch                  Continuously rerun at the configured interval\n`+
   `  --once / --no-watch      Run a single scan and exit\n`+
@@ -229,24 +312,27 @@ function usage() {
 
 async function analyzeSymbol(symbol, params) {
   try {
-    console.log(`\n🔍 Analyzing ${symbol}...`);
+    console.log(`\nðŸ” Analyzing ${symbol}...`);
 
     const aiClient = params.aiClient || getClient(params.aiProvider);
 
     // Get current quote
-    const quotes = await getQuotes([symbol], { provider: params.provider, debug: params.debug });
-    const quote = quotes[symbol];
+    let quote = params.quoteCache ? params.quoteCache[symbol] : null;
     if (!quote) {
-      console.log(`❌ No quote available for ${symbol}`);
+      const quotes = await getQuotes([symbol], { provider: params.provider, debug: params.debug });
+      quote = quotes[symbol];
+    }
+    if (!quote) {
+      console.log(`âŒ No quote available for ${symbol}`);
       return null;
     }
 
-    console.log(`📊 Current price: $${quote.price.toFixed(2)} (${quote.source})`);
+    console.log(`ðŸ“Š Current price: $${quote.price.toFixed(2)} (${quote.source})`);
 
     // Get technical indicators
     const { bars, indicators } = await fetchBarsWithFallback(symbol, { range: '1d', interval: '1m' });
     if (params.debug) {
-      console.log(`📈 Indicators: RSI=${indicators.rsi?.toFixed(2) || 'N/A'}, MACD=${indicators.macd?.macd?.toFixed(4) || 'N/A'}`);
+      console.log(`ðŸ“ˆ Indicators: RSI=${indicators.rsi?.toFixed(2) || 'N/A'}, MACD=${indicators.macd?.macd?.toFixed(4) || 'N/A'}`);
     }
 
     // Analyze signals
@@ -268,14 +354,14 @@ async function analyzeSymbol(symbol, params) {
       const primary = strategyInsights.primary;
       const directionLabel = primary.bias === 'neutral' ? 'neutral bias' : `${primary.bias} bias`;
       const scoreLabel = Number.isFinite(primary.score) ? (primary.score * 100).toFixed(1) : '0.0';
-      console.log(`🧭 Primary playbook: ${primary.label} (${directionLabel}, score ${scoreLabel}pts)`);
+      console.log(`ðŸ§­ Primary playbook: ${primary.label} (${directionLabel}, score ${scoreLabel}pts)`);
     }
 
-    console.log(`🎯 ${strategyType.toUpperCase()} Analysis: Strength ${(analysis.strength * 100).toFixed(0)}%`);
-    console.log(`📋 Signals: ${analysis.signals.join(', ') || 'none'}`);
+    console.log(`ðŸŽ¯ ${strategyType.toUpperCase()} Analysis: Strength ${(analysis.strength * 100).toFixed(0)}%`);
+    console.log(`ðŸ“‹ Signals: ${analysis.signals.join(', ') || 'none'}`);
 
     if (Math.abs(analysis.strength) < 0.2) {
-      console.log(`⏭️  Skipping ${symbol} - insufficient signal strength`);
+      console.log(`â­ï¸  Skipping ${symbol} - insufficient signal strength`);
       return null;
     }
 
@@ -342,7 +428,7 @@ async function analyzeSymbol(symbol, params) {
         volume: opt.vol ?? opt.volume ?? null,
         optionSymbol: opt.optionSymbol ?? null,
       }));
-      console.log('📡 Option chain response', {
+      console.log('ðŸ“¡ Option chain response', {
         symbol,
         expiry: suggestion.expiry,
         source: chainSource,
@@ -351,7 +437,7 @@ async function analyzeSymbol(symbol, params) {
       });
 
       if (!chain.length && params.debug) {
-        console.warn(`⚠️  Option chain empty for ${symbol} ${suggestion.expiry}; using theoretical pricing`);
+        console.warn(`âš ï¸  Option chain empty for ${symbol} ${suggestion.expiry}; using theoretical pricing`);
       }
 
       let candidate = selectOptimalOption(chain, side, {
@@ -394,33 +480,44 @@ async function analyzeSymbol(symbol, params) {
             volume: suggestion.volume,
             score: candidate._metrics?.totalScore ?? null,
           };
+          let derivedExpiry = candidate.expiry || null;
+          if (!derivedExpiry && suggestion.option_symbol) {
+            const occMeta = parseOptionSymbolMeta(suggestion.option_symbol);
+            if (occMeta?.expiry) {
+              derivedExpiry = occMeta.expiry;
+            }
+          }
+          if (derivedExpiry && derivedExpiry !== suggestion.expiry) {
+            suggestion.expiry = derivedExpiry;
+            suggestion.contract = `${symbol} ${suggestion.expiry} ${suggestion.strike}${side === 'call' ? 'C' : 'P'}`;
+          }
           const chainLabel = chainSource ? ` | Chain ${chainSource}` : '';
           const symbolLabel = suggestion.option_symbol ?? candidate.optionSymbol ?? 'N/A';
-          console.log(`🟢 Selected ${side.toUpperCase()} ${suggestion.strike} @ ~$${suggestion.est_entry} (Δ ${suggestion.delta ?? 'N/A'}, OI ${suggestion.oi ?? 'N/A'})`);
+          console.log(`ðŸŸ¢ Selected ${side.toUpperCase()} ${suggestion.strike} @ ~$${suggestion.est_entry} (Î” ${suggestion.delta ?? 'N/A'}, OI ${suggestion.oi ?? 'N/A'})`);
           console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
-          console.log(`📄 Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}${chainLabel}`);
+          console.log(`ðŸ“„ Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}${chainLabel}`);
         } else if (Number.isFinite(suggestion.strike)) {
           suggestion.entry_source = 'model_chain_fallback';
           suggestion.option_symbol = candidate.optionSymbol ?? suggestion.option_symbol ?? null;
         }
       }
     } catch (chainErr) {
-      console.warn(`⚠️  Option chain fetch failed for ${symbol}:`, chainErr.message);
+      console.warn(`âš ï¸  Option chain fetch failed for ${symbol}:`, chainErr.message);
     }
 
     if (!liveOption) {
       suggestion.entry_source = 'model';
-      console.log('ℹ️  Using theoretical pricing (no live chain data)');
+      console.log('â„¹ï¸  Using theoretical pricing (no live chain data)');
       const symbolLabel = suggestion.option_symbol ?? 'N/A';
-      console.log(`🧮 Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
+      console.log(`ðŸ§® Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
       console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
-      console.log(`📄 Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
+      console.log(`ðŸ“„ Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
     } else if (suggestion.entry_source === 'model_chain_fallback') {
       const symbolLabel = suggestion.option_symbol ?? 'N/A';
-      console.log('ℹ️  Option chain found but pricing unavailable; using theoretical premium for sizing.');
-      console.log(`🧮 Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
+      console.log('â„¹ï¸  Option chain found but pricing unavailable; using theoretical premium for sizing.');
+      console.log(`ðŸ§® Suggested ${side.toUpperCase()} baseline -> Strike ${suggestion.strike} @ ~$${suggestion.est_entry}`);
       console.log(`   Stop ~$${suggestion.stop} | Target ~$${suggestion.take_profit}`);
-      console.log(`📄 Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
+      console.log(`ðŸ“„ Option contract: ${suggestion.contract} | Symbol ${symbolLabel} | Expiry ${suggestion.expiry} | Strike ${suggestion.strike} | Source ${suggestion.entry_source}`);
     }
     suggestion.chain_source = chainSource;
 
@@ -479,20 +576,32 @@ async function analyzeSymbol(symbol, params) {
       ? sizing.riskBudget
       : (params.account && sizing.adjustedRiskPct != null ? params.account * sizing.adjustedRiskPct : null);
     const riskBudgetLabel = riskBudgetValue != null ? `~$${riskBudgetValue.toFixed(2)}` : 'N/A';
-    console.log(`📦 Position sizing: buy ${tradePlan.qty} contract(s) | Stop ${stopLabel} | Target ${tpLabel} | Risk ~$${enrichedSuggestion.risk_total.toFixed(2)} (per contract ~$${perContractRisk})`);
+    console.log(`ðŸ“¦ Position sizing: buy ${tradePlan.qty} contract(s) | Stop ${stopLabel} | Target ${tpLabel} | Risk ~$${enrichedSuggestion.risk_total.toFixed(2)} (per contract ~$${perContractRisk})`);
     if (tradePlan.qty === 0) {
-      console.log(`⚠️  Risk budget (${riskBudgetLabel}) is smaller than the per-contract risk ($${perContractRisk}). Increase account size, tighten the stop, or raise RISK_PCT to afford a starter contract.`);
+      console.log(`âš ï¸  Risk budget (${riskBudgetLabel}) is smaller than the per-contract risk ($${perContractRisk}). Increase account size, tighten the stop, or raise RISK_PCT to afford a starter contract.`);
     }
     if (tradePlan.iterations.length) {
-      console.log('📈 Profit plan:');
+      console.log('ðŸ“ˆ Profit plan:');
       tradePlan.iterations.forEach((step, idx) => {
         const targetLabel = step.target != null ? `$${step.target.toFixed(2)}` : 'market strength';
-        console.log(`   ${idx + 1}) Sell ${step.sellQty} @ ${targetLabel} — ${step.note}`);
+        console.log(`   ${idx + 1}) Sell ${step.sellQty} @ ${targetLabel} â€” ${step.note}`);
       });
     }
 
     // AI analysis
-    console.log(`🤖 Getting AI analysis...`);
+    console.log(`ðŸ¤– Getting AI analysis...`);
+    const supplementalSignals = buildSupplementalSignals({
+      indicators,
+      suggestion: enrichedSuggestion,
+      tradePlan,
+      confluence,
+      quotePrice: quote.price,
+      bars,
+      riskBudgetValue,
+      params,
+      adjustedParams,
+    });
+
     const context = {
       price: quote.price,
       source: quote.source,
@@ -521,21 +630,22 @@ async function analyzeSymbol(symbol, params) {
       strategy_playbook: {
         primary: strategyInsights?.primary ?? null,
         ranked: strategyInsights?.ranked?.slice(0, 3) ?? [],
-      }
+      },
+      supplemental_signals: supplementalSignals,
     };
 
     const system = buildSystemPrompt();
     const user = buildUserPrompt({ suggestion: enrichedSuggestion, context });
 
     try {
-      console.log('🧾 AI system prompt:', system);
-      console.log('🧾 AI user prompt:', user);
+      console.log('ðŸ§¾ AI system prompt:', system);
+      console.log('ðŸ§¾ AI user prompt:', user);
     } catch (promptLogErr) {
-      console.warn('⚠️  Failed to log AI prompt payloads:', promptLogErr.message);
+      console.warn('âš ï¸  Failed to log AI prompt payloads:', promptLogErr.message);
     }
   const ai = await aiClient.chatJson({ model: params.aiModel, system, user, timeout_ms: 20000 });
 
-    console.log(`🧠 AI Decision: ${ai.decision || 'N/A'} (confidence: ${(ai.confidence ?? 0) * 100}%)`);
+    console.log(`ðŸ§  AI Decision: ${ai.decision || 'N/A'} (confidence: ${(ai.confidence ?? 0) * 100}%)`);
     if (ai.selected_strategy) {
       try {
         console.log(`AI_SELECTED_STRATEGY ${JSON.stringify(ai.selected_strategy)}`);
@@ -570,7 +680,7 @@ async function analyzeSymbol(symbol, params) {
     };
 
   } catch (error) {
-    console.error(`❌ Error analyzing ${symbol}:`, error.message);
+    console.error(`âŒ Error analyzing ${symbol}:`, error.message);
     return null;
   }
 }
@@ -578,9 +688,20 @@ async function analyzeSymbol(symbol, params) {
 async function runScan(args, runId = 1) {
   console.log(`\n==================== AI TRADING AGENT ====================`);
   console.log(`Tick: ${new Date().toISOString()} | Run ${runId}`);
-  console.log(`📈 Strategy: ${args.strategy.toUpperCase()} | Expiry: ${args.expiryType.toUpperCase()}`);
-  console.log(`💰 Account: $${args.account.toLocaleString()} | Symbols: ${args.symbols.join(', ')}`);
-  console.log(`🤖 AI: ${args.aiProvider} | Model: ${args.aiModel}`);
+  console.log(`ðŸ“ˆ Strategy: ${args.strategy.toUpperCase()} | Expiry: ${args.expiryType.toUpperCase()}`);
+  console.log(`ðŸ’° Account: $${args.account.toLocaleString()} | Symbols: ${args.symbols.join(', ')}`);
+  console.log(`ðŸ¤– AI: ${args.aiProvider} | Model: ${args.aiModel}`);
+
+  try {
+    args.quoteCache = await getQuotes(args.symbols, { provider: args.provider, debug: args.debug });
+    if (args.debug) {
+      console.log(`Fetched ${Object.keys(args.quoteCache || {}).length} quotes via bulk request.`);
+    }
+  } catch (bulkErr) {
+    console.warn('Bulk quote fetch failed; falling back to per-symbol requests:', bulkErr.message);
+    args.quoteCache = {};
+  }
+
 
   const results = [];
 
@@ -592,19 +713,19 @@ async function runScan(args, runId = 1) {
     await sleep(1000); // spacing out API calls slightly
   }
 
-  console.log(`\n📊 SUMMARY`);
+  console.log(`\nðŸ“Š SUMMARY`);
   console.log(`==========`);
 
   const approved = results.filter(r => r.ai.decision === 'approve');
   const cautioned = results.filter(r => r.ai.decision === 'caution');
   const rejected = results.filter(r => r.ai.decision === 'reject');
 
-  console.log(`✅ Approved: ${approved.length}`);
-  console.log(`⚠️  Caution: ${cautioned.length}`);
-  console.log(`❌ Rejected: ${rejected.length}`);
+  console.log(`âœ… Approved: ${approved.length}`);
+  console.log(`âš ï¸  Caution: ${cautioned.length}`);
+  console.log(`âŒ Rejected: ${rejected.length}`);
 
   if (approved.length > 0) {
-    console.log(`\n🎉 RECOMMENDED TRADES:`);
+    console.log(`\nðŸŽ‰ RECOMMENDED TRADES:`);
     approved.forEach(r => {
       const s = r.suggestion;
       console.log(`\n${r.symbol} ${s.side.toUpperCase()} - ${s.contract}`);
@@ -624,14 +745,14 @@ async function runScan(args, runId = 1) {
         console.log(`  Plan: stop at ${stopSummary} and scale out over ${s.tradePlan.iterations.length} step(s)`);
         s.tradePlan.iterations.forEach((step, idx) => {
           const tgt = step.target != null ? `$${step.target.toFixed(2)}` : 'market strength';
-          console.log(`    ${idx + 1}) Sell ${step.sellQty} @ ${tgt} — ${step.note}`);
+          console.log(`    ${idx + 1}) Sell ${step.sellQty} @ ${tgt} â€” ${step.note}`);
         });
       }
       console.log(`  AI Notes: ${r.ai.notes || 'N/A'}`);
     });
   }
 
-  console.log(`\n✨ Analysis complete!`);
+  console.log(`\nâœ¨ Analysis complete!`);
 }
 
 async function main() {
@@ -642,18 +763,18 @@ async function main() {
   if (args.help) return usage();
 
   if (!args.symbols || args.symbols.length === 0) {
-    console.error('❌ No symbols specified. Use --symbols or set SCAN_SYMBOLS env var.');
+    console.error('âŒ No symbols specified. Use --symbols or set SCAN_SYMBOLS env var.');
     return usage();
   }
 
   if (!args.account) {
-    console.error('❌ Account size required. Use --account or set ACCOUNT_SIZE env var.');
+    console.error('âŒ Account size required. Use --account or set ACCOUNT_SIZE env var.');
     return usage();
   }
 
   let runId = 1;
   if (args.watch) {
-    console.log(`🚀 AI Trading Agent watching every ${(args.intervalMs / 1000).toFixed(0)} seconds... (Ctrl+C to stop)`);
+    console.log(`ðŸš€ AI Trading Agent watching every ${(args.intervalMs / 1000).toFixed(0)} seconds... (Ctrl+C to stop)`);
     while (true) {
       await runScan(args, runId++);
       await sleep(args.intervalMs);
@@ -664,6 +785,8 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('💥 Fatal error:', err);
+  console.error('ðŸ’¥ Fatal error:', err);
   process.exit(1);
 });
+
+

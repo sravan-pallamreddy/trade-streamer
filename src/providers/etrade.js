@@ -250,6 +250,9 @@ async function getPortfolio(accountIdKey, { view = 'QUICK' } = {}) {
       },
       positions: Array.isArray(positions) ? positions.map(position => ({
         symbol: position?.Product?.symbol || 'UNKNOWN',
+        underlyingSymbol: position?.Product?.symbol || null,
+        optionSymbol: position?.optionSymbol || position?.Instrument?.[0]?.Product?.symbol || null,
+        osiKey: position?.osiKey || position?.Instrument?.[0]?.osiKey || null,
         symbolDescription: position?.symbolDescription || '',
         quantity: Number(position.quantity || 0),
         pricePaid: Number(position.pricePaid || 0),
@@ -437,6 +440,11 @@ function buildOccSymbol({ underlying, callPut, strike, expiry }) {
   return `${base}${year2}${month2}${day2}${flag}${strikeStr}`;
 }
 
+function formatOsiKey(occSymbol) {
+  if (!occSymbol) return null;
+  return occSymbol.replace(/ /g, '-');
+}
+
 function normalizeOptionContract({ optionSymbol, underlyingSymbol, callPut, strike, expiry }) {
   const rawSymbol = optionSymbol || underlyingSymbol;
   let inferredUnderlying = inferUnderlyingSymbol(rawSymbol, callPut) || (underlyingSymbol ? underlyingSymbol.toUpperCase() : null);
@@ -511,7 +519,7 @@ function buildOptionProduct(contract) {
 
   const pad2 = (n) => String(n).padStart(2, '0');
 
-  return {
+  const product = {
     symbol: contract.underlying,
     securityType: 'OPTN',
     callPut: contract.callPut.toUpperCase(),
@@ -520,12 +528,28 @@ function buildOptionProduct(contract) {
     expiryMonth: pad2(month),
     expiryDay: pad2(day),
   };
+
+  const osiKey = formatOsiKey(contract.occSymbol);
+  if (osiKey) {
+    product.ProductId = {
+      symbol: osiKey,
+      typeCode: 'OPTION',
+    };
+  }
+
+  return product;
 }
 
 function buildClientOrderId(prefix = 'SOS') {
-  const stamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `${prefix}${stamp}${random}`.slice(0, 32);
+  const MAX_LENGTH = 20; // E*TRADE rejects IDs longer than 20 chars
+  const tokens = [
+    prefix || '',
+    Date.now().toString(36),
+    Math.random().toString(36).slice(2, 6),
+  ];
+  const raw = tokens.join('').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const padded = (raw || 'SOS').padEnd(6, 'X');
+  return padded.slice(0, MAX_LENGTH);
 }
 
 function normalizeCloseAction(orderAction, rawQty = 0) {
@@ -536,23 +560,43 @@ function normalizeCloseAction(orderAction, rawQty = 0) {
   return rawQty >= 0 ? 'SELL_CLOSE' : 'BUY_CLOSE';
 }
 
-function buildOrderPayload({ product, orderAction, quantity }) {
+function buildOrderPayload({ product, orderAction, quantity, contract, price }) {
   const qty = Math.abs(Math.trunc(quantity));
-  return {
+  const numericPrice = Number(price);
+  const hasLimitPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+  const instrument = {
+    Product: product,
+    orderAction,
+    orderedQuantity: qty,
+    quantityType: 'QUANTITY',
+    quantity: qty,
+  };
+
+  const osiKey = formatOsiKey(contract?.occSymbol);
+  if (osiKey) {
+    instrument.osiKey = osiKey;
+    if (!instrument.Product.ProductId) {
+      instrument.Product.ProductId = {
+        symbol: osiKey,
+        typeCode: 'OPTION',
+      };
+    }
+  }
+
+  const orderPayload = {
     allOrNone: false,
-    priceType: 'MARKET',
+    priceType: hasLimitPrice ? 'LIMIT' : 'MARKET',
+    stopPrice: 0,
     orderTerm: 'GOOD_FOR_DAY',
     marketSession: 'REGULAR',
-    Instrument: [
-      {
-        Product: product,
-        orderAction,
-        orderedQuantity: qty,
-        quantityType: 'QUANTITY',
-        quantity: qty,
-      },
-    ],
+    Instrument: [instrument],
   };
+
+  if (hasLimitPrice) {
+    orderPayload.limitPrice = numericPrice;
+  }
+
+  return orderPayload;
 }
 
 async function placeOptionMarketOrder({
@@ -564,6 +608,7 @@ async function placeOptionMarketOrder({
   callPut,
   strike,
   expiry,
+  price,
 }) {
   if (!accountIdKey) throw new Error('Account ID (accountIdKey) is required');
   if (!optionSymbol && !underlyingSymbol) {
@@ -610,7 +655,13 @@ async function placeOptionMarketOrder({
     });
   }
 
-  const buildOrderSection = () => buildOrderPayload({ product, orderAction: action, quantity: absQty });
+  const buildOrderSection = () => buildOrderPayload({
+    product,
+    orderAction: action,
+    quantity: absQty,
+    contract,
+    price,
+  });
 
   const previewRequest = {
     PreviewOrderRequest: {
@@ -683,6 +734,40 @@ async function placeOptionMarketOrder({
   };
 }
 
+function buildOrdersQuery(params = {}) {
+  const allowedKeys = [
+    'marker',
+    'count',
+    'status',
+    'fromDate',
+    'toDate',
+    'symbol',
+    'securityType',
+    'transactionType',
+    'marketSession',
+  ];
+  const query = {};
+  for (const key of allowedKeys) {
+    if (params[key] == null) continue;
+    const value = params[key];
+    if (Array.isArray(value)) {
+      if (value.length) query[key] = value.join(',');
+      continue;
+    }
+    const trimmed = typeof value === 'string' ? value.trim() : value;
+    if (trimmed === '' || trimmed == null) continue;
+    query[key] = trimmed;
+  }
+  return query;
+}
+
+async function getOrders(accountIdKey, params = {}) {
+  if (!accountIdKey) throw new Error('Account ID (accountIdKey) is required');
+  const query = buildOrdersQuery(params);
+  const data = await etFetch(`/v1/accounts/${accountIdKey}/orders.json`, { query });
+  return data;
+}
+
 module.exports = {
   getEquityQuotes,
   getOptionChain,
@@ -691,4 +776,5 @@ module.exports = {
   getPortfolio,
   getAccountBalance,
   placeOptionMarketOrder,
+  getOrders,
 };

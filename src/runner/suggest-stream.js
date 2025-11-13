@@ -105,7 +105,7 @@ function parseArgs(argv) {
 }
 
 function usage() {
-  console.log(`Usage: npm run suggest:stream -- --symbols SPY,QQQ,AAPL [--side both|call|put] --account 25000 [--interval 15] [--ai --ai-provider xai]\n`+
+  console.log(`Usage: npm run suggest:stream -- --symbols SPY,QQQ,AAPL [--side both|call|put] --account 25000 [--interval 15] [--ai --ai-provider deepseek]\n`+
   `Env: ACCOUNT_SIZE, SCAN_SYMBOLS, RISK_PCT, DEFAULT_IV, RISK_FREE, OTM_PCT, MIN_BUSINESS_DAYS, STOP_LOSS_PCT, TAKE_PROFIT_MULT, STREAM_INTERVAL_SEC, QUOTE_PROVIDER, USE_AI, AI_PROVIDER, AI_MODEL, AI_INTERVAL_SEC`);
 }
 

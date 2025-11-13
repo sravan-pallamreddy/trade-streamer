@@ -95,7 +95,7 @@ function printHelp() {
   '  --no-watch, --once       Run a single evaluation and exit',
     '  --interval, -i <sec>     Poll interval when watching (default 300 seconds)',
     '  --ai / --no-ai           Enable or disable AI commentary (default on)',
-    '  --ai-provider <name>     AI provider (openai|xai; default from env)',
+    '  --ai-provider <name>     AI provider (openai|deepseek; default from env)',
     '  --ai-model <name>        Override AI model (default per provider or AI_MODEL env)',
     '  --help, -h               Show this message',
   ].join('\n'));
