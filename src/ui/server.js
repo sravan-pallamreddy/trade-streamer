@@ -186,15 +186,18 @@ function toIsoTimestamp(value) {
 function normalizeOrderRecords(rawOrders) {
   const root = rawOrders?.OrdersResponse || rawOrders?.ordersResponse || rawOrders;
   if (!root) return [];
-  const orderEntries = ensureArray(root.order || root.orders || root.OrderData || root.Orders);
+  // E*TRADE returns 'Order' (capital O) as the array key
+  const orderEntries = ensureArray(root.Order || root.order || root.orders || root.OrderData || root.Orders);
   const records = [];
 
   for (const entry of orderEntries) {
     const orderId = entry?.orderId || entry?.OrderId || entry?.id || null;
     const details = ensureArray(entry?.orderDetail || entry?.OrderDetail || entry?.details || entry);
+    
     for (const detail of details) {
       const status = String(detail?.status || detail?.orderStatus || entry?.orderStatus || '').toUpperCase();
       if (!status || !(status.includes('EXECUTED') || status.includes('FILLED'))) continue;
+      
       const executedTime =
         detail?.executedTime
         || detail?.orderTime
@@ -203,11 +206,14 @@ function normalizeOrderRecords(rawOrders) {
         || entry?.placedTime
         || null;
       const instruments = ensureArray(detail?.instrument || detail?.Instrument);
+      
       for (const instrument of instruments) {
         const product = instrument?.product || instrument?.Product || {};
         if (!isOptionInstrument(instrument, product)) continue;
+        
         const action = String(instrument?.orderAction || detail?.orderAction || entry?.orderAction || '').toUpperCase();
         if (!action) continue;
+        
         const quantity = Number(
           instrument?.filledQuantity
           ?? instrument?.quantity
@@ -216,6 +222,7 @@ function normalizeOrderRecords(rawOrders) {
           ?? 0,
         );
         if (!Number.isFinite(quantity) || quantity === 0) continue;
+        
         const price = Number(
           instrument?.averageExecutionPrice
           ?? detail?.averageExecutionPrice
@@ -224,6 +231,7 @@ function normalizeOrderRecords(rawOrders) {
           ?? 0,
         );
         if (!Number.isFinite(price) || price <= 0) continue;
+        
         const multiplierRaw = Number(product?.multiplier ?? instrument?.multiplier ?? 100);
         const multiplier = Number.isFinite(multiplierRaw) && multiplierRaw > 0 ? multiplierRaw : 100;
         const key = canonicalOptionKey(instrument, product);
@@ -235,6 +243,7 @@ function normalizeOrderRecords(rawOrders) {
           || key
           || instrument?.symbol
           || 'Option';
+        
         records.push({
           orderId,
           timestamp: toIsoTimestamp(executedTime),
@@ -342,36 +351,28 @@ async function fetchDayOrders(accountIdKey) {
   const today = new Date();
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const nextDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  
+  // Try multiple date formats as per E*TRADE API documentation
   const attempts = [
-    { label: 'MMDDYYYY (bare digits)', format: formatDateBareMMDDYYYY }
+    { label: 'MMDDYYYY (bare digits)', format: formatDateBareMMDDYYYY },
+    { label: 'MM/DD/YYYY (with slashes)', format: formatDateMMDDYYYY },
+    { label: 'YYYY-MM-DD (ISO)', format: formatDateYYYYMMDD }
   ];
 
   let lastError = null;
   for (const attempt of attempts) {
     const params = {
-     
       fromDate: attempt.format(startOfDay),
       toDate: attempt.format(nextDay),
       count: 100,
       securityType: 'OPTN',
       marketSession: 'REGULAR',
     };
-    console.log('[DayOrders] Fetching option executions', {
-      accountIdKey,
-      format: attempt.label,
-      params,
-    });
     try {
       const rawOrders = await getOrders(accountIdKey, params);
       const summary = summarizeDayOptionOrders(rawOrders);
       if (summary?.totals) {
-        console.log('[DayOrders] Summary', {
-          formatTried: attempt.label,
-          trades: summary.trades?.length || 0,
-          totals: summary.totals,
-        });
-      } else {
-        console.log('[DayOrders] No executed option orders returned for today (format:', attempt.label, ')');
+        console.log('[DayOrders] Retrieved', summary.trades?.length || 0, 'trades with realized P&L:', summary.totals.realized);
       }
       return summary;
     } catch (error) {
@@ -536,7 +537,7 @@ try {
   process.exit(1);
 }
 
-const { getAccounts, getPortfolio, getAccountBalance, placeOptionMarketOrder } = etradeModule;
+const { getAccounts, getPortfolio, getAccountBalance, placeOptionMarketOrder, previewOptionOrder } = etradeModule;
 const { getOrders } = etradeModule;
 
 // API endpoints
@@ -682,6 +683,79 @@ app.get('/api/portfolio/:accountIdKey/balance', async (req, res) => {
   } catch (error) {
     console.error('Balance error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/portfolio/:accountIdKey/options/preview-order', async (req, res) => {
+  try {
+    const { accountIdKey } = req.params;
+    const { symbol, quantity, orderType, callPut, strike, expiry, price, underlyingSymbol } = req.body || {};
+    
+    console.log('[PreviewOrder] Request received', {
+      accountIdKey,
+      body: req.body,
+    });
+    
+    if (!accountIdKey) {
+      return res.status(400).json({ success: false, error: 'Account ID is required.' });
+    }
+    
+    const tradeSymbol = symbol;
+    if (!tradeSymbol) {
+      return res.status(400).json({ success: false, error: 'Option symbol is required.' });
+    }
+    
+    const qty = parseInt(quantity, 10);
+    if (!qty || qty <= 0) {
+      return res.status(400).json({ success: false, error: 'Valid quantity is required.' });
+    }
+    
+    // Determine order action based on orderType
+    const action = orderType === 'BUY' ? 'BUY_OPEN' : 'SELL_CLOSE';
+    
+    // Call E*TRADE preview API with data from request
+    // For market orders, don't pass price to ensure priceType is MARKET
+    const previewResult = await previewOptionOrder({
+      accountIdKey,
+      optionSymbol: tradeSymbol,
+      underlyingSymbol: underlyingSymbol,
+      quantity: qty,
+      orderAction: action,
+      callPut: callPut,
+      strike: strike,
+      expiry: expiry,
+      // price: undefined, // Omit price to force MARKET order
+    });
+    
+    // Build preview response
+    const previewData = {
+      orderType: previewResult.orderType || 'MARKET',
+      symbol: tradeSymbol,
+      quantity: qty,
+      action: orderType,
+      estimatedPrice: previewResult.estimatedPrice || price || 0,
+      estimatedCost: previewResult.estimatedCost || 0,
+      commission: previewResult.commission || 0.65,
+      warnings: previewResult.warnings || []
+    };
+    
+    console.log('[PreviewOrder] E*TRADE preview result:', previewData);
+    
+    res.json({ success: true, ...previewData });
+    
+  } catch (error) {
+    console.error('[PreviewOrder] Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      previewData: {
+        orderType: 'MARKET',
+        estimatedPrice: null,
+        estimatedCost: null,
+        commission: 0.65,
+        warnings: ['Unable to fetch preview data: ' + error.message]
+      }
+    });
   }
 });
 
